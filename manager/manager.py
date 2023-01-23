@@ -1,11 +1,12 @@
 """Node manager."""
 
 import logging
-from threading import Semaphore
+from threading import Semaphore, Thread
 import uuid
 import ssl
-import paho.mqtt.client as mqtt
 import json
+
+import paho.mqtt.client as mqtt
 
 from beartype.typing import NamedTuple
 
@@ -23,15 +24,21 @@ class MQTTServer(NamedTuple):
 
 
 class Manager(mqtt.Client):
-    """Silverline node manager."""
+    """Silverline node manager.
+
+    NOTE: blocks on initialization until the client connects, and all runtimes
+    are registered.
+    """
 
     def __init__(
         self, runtimes: dict[str, BaseRuntime], name: str = "manager",
         realm: str = "realm", server: MQTTServer = MQTTServer(
-            host="localhost", port=1883, user="cli", pwd="", ssl=False)
+            host="localhost", port=1883, user="cli", pwd="", ssl=False),
+        registration_timeout=5.
     ) -> None:
         self.log = logging.getLogger('manager')
         self.realm = realm
+        self.runtimes = runtimes
 
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
@@ -39,10 +46,44 @@ class Manager(mqtt.Client):
         self.name = "{}:{}".format(name, uuid.uuid4())
         super().__init__(client_id=self.name)
 
-        self.connect(server)
+        # TODO: need to set the will.
+        self.will_set(self.control_topic("mgr"), payload={"todo": None}, qos=2)
 
-        for rtid, rt in self.runtimes.items():
-            self.control_message("reg/{}".format(rtid), "create", rt.start())
+        self.connect(server)
+        self.register_runtimes(runtimes, timeout=registration_timeout)
+
+    def register(self, rtid: str, rt: BaseRuntime):
+        """Register runtime with orchestrator."""
+        reg_topic = self.control_topic("reg", rtid)
+        self.subscribe(reg_topic)
+
+        sem = Semaphore()
+        sem.acquire()
+
+        def _handler(client, userdata, msg, sem=sem, reg_topic=reg_topic):
+            sem.release()
+            self.unsubscribe(reg_topic)
+
+        self.message_callback_add(reg_topic, _handler)
+        msg = rt.start()
+        self.control_message("reg", rtid, "create", msg)
+        sem.acquire()
+
+    def register_runtimes(self, runtimes, timeout=5.):
+        """Register runtimes."""
+        self.log.info("Registering {} runtimes...".format(len(runtimes)))
+        threads = {
+            rtid: Thread(target=self.register, args=[rtid, rt])
+            for rtid, rt in runtimes.items()}
+        for t in threads.values():
+            t.start()
+        for rtid, thread in threads.items():
+            thread.join(timeout=timeout)
+            if thread.is_alive():
+                self.log.error("Timeout on registration: {}".format(rtid))
+            else:
+                self.log.info("Registered: {}".format(rtid))
+        self.log.info("Done registering.")
 
     def connect(self, server: MQTTServer) -> None:
         """Connect to MQTT server; blocks until connected."""
@@ -66,7 +107,7 @@ class Manager(mqtt.Client):
         self.username_pw_set(server.user, passwd)
         if server.ssl:
             self.tls_set(cert_reqs=ssl.CERT_NONE)
-        self.connect(server.host, server.port, 60)
+        super().connect(server.host, server.port, 60)
 
         # Waiting for on_connect to release
         self.loop_start()
@@ -89,11 +130,18 @@ class Manager(mqtt.Client):
             "Message arrived topic without handler (should be "
             "impossible!): {}".format(message.topic))
 
-    def control_message(self, topic: str, action: str, payload: dict) -> None:
+    def control_message(
+            self, topic: str, rtid: str, action: str, payload: dict) -> None:
         """Send control message to the orchestrator."""
-        self.publish("{}/proc/{}".format(self.realm, topic), json.dumps({
+        self.publish(self.control_topic(topic, rtid), json.dumps({
             "object_id": str(uuid.uuid4()),
             "action": action,
             "type": "arts_req",
             "data": payload
         }))
+
+    def control_topic(self, topic: str, rtid: str) -> None:
+        """Format control topic."""
+        # Todo: add .../* to the orchestrator.
+        # return "{}/proc/{}/{}".format(self.realm, topic, rtid)
+        return "{}/proc/{}".format(self.realm, topic)

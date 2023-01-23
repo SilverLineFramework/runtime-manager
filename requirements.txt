@@ -1,2 +1,2 @@
-paho-mqtt=1.6.1
-beartype
+paho-mqtt==1.6.1
+beartype==0.12.0
