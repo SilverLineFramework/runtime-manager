@@ -10,3 +10,4 @@ rt1 = TestRuntime()
 rt2 = TestRuntime()
 mgr = Manager({rt1.rtid: rt1, rt2.rtid: rt2}, server=MQTTServer(
     "localhost", 1883, "cli", "../mqtt_pwd.txt", False))
+mgr.connect()

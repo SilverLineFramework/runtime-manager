@@ -31,7 +31,7 @@ class Message(NamedTuple):
     | Runtime | x81.x00    | sl/{rt}:x81        | Keepalive        | json   |
     | Runtime | x82.x00    | sl/{rt}:x82        | Runtime Logging  | json   |
     | Runtime | {mod}.x80  | sl/{rt}/{mod}:x80  | Open Channel     | char[] |
-    | Runtime | {mod}.x81  | sl/{rt}/{mod}:x81  | Close Channel    | u32    |
+    | Runtime | {mod}.x81  | sl/{rt}/{mod}:x81  | Close Channel    | char   |
     | Runtime | {mod}.x82  | sl/{rt}/{mod}:x82  | Module Logging   | char[] |
     | Runtime | {mod}.x83  | sl/{rt}/{mod}:x83  | Profiling Data   | char[] |
     | Runtime | {mod}.{fd} | sl/{rt}/{mod}:{fd} | Publish Message  | u8[]   |
@@ -82,8 +82,7 @@ class BaseRuntime:
 class TestRuntime(BaseRuntime):
     """Runtime for debugging the manager interface."""
 
-    def __init__(
-            self, rtid: str = None, name: str = "debug") -> None:
+    def __init__(self, rtid: str = None, name: str = "debug") -> None:
         super().__init__(rtid, name)
         self.create = {
             "type": "runtime",
