@@ -1,0 +1,45 @@
+"""Common utilities."""
+
+from beartype.typing import Union
+
+
+class ModuleLookup:
+    """Module lookup by index and by UUID."""
+
+    def __init__(self):
+        self.modules_idx = {}
+        self.modules_uuid = {}
+
+    def add(self, data: dict) -> None:
+        """Add item."""
+        self.modules_idx[data["index"]] = data
+        self.modules_uuid[data["uuid"]] = data
+
+    def get(self, x: Union[int, str]) -> dict:
+        """Get item by index or UUID."""
+        if isinstance(x, int):
+            return self.modules_idx[x]
+        else:
+            return self.modules_uuid[x]
+
+    def uuid(self, x: int) -> str:
+        """Get UUID by index."""
+        return self.modules_uuid[x]
+
+    def free_index(self, max=128) -> int:
+        """Get first free index."""
+        for i in range(max):
+            if i not in self.modules:
+                return i
+        return -1
+
+    def remove(self, x: Union[int, str]) -> None:
+        """Remove item by index or UUID."""
+        if isinstance(x, int):
+            index = x
+            module_id = self.modules_idx[index]
+        else:
+            module_id = x
+            index = self.modules_uuid[x]
+        del self.modules_idx[index]
+        del self.modules_uuid[module_id]

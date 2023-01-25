@@ -8,6 +8,11 @@ configure_log(log=None, verbose=5)
 
 rt1 = TestRuntime()
 rt2 = TestRuntime()
-mgr = Manager({rt1.rtid: rt1, rt2.rtid: rt2}, server=MQTTServer(
-    "localhost", 1883, "cli", "../mqtt_pwd.txt", False))
-mgr.connect()
+mgr = Manager([rt1, rt2])
+mgr.connect(MQTTServer("localhost", 1883, "cli", "../mqtt_pwd.txt", False))
+import time
+time.sleep(1)
+
+mgr.disconnect()
+
+exit()
