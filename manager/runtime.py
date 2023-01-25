@@ -3,11 +3,10 @@
 import uuid
 import time
 import logging
+import json
 
 from abc import abstractmethod
 from beartype.typing import Optional, NamedTuple
-
-from .module import Module
 
 
 CREATE_MODULE = 0x80
@@ -26,8 +25,8 @@ class Message(NamedTuple):
 
     | Sender  | Header     | Socket             | Message          | Data   |
     | ------- | ---------- | ------------------ | -----------------| ------ |
-    | Manager | x80.x00    | sl/{rt}:x80        | Create Module    | json   |
-    | Manager | x81.x00    | sl/{rt}:x81        | Delete Module    | json   |
+    | Manager | x80.{mod}  | sl/{rt}:x80        | Create Module    | json   |
+    | Manager | x81.{mod}  | sl/{rt}:x81        | Delete Module    | null   |
     | Manager | {mod}.{fd} | sl/{rt}/{mod}:{fd} | Receive Message  | u8[]   |
     | Runtime | x80.x00    | sl/{rt}:x80        | Module Exited    | json   |
     | Runtime | x81.x00    | sl/{rt}:x81        | Keepalive        | json   |
@@ -37,6 +36,11 @@ class Message(NamedTuple):
     | Runtime | {mod}.x82  | sl/{rt}/{mod}:x82  | Module Logging   | char[] |
     | Runtime | {mod}.x83  | sl/{rt}/{mod}:x83  | Profiling Data   | char[] |
     | Runtime | {mod}.{fd} | sl/{rt}/{mod}:{fd} | Publish Message  | u8[]   |
+
+    Notes
+    -----
+    Add "dir" (list[str]) -- WASI dirs -- attribute to CreateModuleMsg/data
+    Add "reason" (object) attribute to ModuleExitMsg/data
 
     Attributes
     ----------
@@ -77,31 +81,52 @@ class RuntimeManager:
         pass
 
     @abstractmethod
-    def receive(self) -> Optional[Message]:
+    def receive(self, timeout: float = 5.) -> Optional[Message]:
         """Poll interface and receive message; return None on timeout."""
         pass
 
-    def create_module(self, mod: Module) -> None:
+    def handle_control_message(self, data: bytes) -> None:
+        """Handle control message on {realm}/proc/control/{rtid}."""
+        self.log.debug("Received control message: {}".format(data))
+
+        try:
+            data = json.loads(data)
+            if data["action"] == "create":
+                # todo: validate using json schema
+                self.create_module(data["data"])
+            elif data["action"] == "delete":
+                # todo: validate using json schema
+                self.delete_module(data["data"]["uuid"])
+            else:
+                self.log.error(
+                    "Invalid message action: {}".format(data["action"]))
+        except KeyError as e:
+            self.log.error("Message missing required key: {}".format(e))
+        except json.JSONDecodeError:
+            self.log.error(
+                "Mangled JSON could not be decoded: {}".format(data))
+
+    def create_module(self, data: dict) -> None:
         """Create module."""
         for i in range(self.max_nmodules):
             if i not in self.modules:
-                self.modules[i] = mod
-                self.modules_uuid[mod.uuid] = i
-                self.send(Message(CREATE_MODULE, 0, mod.to_json(i)))
+                self.modules[i] = data
+                self.modules_uuid[data["uuid"]] = i
+                self.send(Message(CREATE_MODULE, i, json.dumps(data)))
         else:
             self.log.error(
                 "Module limit exceeded: {}".format(self.max_nmodules))
 
-    def delete_module(self, mod: Module) -> None:
+    def delete_module(self, data: dict) -> None:
         """Delete module."""
         try:
-            index = self.modules_uuid[mod.uuid]
+            index = self.modules_uuid[data["uuid"]]
             del self.modules[index]
-            del self.modules_uuid[mod.uuid]
-            self.send(Message(DELETE_MODULE, 0, mod.to_json(index)))
+            del self.modules_uuid[data["uuid"]]
+            self.send(Message(DELETE_MODULE, index, None))
         except KeyError:
             self.log.error(
-                "Tried to delete nonexistent module: {}".format(mod.to_json()))
+                "Tried to delete nonexistent module: {}".format(data["uuid"]))
 
 
 class TestRuntime(RuntimeManager):
@@ -127,9 +152,9 @@ class TestRuntime(RuntimeManager):
         print("Forwarding message ({:02x}.{:02x}): {}".format(
             msg.h1, msg.h2, msg.payload))
 
-    def receive(self) -> Optional[Message]:
+    def receive(self, timeout: float = 5.) -> Optional[Message]:
         """The TestRuntime does not send messages."""
-        time.sleep(1)
+        time.sleep(timeout)
         return None
 
 
@@ -174,7 +199,7 @@ class LinuxRuntime(RuntimeManager):
             # send (size), then (msg.h1, msg.payload) to
             self.socket_rt
 
-    def receive(self) -> Optional[Message]:
+    def receive(self, timeout: float = 5.) -> Optional[Message]:
         """Poll interface and receive message; return None on timeout."""
         # poll socket_rt and socket_mod
         pass

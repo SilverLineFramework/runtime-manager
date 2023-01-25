@@ -1,11 +1,10 @@
 """MQTT Client Interface."""
 
 import ssl
-import logging
 from threading import Semaphore
 import paho.mqtt.client as mqtt
 
-from beartype.typing import NamedTuple
+from beartype.typing import NamedTuple, Callable
 
 from .runtime import BaseRuntime, Message
 
@@ -36,24 +35,7 @@ class RegistrationTimeout(Exception):
 
 
 class MQTTClient(mqtt.Client):
-    """Silverline MQTT Client and channels interface.
-
-    Parameters
-    ----------
-    runtimes: input runtimes to forward messages to.
-    client_id: ID to use for MQTTClient; must be unique.
-    """
-
-    def __init__(
-        self, runtimes: list[BaseRuntime], client_id: str = "manager"
-    ) -> None:
-        super().__init__(client_id=client_id)
-        self.log = logging.getLogger('mqtt')
-
-        self.runtimes = runtimes
-
-        self.matcher = mqtt.MQTTMatcher()
-        self.channels = {}
+    """Silverline MQTT Client and channels interface."""
 
     def connect(self, server: MQTTServer) -> None:
         """Connect to MQTT server."""
@@ -212,3 +194,13 @@ class MQTTClient(mqtt.Client):
             self.log.error(
                 "Received message to topic without active channel: {}. Was"
                 "the channel unsubscribed from?".format(msg.topic))
+
+    def subscribe_callback(
+        self, topic: str, callback: Callable[[bytes], None],
+    ) -> None:
+        """Subscribe and create callback."""
+        def _handler(client, userdata, msg):
+            return callback(msg.payload)
+
+        self.subscribe(topic)
+        self.message_callback_add(topic, _handler)
