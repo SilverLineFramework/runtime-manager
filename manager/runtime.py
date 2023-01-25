@@ -1,11 +1,13 @@
 """Runtime base class."""
 
-import json
 import uuid
 import time
+import logging
 
 from abc import abstractmethod
 from beartype.typing import Optional, NamedTuple
+
+from .module import Module
 
 
 CREATE_MODULE = 0x80
@@ -48,12 +50,21 @@ class Message(NamedTuple):
     payload: bytes
 
 
-class BaseRuntime:
+class RuntimeManager:
     """Runtime interface layer."""
 
-    def __init__(self, rtid: str, name: str):
+    def __init__(self, rtid: str, name: str, max_nmodules: int = 128):
+        self.log = logging.getLogger("runtime.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = name
+        self.index = -1
+        self.modules = {}
+        self.modules_uuid = {}
+        self.max_nmodules = max_nmodules
+
+    def set_index(self, index: int) -> None:
+        """Set runtime index."""
+        self.index = index
 
     @abstractmethod
     def start(self) -> dict:
@@ -70,21 +81,35 @@ class BaseRuntime:
         """Poll interface and receive message; return None on timeout."""
         pass
 
-    def create_module(self, cfg: dict) -> None:
+    def create_module(self, mod: Module) -> None:
         """Create module."""
-        self.send(Message(CREATE_MODULE, 0, json.dumps(cfg)))
+        for i in range(self.max_nmodules):
+            if i not in self.modules:
+                self.modules[i] = mod
+                self.modules_uuid[mod.uuid] = i
+                self.send(Message(CREATE_MODULE, 0, mod.to_json(i)))
+        else:
+            self.log.error(
+                "Module limit exceeded: {}".format(self.max_nmodules))
 
-    def delete_module(self, cfg: dict) -> None:
+    def delete_module(self, mod: Module) -> None:
         """Delete module."""
-        self.send(Message(DELETE_MODULE, 0, json.dumps(cfg)))
+        try:
+            index = self.modules_uuid[mod.uuid]
+            del self.modules[index]
+            del self.modules_uuid[mod.uuid]
+            self.send(Message(DELETE_MODULE, 0, mod.to_json(index)))
+        except KeyError:
+            self.log.error(
+                "Tried to delete nonexistent module: {}".format(mod.to_json()))
 
 
-class TestRuntime(BaseRuntime):
+class TestRuntime(RuntimeManager):
     """Runtime for debugging the manager interface."""
 
     def __init__(self, rtid: str = None, name: str = "debug") -> None:
-        super().__init__(rtid, name)
-        self.create = {
+        super().__init__(rtid, name, max_nmodules=1)
+        self.config = {
             "type": "runtime",
             "uuid": self.rtid,
             "name": self.name,
@@ -108,14 +133,14 @@ class TestRuntime(BaseRuntime):
         return None
 
 
-class LinuxRuntime(BaseRuntime):
+class LinuxRuntime(RuntimeManager):
     """Linux runtime communicating with AF_UNIX sockets."""
 
     def __init__(
         self, rtid: str = None, name: str = "runtime", path: str = "./runtime"
     ) -> None:
         self.path = path
-        super().__init__(rtid, name)
+        super().__init__(rtid, name, max_nmodules=128)
 
         self.config = {
             "type": "runtime",

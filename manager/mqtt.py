@@ -36,9 +36,17 @@ class RegistrationTimeout(Exception):
 
 
 class MQTTClient(mqtt.Client):
-    """Silverline MQTT Client."""
+    """Silverline MQTT Client and channels interface.
 
-    def __init__(self, client_id: str, runtimes: list[BaseRuntime]) -> None:
+    Parameters
+    ----------
+    runtimes: input runtimes to forward messages to.
+    client_id: ID to use for MQTTClient; must be unique.
+    """
+
+    def __init__(
+        self, runtimes: list[BaseRuntime], client_id: str = "manager"
+    ) -> None:
         super().__init__(client_id=client_id)
         self.log = logging.getLogger('mqtt')
 
@@ -60,7 +68,7 @@ class MQTTClient(mqtt.Client):
         # We handle loopback internally.
         self.enable_bridge_mode()
 
-        self.log.info("Connecting with MQTT client: {}".format(self.name))
+        self.log.info("Connecting MQTT client: {}".format(self._client_id))
         self.log.info("SSL: {}".format(server.ssl))
         self.log.info("Username: {}".format(server.user))
         try:
@@ -127,7 +135,15 @@ class MQTTClient(mqtt.Client):
 
     def channel_open(
             self, runtime: int, module: int, fd: int, topic: str) -> None:
-        """Open channel."""
+        """Open channel.
+
+        Parameters
+        ----------
+        runtime: runtime index.
+        module: module index on this runtime.
+        fd: channel index on this module.
+        topic: MQTT topic string.
+        """
         if runtime not in self.channels:
             self.channels[runtime] = {}
         if module not in self.channels[runtime]:
@@ -142,7 +158,14 @@ class MQTTClient(mqtt.Client):
             self.subscribe(topic)
 
     def channel_close(self, runtime: int, module: int, fd: int) -> None:
-        """Close channel."""
+        """Close channel.
+
+        Parameters
+        ----------
+        runtime: runtime index.
+        module: module index on this runtime.
+        fd: channel index on this module.
+        """
         try:
             channel = self.channels[runtime][module][fd]
 
@@ -174,7 +197,10 @@ class MQTTClient(mqtt.Client):
             self._err_nonexistent("publish to", runtime, module, fd)
 
     def on_message(self, client, userdata, msg):
-        """Handle message."""
+        """Handle message.
+
+        Messages are dispatched to runtimes with corresponding open channels.
+        """
         try:
             matches = self.matcher[msg.topic]
             self.log.debug("Handling message with {} matches @ {}".format(
