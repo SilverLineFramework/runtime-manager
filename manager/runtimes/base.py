@@ -3,6 +3,7 @@
 import logging
 import uuid
 import json
+import threading
 
 from abc import abstractmethod
 from functools import partial
@@ -19,10 +20,10 @@ class RuntimeManager:
     ----------
     rtid: Runtime UUID.
     name: Runtime shortname.
-    max_nmodules: Maximum number of modules supported by this runtime.    
+    max_nmodules: Maximum number of modules supported by this runtime.
     """
 
-    def __init__(self, rtid: str, name: str, max_nmodules: int = 128):
+    def __init__(self, rtid: str, name: str, max_nmodules: int = 128) -> None:
         self.log = logging.getLogger("runtime.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = name
@@ -30,17 +31,7 @@ class RuntimeManager:
         self.modules = ModuleLookup()
         self.max_nmodules = max_nmodules
 
-    def bind_manager(self, mgr, index: int) -> None:
-        """Set runtime index."""
-        self.index = index
-        self.mgr = mgr
-        self.publish = mgr.publish
-        self.channel_open = partial(mgr.channel_open, runtime=self.index)
-        self.channel_close = partial(mgr.channel_close, runtime=self.index)
-
-    def control_topic(self, topic: str, *ids: list[str]) -> str:
-        """Format control topic name."""
-        return self.mgr.control_topic(topic, [self.rtid] + ids)
+        self.done = False
 
     @abstractmethod
     def start(self) -> dict:
@@ -53,9 +44,21 @@ class RuntimeManager:
         pass
 
     @abstractmethod
-    def receive(self, timeout: float = 5.) -> Optional[Message]:
+    def receive(self) -> Optional[Message]:
         """Poll interface and receive message; return None on timeout."""
         pass
+
+    def bind_manager(self, mgr, index: int) -> None:
+        """Set runtime index."""
+        self.index = index
+        self.mgr = mgr
+        self.publish = mgr.publish
+        self.channel_open = partial(mgr.channel_open, runtime=self.index)
+        self.channel_close = partial(mgr.channel_close, runtime=self.index)
+
+    def control_topic(self, topic: str, *ids: list[str]) -> str:
+        """Format control topic name."""
+        return self.mgr.control_topic(topic, self.rtid, *ids)
 
     def insert_module(self, data: dict) -> None:
         """Insert module into manager."""
@@ -71,12 +74,10 @@ class RuntimeManager:
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
         index = self.insert_module(data)
-        # --> additional steps here if required.
         self.send(Message(0x80 | index, 0x00, json.dumps(data)))
 
     def delete_module(self, data: dict) -> None:
         """Delete module."""
-        # --> additional steps here if required.
         try:
             index = self.modules.get(data["uuid"])
             self.send(Message(0x80 | index, 0x01, None))
@@ -146,3 +147,23 @@ class RuntimeManager:
         # Normal Message
         else:
             self.mgr.channel_publish(self.index, msg.h1, msg.h2, msg.payload)
+
+    def loop(self) -> None:
+        """Run main loop for this runtime."""
+        while not self.done:
+            msg = self.receive()
+            if msg is not None:
+                self.log.debug("Received message: {}.{}.{}".format())
+                self.handle_runtime_message(msg)
+        self.log.debug("Exiting main loop for runtime {}:{}".format(
+            self.rtid, self.name))
+
+    def loop_start(self):
+        """Start main loop."""
+        self.thread = threading.Thread(target=self.loop)
+        self.thread.start()
+
+    def loop_stop(self):
+        """Stop main loop."""
+        self.done = True
+        self.thread.join()

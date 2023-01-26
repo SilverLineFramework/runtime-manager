@@ -1,5 +1,10 @@
 """Linux runtime."""
 
+import struct
+import socket
+import json
+import subprocess
+
 from beartype.typing import Optional
 
 from manager.types import Message
@@ -28,7 +33,7 @@ class LinuxMinimalRuntime(RuntimeManager):
             "uuid": self.rtid,
             "name": self.name,
             "runtime_type": "linux/minimal",
-            "apis": ["wasi:unstable", "wasi:snapshot_preview1"],
+            "apis": [],
             "page_size": 65536,
             "aot_target": {},
             "metadata": None,
@@ -37,31 +42,86 @@ class LinuxMinimalRuntime(RuntimeManager):
 
     def start(self) -> dict:
         """Start runtime, and return the registration config."""
-        # create sockets
-        self.socket_rt = None
-        self.socket_mod = {}
-        # - Each runtime opens `/tmp/sl/{rt}`
-        # - Each module has the runtime open `/tmp/sl/{rt}/{mod}`.
-        # start runtime using subprocess on self.path
+        self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.socket.bind("/tmp/sl/{:02x}.s".format(self.index))
+        self.socket.settimeout(5.)
+        self.socket.listen(1)
+
+        subprocess.Popen([self.path])
+
+        self.socket.accept()
         return self.config
 
     def send(self, msg: Message) -> None:
         """Send message."""
-        # Module message
-        if msg.h1 & 0x80 == 0:
-            # send (size), then (msg.h2, msg.payload) to
-            self.socket_mod[msg.h1]
-        else:
-            # send (size), then (msg.h1, msg.payload) to
-            self.socket_rt
+        header = struct.pack("IBB", len(msg.payload), msg.h1, msg.h2)
 
-    def receive(self, timeout: float = 5.) -> Optional[Message]:
-        """Poll interface and receive message; return None on timeout."""
-        # poll socket_rt and socket_mod
-        pass
+        self.socket.send(header)
+        self.socket.send(msg.payload)
 
-    def create_module(self, cfg: dict) -> None:
+    def receive(self) -> Optional[Message]:
+        """Receive message."""
+        try:
+            payloadlen, h1, h2 = struct.unpack("IBB", self.socket.recv(6))
+            payload = self.socket.recv(payloadlen)
+            return Message(h1, h2, payload)
+        except TimeoutError:
+            return None
+
+
+class LinuxRuntime(LinuxMinimalRuntime):
+    """Default Linux Runtime."""
+
+    def __init__(
+        self, rtid: str = None, name: str = "runtime-linux-default",
+        path: str = "./runtime"
+    ) -> None:
+        self.path = path
+        super().__init__(rtid, name, max_nmodules=128)
+
+        self.config = {
+            "type": "runtime",
+            "uuid": self.rtid,
+            "name": self.name,
+            "runtime_type": "linux/default",
+            "apis": ["wasi:unstable", "wasi:snapshot_preview1"],
+            "page_size": 65536,
+            "aot_target": {},
+            "metadata": None,
+            "platform": None,
+        }
+        self.socket_mod = {}
+
+    def create_module(self, data: dict) -> None:
         """Create module."""
-        # get file
-        # then...
-        super().create_module(cfg)
+        index = self.insert_module(data)
+        self.socket_mod[index] = socket.socket(
+            socket.AF_UNIX, socket.SOCK_STREAM)
+        self.socket_mod[index].bind(
+            "/tmp/sl/{:02x}.{:02x}.s".format(self.index, index))
+        self.socket_mod[index].listen(1)
+        self.send(Message(0x80 | index, 0x00, json.dumps(data)))
+        self.socket_mod.accept()
+
+    def delete_module(self, data: dict) -> None:
+        """Delete module."""
+        try:
+            index = self.modules.get(data["uuid"])
+            self.send(Message(0x80 | index, 0x01, None))
+            self.socket_mod[index].close()
+            del self.socket_mod[index]
+        except KeyError:
+            self.log.error(
+                "Tried to delete nonexistent module: {}".format(data["uuid"]))
+
+    def send(self, msg: Message) -> None:
+        """Send message."""
+        header = struct.pack("IBB", len(msg.payload), msg.h1, msg.h2)
+
+        if msg.h1 & 0x80 == 0:
+            sock = self.socket_mod[msg.h1]
+        else:
+            sock = self.socket
+
+        sock.send(header)
+        sock.send(msg.payload)

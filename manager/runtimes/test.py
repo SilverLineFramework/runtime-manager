@@ -8,8 +8,8 @@ from manager.types import Message
 from .base import RuntimeManager
 
 
-class TestRuntime(RuntimeManager):
-    """Runtime for debugging the manager interface."""
+class RegistrationOnlyRuntime(RuntimeManager):
+    """Runtime for debugging the manager."""
 
     def __init__(self, rtid: str = None, name: str = "debug") -> None:
         super().__init__(rtid, name, max_nmodules=1)
@@ -31,7 +31,7 @@ class TestRuntime(RuntimeManager):
         print("Forwarding message ({:02x}.{:02x}): {}".format(
             msg.h1, msg.h2, msg.payload))
 
-    def receive(self, timeout: float = 5.) -> Optional[Message]:
+    def receive(self) -> Optional[Message]:
         """The TestRuntime does not send messages."""
-        time.sleep(timeout)
+        time.sleep(1.)
         return None
