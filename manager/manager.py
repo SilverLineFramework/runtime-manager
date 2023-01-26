@@ -2,7 +2,6 @@
 
 import logging
 import uuid
-from threading import Semaphore
 
 import paho.mqtt.client as mqtt
 

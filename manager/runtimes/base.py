@@ -20,16 +20,28 @@ class RuntimeManager:
     ----------
     rtid: Runtime UUID.
     name: Runtime shortname.
-    max_nmodules: Maximum number of modules supported by this runtime.
+    cfg: Additional configuration fields to add.
     """
 
-    def __init__(self, rtid: str, name: str, max_nmodules: int = 128) -> None:
+    TYPE = "abstract"
+    APIS = []
+    MAX_NMODULES = 0
+
+    def __init__(self, rtid: str, name: str, cfg: dict = {}) -> None:
         self.log = logging.getLogger("runtime.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = name
         self.index = -1
         self.modules = ModuleLookup()
-        self.max_nmodules = max_nmodules
+
+        self.config = {
+            "type": "runtime",
+            "uuid": self.rtid,
+            "name": self.name,
+            "runtime_type": self.TYPE,
+            "apis": self.APIS,
+        }
+        self.config.update(cfg)
 
         self.done = False
 
@@ -62,14 +74,14 @@ class RuntimeManager:
 
     def insert_module(self, data: dict) -> None:
         """Insert module into manager."""
-        idx = self.modules.free_index(max=self.max_nmodules)
+        idx = self.modules.free_index(max=self.MAX_NMODULES)
         if idx >= 0:
             data["index"] = idx
             self.modules.add(data)
             return idx
         else:
             self.log.error(
-                "Module limit exceeded: {}".format(self.max_nmodules))
+                "Module limit exceeded: {}".format(self.MAX_NMODULES))
 
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
