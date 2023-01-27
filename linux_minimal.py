@@ -33,18 +33,6 @@ class LinuxMinimalRuntime:
         ch_open = bytes("\0std/{}".format(data["uuid"]), encoding='utf-8')
         self.socket.write(Message(0x80 | self.index, Header.ch_open, ch_open))
 
-        # Each line is a new message. When the program terminates, we should
-        # get EOF, which should terminate readline() with a falsy value.
-        # print("entering...")
-        # while True:
-        #     line = self.process.stdout.readline()
-        #     print(line)
-        #    if line:
-        #          print("line:", line)
-        #         self.socket.write(Message(self.index, 0x00, line))
-        #     else:
-        #         break
-
         stdout, _ = (self.process.communicate())
         self.socket.write(Message(self.index, 0x00, stdout))
 
@@ -59,26 +47,30 @@ class LinuxMinimalRuntime:
             self.killed = True
             self.process.kill()
 
+    def handle_message(self, msg: Message) -> None:
+        """Handle message from manager."""
+        if msg.h1 & 0x80 == 0:
+            self.process.stdin.write(msg.payload)
+        else:
+            match msg.h2:
+                case Header.create:
+                    self.thread = threading.Thread(target=self.run, args=[msg])
+                    self.thread.start()
+                case Header.delete:
+                    self.stop()
+                case Header.stop:
+                    self.done = True
+                    self.stop()
+                case _:
+                    pass
+
     def loop(self):
         """Main loop."""
         while not self.done:
             msg = self.socket.read()
             if msg is not None:
-                # Channel message
-                if msg.h1 & 0x80 == 0:
-                    self.process.stdin.write(msg.payload)
-                else:
-                    match msg.h2:
-                        case Header.create:
-                            self.thread = threading.Thread(target=self.run, args=[msg])
-                            self.thread.start()
-                        case Header.delete:
-                            self.stop()
-                        case Header.stop:
-                            self.done = True
-                            self.stop()
-                        case _:
-                            pass
+                self.handle_message(msg)
+
 
     def loop_start(self):
         """Start loop."""

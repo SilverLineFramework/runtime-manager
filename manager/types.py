@@ -1,6 +1,7 @@
 """SilverLine Messaging and Types."""
 
-from beartype.typing import NamedTuple
+import json
+from beartype.typing import NamedTuple, Union
 
 
 class Header:
@@ -59,6 +60,13 @@ class Message(NamedTuple):
     h1: int
     h2: int
     payload: bytes
+
+    def __init__(self, h1: int, h2: int, payload: Union[bytes, str, dict]):
+        if isinstance(payload, dict):
+            payload = json.dumps(payload)
+        if isinstance(payload, str):
+            payload = bytes(payload, encoding='utf-8')
+        super().__init__(h1, h2, payload)
 
 
 class MQTTServer(NamedTuple):
