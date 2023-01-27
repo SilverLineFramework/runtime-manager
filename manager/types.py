@@ -14,6 +14,10 @@ class Header:
     log_module = 0x05
     profile = 0x06
 
+    create = 0x00
+    delete = 0x01
+    stop = 0x02
+
 
 class Message(NamedTuple):
     """Runtime-manager message.
@@ -22,9 +26,10 @@ class Message(NamedTuple):
     | ------- | --------- | ----------- | -----------------| ------ |
     | Manager | 1{m}.x00  | sl/{rt}     | Create Module    | json   |
     | Manager | 1{m}.x01  | sl/{rt}     | Delete Module    | null   |
+    | Manager | 1{-}.x02  | sl/{rt}     | Stop Runtime     | null   |
     | Manager | 0{m}.{fd} | sl/{rt}/{m} | Receive Message  | u8[]   |
     | Runtime | 1{-}.x00  | sl/{rt}     | Keepalive        | json   |
-    | Runtime | 1{-}.x01  | sl/{rt}     | Runtime Logging  | json   |
+    | Runtime | 1{-}.x01  | sl/{rt}     | Runtime Logging  | char[] |
     | Runtime | 1{m}.x02  | sl/{rt}     | Module Exited    | json   |
     | Runtime | 1{m}.x03  | sl/{rt}     | Open Channel     | char[] |
     | Runtime | 1{m}.x04  | sl/{rt}     | Close Channel    | u8     |
@@ -34,6 +39,7 @@ class Message(NamedTuple):
 
     Notes
     -----
+    - Channel open has the target channel index as the first value.
     - The module index ({m}) is a 7-bit integer (0<=i<128); this index is
       controlled and enforced by the runtime manager.
     - The channel index is a 8-bit integer (0<=j<256); this index is controlled

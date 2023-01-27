@@ -24,12 +24,12 @@ class ModuleLookup:
 
     def uuid(self, x: int) -> str:
         """Get UUID by index."""
-        return self.modules_uuid[x]
+        return self.modules_idx[x]["uuid"]
 
     def free_index(self, max=128) -> int:
         """Get first free index."""
         for i in range(max):
-            if i not in self.modules:
+            if i not in self.modules_idx:
                 return i
         return -1
 
@@ -37,9 +37,9 @@ class ModuleLookup:
         """Remove item by index or UUID."""
         if isinstance(x, int):
             index = x
-            module_id = self.modules_idx[index]
+            module_id = self.modules_idx[index]["uuid"]
         else:
             module_id = x
-            index = self.modules_uuid[x]
+            index = self.modules_uuid[x]["index"]
         del self.modules_idx[index]
         del self.modules_uuid[module_id]

@@ -64,9 +64,6 @@ class RuntimeManager:
         """Set runtime index."""
         self.index = index
         self.mgr = mgr
-        self.publish = mgr.publish
-        self.channel_open = partial(mgr.channel_open, runtime=self.index)
-        self.channel_close = partial(mgr.channel_close, runtime=self.index)
 
     def control_topic(self, topic: str, *ids: list[str]) -> str:
         """Format control topic name."""
@@ -86,7 +83,8 @@ class RuntimeManager:
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
         index = self.insert_module(data)
-        self.send(Message(0x80 | index, 0x00, json.dumps(data)))
+        self.send(Message(
+            0x80 | index, 0x00, bytes(json.dumps(data), encoding='utf-8')))
 
     def delete_module(self, data: dict) -> None:
         """Delete module."""
@@ -97,22 +95,23 @@ class RuntimeManager:
             self.log.error(
                 "Tried to delete nonexistent module: {}".format(data["uuid"]))
 
-    def handle_orchestrator_message(self, data: bytes) -> None:
+    def handle_orchestrator_message(self, data: dict) -> None:
         """Handle control message on {realm}/proc/control/{rtid}."""
         self.log.debug("Received control message: {}".format(data))
 
         try:
-            data = json.loads(data)
-            if data["action"] == "create":
-                self.create_module(data["data"])
-            elif data["action"] == "delete":
-                self.delete_module(data["data"]["uuid"])
-            else:
-                self.log.error(
-                    "Invalid message action: {}".format(data["action"]))
-        except json.JSONDecodeError:
-            self.log.error(
-                "Mangled JSON could not be decoded: {}".format(data))
+            action = (data["action"], data["data"]["type"])
+            match action:
+                case ("create", "module"):
+                    self.create_module(data["data"])
+                case ("create", "runtime"):
+                    pass
+                case ("delete", "module"):
+                    self.delete_module(data["data"]["uuid"])
+                case ("delete", "runtime"):
+                    pass
+                case _:
+                    self.log.error("Invalid message action: {}".format(action))
         except KeyError as e:
             self.log.error("Message missing required key: {}".format(e))
 
@@ -126,30 +125,35 @@ class RuntimeManager:
 
             match msg.h2:
                 case Header.keepalive:
-                    self.publish(
+                    self.mgr.publish(
                         self.control_topic("keepalive"),
                         self.mgr.control_message("update", {
                             "type": "runtime", "uuid": self.rtid,
-                            "name": self.name, **json.load(msg.payload)
+                            "name": self.name, **json.loads(msg.payload)
                         }))
                 case Header.log_runtime:
-                    self.publish(self.control_topic("log"), msg.payload)
+                    self.mgr.publish(self.control_topic("log"), msg.payload)
                 case Header.exited:
-                    self.publish(
+                    self.mgr.publish(
                         self.control_topic("control"),
-                        self.mgr.control_message("delete", {
+                        self.mgr.control_message("exited", {
                             "type": "module", "uuid": mid,
-                            "reason": json.load(msg.payload)
+                            "reason": json.loads(msg.payload)
                         }))
+                    self.mgr.channel_cleanup(self.index, idx)
                     self.modules.remove(idx)
                 case Header.ch_open:
-                    self.channel_open(idx, msg.payload[0], msg.payload[1:])
+                    self.mgr.channel_open(
+                        self.index, idx, msg.payload[0],
+                        msg.payload[1:].decode('utf-8'))
                 case Header.ch_close:
-                    self.channel_close(idx, msg.payload[0])
+                    self.mgr.channel_close(
+                        self.index, msg.payload[0])
                 case Header.log_module:
-                    self.publish(self.control_topic("log", mid), msg.payload)
+                    self.mgr.publish(
+                        self.control_topic("log", mid), msg.payload)
                 case Header.profile:
-                    self.publish(
+                    self.mgr.publish(
                         self.control_topic("profile", mid), msg.payload)
                 case _:
                     self.log.error(
@@ -165,7 +169,8 @@ class RuntimeManager:
         while not self.done:
             msg = self.receive()
             if msg is not None:
-                self.log.debug("Received message: {}.{}.{}".format())
+                self.log.debug("Received message: {}.{}.{}".format(
+                    self.index, msg.h1, msg.h2))
                 self.handle_runtime_message(msg)
         self.log.debug("Exiting main loop for runtime {}:{}".format(
             self.rtid, self.name))

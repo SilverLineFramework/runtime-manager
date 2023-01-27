@@ -5,7 +5,8 @@ Each runtime should extend RuntimeManager, and must implement the .start(),
 """
 
 from .base import RuntimeManager
-from .linux import LinuxMinimalRuntime
-from .test import TestRuntime
+from .linux_minimal import LinuxMinimalRuntime
+from .linux import LinuxRuntime
+from .test import RegistrationOnlyRuntime
 
-__all__ = ["RuntimeManager", "LinuxMinimalRuntime", "TestRuntime"]
+__all__ = ["RuntimeManager", "LinuxMinimalRuntime", "RegistrationOnlyRuntime"]

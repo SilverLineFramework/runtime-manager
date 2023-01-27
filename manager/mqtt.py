@@ -113,7 +113,7 @@ class MQTTClient(mqtt.Client):
         try:
             channel = self.channels[runtime][module][fd]
 
-            subscribed = self.matcher[channel.topic]
+            subscribed = self.matcher[channel]
             if channel in subscribed:
                 subscribed.remove(channel)
 
@@ -122,6 +122,21 @@ class MQTTClient(mqtt.Client):
                 del self.matcher[channel.topic]
         except KeyError:
             self._err_nonexistent("close", runtime, module, fd)
+
+    def channel_cleanup(self, runtime: int, module: int) -> None:
+        """Cleanup all channels associated with a module.
+
+        Parameters
+        ----------
+        runtime: runtime index.
+        module: module index on this runtime.
+        """
+        try:
+            for fd in self.channels[runtime][module]:
+                self.channel_close(runtime, module, fd)
+            del self.channels[runtime][module]
+        except KeyError:
+            self.log.error("Invalid module: {}.{}".format(runtime, module))
 
     def channel_publish(
             self, runtime: int, module: int, fd: int, payload: bytes) -> None:
@@ -137,12 +152,12 @@ class MQTTClient(mqtt.Client):
         try:
             channel = self.channels[runtime][module][fd]
             # Loopback
-            for ch in self.matcher[channel.topic]:
-                if ch is not channel:
+            for ch in self.matcher[channel]:
+                if ch.runtime != runtime and ch.module != module:
                     self.runtimes[ch.runtime].send(
                         Message(ch.module, ch.fd, payload))
             # MQTT
-            self.publish(channel.topic, payload)
+            self.publish(channel, payload)
         except KeyError:
             self._err_nonexistent("publish to", runtime, module, fd)
 

@@ -76,7 +76,7 @@ class Manager(MQTTClient):
                 rt.control_topic("reg"),
                 self.control_message("create", rt.start()),
                 timeout=self.timeout)
-            rt.loop_start()
+            # rt.loop_start()
             self.log.info("Registered: {}:{}".format(rt.name, rt.rtid))
 
         self.log.info("Done registering runtimes.")

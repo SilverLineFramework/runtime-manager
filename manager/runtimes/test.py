@@ -12,7 +12,7 @@ class RegistrationOnlyRuntime(RuntimeManager):
     """Runtime for debugging the manager."""
 
     def __init__(self, rtid: str = None, name: str = "debug") -> None:
-        super().__init__(rtid, name, max_nmodules=1)
+        super().__init__(rtid, name)
         self.config = {
             "type": "runtime",
             "uuid": self.rtid,
