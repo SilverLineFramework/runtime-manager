@@ -10,7 +10,7 @@ import paho.mqtt.client as mqtt
 
 from beartype.typing import Callable
 
-from .types import MQTTServer, Channel, Message
+from .types import MQTTServer
 
 
 class MQTTClient(mqtt.Client):
@@ -73,110 +73,13 @@ class MQTTClient(mqtt.Client):
         semaphore.acquire()
         self.log.info("Connected to MQTT server.")
 
-    def _err_nonexistent(self, action, runtime, module, fd):
-        self.log.error("Tried to {} nonexisting channel: {}/{}/{}".format(
-            action, runtime, module, fd))
-
-    def channel_open(
-            self, runtime: int, module: int, fd: int, topic: str) -> None:
-        """Open channel.
-
-        Parameters
-        ----------
-        runtime: runtime index.
-        module: module index on this runtime.
-        fd: channel index on this module.
-        topic: MQTT topic string.
-        """
-        if runtime not in self.channels:
-            self.channels[runtime] = {}
-        if module not in self.channels[runtime]:
-            self.channels[runtime][module] = {}
-        self.channels[runtime][module][fd] = topic
-
-        channel = Channel(runtime, module, fd, topic)
-        try:
-            self.matcher[topic].add(channel)
-        except KeyError:
-            self.matcher[topic] = {channel}
-            self.subscribe(topic)
-
-    def channel_close(self, runtime: int, module: int, fd: int) -> None:
-        """Close channel.
-
-        Parameters
-        ----------
-        runtime: runtime index.
-        module: module index on this runtime.
-        fd: channel index on this module.
-        """
-        try:
-            channel = self.channels[runtime][module][fd]
-
-            subscribed = self.matcher[channel]
-            if channel in subscribed:
-                subscribed.remove(channel)
-
-            if len(subscribed) == 0:
-                self.unsubscribe(channel)
-                del self.matcher[channel.topic]
-        except KeyError:
-            self._err_nonexistent("close", runtime, module, fd)
-
-    def channel_cleanup(self, runtime: int, module: int) -> None:
-        """Cleanup all channels associated with a module.
-
-        Parameters
-        ----------
-        runtime: runtime index.
-        module: module index on this runtime.
-        """
-        try:
-            for fd in self.channels[runtime][module]:
-                self.channel_close(runtime, module, fd)
-            del self.channels[runtime][module]
-        except KeyError:
-            self.log.error("Invalid module: {}.{}".format(runtime, module))
-
-    def channel_publish(
-            self, runtime: int, module: int, fd: int, payload: bytes) -> None:
-        """Publish message.
-
-        Parameters
-        ----------
-        runtime: Runtime index.
-        module: Module index on this runtime.
-        fd: Channel index on this module.
-        payload: Message payload.
-        """
-        try:
-            channel = self.channels[runtime][module][fd]
-            # Loopback
-            for ch in self.matcher[channel]:
-                if ch.runtime != runtime and ch.module != module:
-                    self.runtimes[ch.runtime].send(
-                        Message(ch.module, ch.fd, payload))
-            # MQTT
-            self.publish(channel, payload)
-        except KeyError:
-            self._err_nonexistent("publish to", runtime, module, fd)
-
     def on_message(self, client, userdata, msg):
         """Handle message.
 
         Messages are dispatched to runtimes with corresponding open channels.
         """
-        try:
-            matches = self.matcher[msg.topic]
-            self.log.debug("Handling message with {} matches @ {}".format(
-                msg.topic, len(matches)))
-            for match in matches:
-                self.runtimes[match.runtime].send(
-                    Message(match.module, match.fd, msg.payload))
-        except KeyError:
-            self.log.error(
-                "Received message to topic without active channel: {}. Was"
-                "the channel unsubscribed from?".format(msg.topic))
+        self.log.debug("Handling message @ {}".format(msg.topic))
+        self.channels.handle_message(msg.topic, msg.payload)
 
     def control_message(self, action: str, payload: dict) -> None:
         """Format control message to the orchestrator."""

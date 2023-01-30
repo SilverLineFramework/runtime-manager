@@ -30,15 +30,16 @@ class LinuxMinimalRuntime:
 
         data = json.loads(msg.payload)
 
-        ch_open = bytes("\0std/{}".format(data["uuid"]), encoding='utf-8')
-        self.socket.write(Message(0x80 | self.index, Header.ch_open, ch_open))
+        self.socket.write(Message(
+            0x80 | self.index, Header.ch_open,
+            bytes([0x00, 0b11])
+            + bytes("std/{}".format(data["uuid"]), encoding='utf-8')))
 
         stdout, _ = (self.process.communicate())
         self.socket.write(Message(self.index, 0x00, stdout))
 
-        rc = json.dumps({"status": "killed" if self.killed else "exited"})
-        self.socket.write(Message(
-            0x80 | self.index, Header.exited, bytes(rc, encoding='utf-8')))
+        self.socket.write(Message.from_dict(0x80 | self.index, Header.exited, {
+            "status": "killed" if self.killed else "exited"}))
         self.process = None
 
     def stop(self):
@@ -70,7 +71,6 @@ class LinuxMinimalRuntime:
             msg = self.socket.read()
             if msg is not None:
                 self.handle_message(msg)
-
 
     def loop_start(self):
         """Start loop."""

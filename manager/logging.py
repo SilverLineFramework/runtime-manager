@@ -34,6 +34,6 @@ def configure_log(log="", verbose=2):
 
     logging.basicConfig(
         level=level,
-        format="[%(asctime)s] [%(module)s:%(levelname)s] %(message)s",
+        format="[%(asctime)s] [%(name)s:%(levelname)s] %(message)s",
         datefmt="%H:%M:%S",
         handlers=handlers)

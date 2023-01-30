@@ -6,11 +6,11 @@ import json
 import threading
 
 from abc import abstractmethod
-from functools import partial
 from beartype.typing import Optional
 
 from manager.types import Message, Header
 from .util import ModuleLookup
+from manager.channels import Channel
 
 
 class RuntimeManager:
@@ -83,14 +83,16 @@ class RuntimeManager:
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
         index = self.insert_module(data)
-        self.send(Message(
-            0x80 | index, 0x00, bytes(json.dumps(data), encoding='utf-8')))
+        self.send(Message.from_dict(0x80 | index, 0x00, data))
+        self.log.info(
+            "Created module: {} -> x{:02x}".format(data.get("uuid"), index))
 
     def delete_module(self, data: dict) -> None:
         """Delete module."""
         try:
             index = self.modules.get(data["uuid"])
-            self.send(Message(0x80 | index, 0x01, None))
+            self.send(Message(0x80 | index, 0x01, bytes()))
+            self.log.info("Deleted module: x{:02x}".format(index))
         except KeyError:
             self.log.error(
                 "Tried to delete nonexistent module: {}".format(data["uuid"]))
@@ -115,61 +117,60 @@ class RuntimeManager:
         except KeyError as e:
             self.log.error("Message missing required key: {}".format(e))
 
+    def handle_runtime_control_message(self, msg: Message) -> None:
+        """Handle control message."""
+        # Index is lower bits of first header byte.
+        idx = msg.h1 & 0x7f
+        mid = self.modules.uuid(idx)
+
+        match msg.h2:
+            case Header.keepalive:
+                self.mgr.publish(
+                    self.control_topic("keepalive"),
+                    self.mgr.control_message("update", {
+                        "type": "runtime", "uuid": self.rtid,
+                        "name": self.name, **json.loads(msg.payload)
+                    }))
+            case Header.log_runtime:
+                self.mgr.publish(self.control_topic("log"), msg.payload)
+            case Header.exited:
+                self.mgr.publish(
+                    self.control_topic("control"),
+                    self.mgr.control_message("exited", {
+                        "type": "module", "uuid": mid,
+                        "reason": json.loads(msg.payload)
+                    }))
+                self.mgr.channels.cleanup(self.index, idx)
+                self.modules.remove(idx)
+                self.log.info("Exited: x{:02x}".format(idx))
+            case Header.ch_open:
+                self.mgr.channels.open(Channel(
+                    self.index, idx, msg.payload[0],
+                    msg.payload[2:].decode('utf-8'), msg.payload[1]))
+            case Header.ch_close:
+                self.mgr.channels.close(self.index, msg.payload[0])
+            case Header.log_module:
+                self.mgr.publish(self.control_topic("log", mid), msg.payload)
+            case Header.profile:
+                self.mgr.publish(
+                    self.control_topic("profile", mid), msg.payload)
+            case _:
+                self.log.error(
+                    "Unknown msg type: {:02x}.{:02x}".format(msg.h1, msg.h2))
+
     def handle_runtime_message(self, msg: Message) -> None:
-        """Handle control message from the runtime."""
-        # Control message
+        """Handle message from the runtime."""
         if 0x80 & msg.h1:
-            # Index is lower bits of first header byte.
-            idx = msg.h1 & 0x7f
-            mid = self.modules.uuid(idx)
-
-            match msg.h2:
-                case Header.keepalive:
-                    self.mgr.publish(
-                        self.control_topic("keepalive"),
-                        self.mgr.control_message("update", {
-                            "type": "runtime", "uuid": self.rtid,
-                            "name": self.name, **json.loads(msg.payload)
-                        }))
-                case Header.log_runtime:
-                    self.mgr.publish(self.control_topic("log"), msg.payload)
-                case Header.exited:
-                    self.mgr.publish(
-                        self.control_topic("control"),
-                        self.mgr.control_message("exited", {
-                            "type": "module", "uuid": mid,
-                            "reason": json.loads(msg.payload)
-                        }))
-                    self.mgr.channel_cleanup(self.index, idx)
-                    self.modules.remove(idx)
-                case Header.ch_open:
-                    self.mgr.channel_open(
-                        self.index, idx, msg.payload[0],
-                        msg.payload[1:].decode('utf-8'))
-                case Header.ch_close:
-                    self.mgr.channel_close(
-                        self.index, msg.payload[0])
-                case Header.log_module:
-                    self.mgr.publish(
-                        self.control_topic("log", mid), msg.payload)
-                case Header.profile:
-                    self.mgr.publish(
-                        self.control_topic("profile", mid), msg.payload)
-                case _:
-                    self.log.error(
-                        "Unknown message type: {:02x}.{:02x}".format(
-                            msg.h1, msg.h2))
-
-        # Normal Message
+            self.handle_runtime_control_message(msg)
         else:
-            self.mgr.channel_publish(self.index, msg.h1, msg.h2, msg.payload)
+            self.mgr.channels.publish(self.index, msg.h1, msg.h2, msg.payload)
 
     def loop(self) -> None:
         """Run main loop for this runtime."""
         while not self.done:
             msg = self.receive()
             if msg is not None:
-                self.log.debug("Received message: {}.{}.{}".format(
+                self.log.debug("Received: x{:02x}.{:02x}.{:02x}".format(
                     self.index, msg.h1, msg.h2))
                 self.handle_runtime_message(msg)
         self.log.debug("Exiting main loop for runtime {}:{}".format(

@@ -40,7 +40,8 @@ class Message(NamedTuple):
 
     Notes
     -----
-    - Channel open has the target channel index as the first value.
+    - Channel open has the target channel index as the first value, and the
+      mode as the second value.
     - The module index ({m}) is a 7-bit integer (0<=i<128); this index is
       controlled and enforced by the runtime manager.
     - The channel index is a 8-bit integer (0<=j<256); this index is controlled
@@ -61,12 +62,16 @@ class Message(NamedTuple):
     h2: int
     payload: bytes
 
-    def __init__(self, h1: int, h2: int, payload: Union[bytes, str, dict]):
-        if isinstance(payload, dict):
-            payload = json.dumps(payload)
-        if isinstance(payload, str):
-            payload = bytes(payload, encoding='utf-8')
-        super().__init__(h1, h2, payload)
+    @classmethod
+    def from_str(cls, h1: int, h2: int, payload: str):
+        """Create message from string."""
+        return cls(h1=h1, h2=h2, payload=bytes(payload, encoding='utf-8'))
+
+    @classmethod
+    def from_dict(cls, h1: int, h2: int, payload: dict):
+        """Create message from dictionary using JSON encoding."""
+        return cls(
+            h1=h1, h2=h2, payload=bytes(json.dumps(payload), encoding='utf-8'))
 
 
 class MQTTServer(NamedTuple):
@@ -87,19 +92,3 @@ class MQTTServer(NamedTuple):
     pwd: str
     ssl: bool
 
-
-class Channel(NamedTuple):
-    """Open Channel.
-
-    Attributes
-    ----------
-    runtime: Runtime index.
-    module: Module index for this runtime.
-    fd: Channel index for this module.
-    topic: Topic name.
-    """
-
-    runtime: int
-    module: int
-    fd: int
-    topic: str

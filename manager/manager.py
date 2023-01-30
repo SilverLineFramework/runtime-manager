@@ -3,11 +3,10 @@
 import logging
 import uuid
 
-import paho.mqtt.client as mqtt
-
 from .runtimes import RuntimeManager
 from .mqtt import MQTTClient
 from .types import MQTTServer
+from .channels import ChannelManager
 
 
 class Manager(MQTTClient):
@@ -44,8 +43,7 @@ class Manager(MQTTClient):
         super().__init__(client_id="{}:{}".format(self.name, self.uuid))
         self.log = logging.getLogger('mqtt')
 
-        self.matcher = mqtt.MQTTMatcher()
-        self.channels = {}
+        self.channels = ChannelManager(self)
 
         super().__init__()
 
