@@ -2,14 +2,23 @@
 
 import logging
 import uuid
+import ssl
+import json
+import traceback
+from threading import Semaphore
+
+import paho.mqtt.client as mqtt
+
+from beartype import beartype
 
 from .runtimes import RuntimeManager
-from .mqtt import MQTTClient
 from .types import MQTTServer
 from .channels import ChannelManager
+from . import exceptions
 
 
-class Manager(MQTTClient):
+@beartype
+class Manager(mqtt.Client):
     """Silverline node manager.
 
     NOTE: blocks on initialization until the client connects, and all runtimes
@@ -59,7 +68,7 @@ class Manager(MQTTClient):
         self.connect(server)
 
         self.log.info("Registering manager...")
-        self.register(
+        self._register(
             self.control_topic("reg", self.uuid),
             self.control_message("create", metadata), timeout=self.timeout)
         self.log.info("Manager registered.")
@@ -67,14 +76,14 @@ class Manager(MQTTClient):
         self.log.info("Registering {} runtimes.".format(len(self.runtimes)))
         for i, rt in enumerate(self.runtimes):
             rt.bind_manager(self, i)
-            self.subscribe_callback(
-                rt.control_topic("control"),
-                rt.handle_orchestrator_message, decode_json=True)
-            self.register(
+            topic = rt.control_topic("control")
+            self.subscribe(topic)
+            self.message_callback_add(topic, rt.on_mqtt_message)
+            self._register(
                 rt.control_topic("reg"),
                 self.control_message("create", rt.start()),
                 timeout=self.timeout)
-            # rt.loop_start()
+            rt.loop_start()
             self.log.info("Registered: {}:{}".format(rt.name, rt.rtid))
 
         self.log.info("Done registering runtimes.")
@@ -86,3 +95,95 @@ class Manager(MQTTClient):
 
         self.loop_stop()
         self.disconnect()
+
+    def on_disconnect(self, client, userdata, rc):
+        """Disconnection callback."""
+        self.log.info("Disconnected: rc={} ({})".format(
+            rc, mqtt.connack_string(rc)))
+
+    def connect(self, server: MQTTServer) -> None:
+        """Connect to MQTT server."""
+        semaphore = Semaphore()
+        semaphore.acquire()
+
+        def _on_connect(mqttc, obj, flags, rc):
+            semaphore.release()
+
+        self.on_connect = _on_connect
+
+        # We handle loopback internally.
+        self.enable_bridge_mode()
+
+        self.log.info(
+            "Connecting MQTT client: {}:{}".format(self.name, self.uuid))
+        self.log.info("SSL: {}".format(server.ssl))
+        self.log.info("Username: {}".format(server.user))
+        try:
+            self.log.info("Password file: {}".format(server.pwd))
+            with open(server.pwd, 'r') as f:
+                passwd = f.read().rstrip('\n')
+        except FileNotFoundError:
+            passwd = ""
+            self.log.warn("No password supplied; using an empty password.")
+
+        self.username_pw_set(server.user, passwd)
+        if server.ssl:
+            self.tls_set(cert_reqs=ssl.CERT_NONE)
+        super().connect(server.host, server.port, 60)
+
+        # Waiting for on_connect to release
+        self.loop_start()
+        semaphore.acquire()
+        self.log.info("Connected to MQTT server.")
+
+    def on_message(self, client, userdata, msg):
+        """Handle message.
+
+        Messages are dispatched to runtimes with corresponding open channels.
+        """
+        self.log.debug("Handling message @ {}".format(msg.topic))
+        try:
+            self.channels.handle_message(msg.topic, msg.payload)
+        except exceptions.SLException as e:
+            self.log.error(e.fmt())
+        except Exception as e:
+            self.log.error("Uncaught exception: {}".format(e))
+            self.log.error(traceback.format_exception())
+
+    def control_message(self, action: str, payload: dict) -> str:
+        """Format control message to the orchestrator."""
+        return json.dumps({
+            "object_id": str(uuid.uuid4()),
+            "action": action,
+            "type": "arts_req",
+            "data": payload
+        })
+
+    def control_topic(self, topic: str, *ids: str) -> str:
+        """Format control topic."""
+        return "{}/proc/{}/{}".format(self.realm, topic, "/".join(ids))
+
+    def _register(self, topic: str, msg: str, timeout: float = 5.) -> None:
+        """Blocking registration.
+
+        Parameters
+        ----------
+        topic: MQTT topic.
+        msg: Message payload in final encoded form.
+        timeout: Registration timeout.
+        """
+        self.subscribe(topic)
+
+        sem = Semaphore()
+        sem.acquire()
+
+        def _handler(client, userdata, msg, sem=sem, topic=topic):
+            sem.release()
+
+        self.message_callback_add(topic, _handler)
+        self.publish(topic, msg)
+
+        if not sem.acquire(timeout=timeout):
+            self.log.error("Registration timed out on {}.".format(topic))
+        self.message_callback_remove(topic)
+        self.unsubscribe(topic)

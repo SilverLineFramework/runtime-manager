@@ -3,6 +3,7 @@
 import subprocess
 
 from beartype.typing import Optional
+from beartype import beartype
 
 from manager.types import Message
 from manager import SLSocket
@@ -10,6 +11,7 @@ from manager import SLSocket
 from .base import RuntimeManager
 
 
+@beartype
 class LinuxMinimalRuntime(RuntimeManager):
     """Minimal linux runtime communicating with AF_UNIX sockets.
 

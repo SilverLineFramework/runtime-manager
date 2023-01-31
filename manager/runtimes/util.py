@@ -1,8 +1,10 @@
 """Common utilities."""
 
 from beartype.typing import Union
+from beartype import beartype
 
 
+@beartype
 class ModuleLookup:
     """Module lookup by index and by UUID."""
 
@@ -26,7 +28,7 @@ class ModuleLookup:
         """Get UUID by index."""
         return self.modules_idx[x]["uuid"]
 
-    def free_index(self, max=128) -> int:
+    def free_index(self, max: int = 128) -> int:
         """Get first free index."""
         for i in range(max):
             if i not in self.modules_idx:

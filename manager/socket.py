@@ -5,10 +5,12 @@ import socket
 import struct
 
 from beartype.typing import Optional
+from beartype import beartype
 
 from .types import Message
 
 
+@beartype
 class SLSocket:
     """Silverline local socket.
 
@@ -30,7 +32,7 @@ class SLSocket:
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,
-        timeout: int = 5., base_path="/tmp/sl"
+        timeout: float = 5., base_path="/tmp/sl"
     ) -> None:
         self.timeout = timeout
         self.server = server

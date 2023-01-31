@@ -1,7 +1,10 @@
 """Standardized loggging configuration."""
 
 import logging
+import traceback
 from datetime import datetime
+
+from .exceptions import SLException
 
 
 def configure_log(log="", verbose=2):

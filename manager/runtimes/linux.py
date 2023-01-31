@@ -1,6 +1,6 @@
 """Linux runtime."""
 
-import json
+from beartype import beartype
 
 from manager.types import Message
 from manager import socket
@@ -8,6 +8,7 @@ from manager import socket
 from .linux_minimal import LinuxMinimalRuntime
 
 
+@beartype
 class LinuxRuntime(LinuxMinimalRuntime):
     """Default Linux Runtime."""
 

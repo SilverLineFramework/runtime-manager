@@ -2,43 +2,13 @@
 
 import logging
 import paho.mqtt.client as mqtt
-from beartype.typing import NamedTuple
+from beartype import beartype
 
-from .types import Message
-
-
-class Flags:
-    """Channel flags enum."""
-
-    read = 0b0001
-    write = 0b0010
-    readwrite = 0b0011
+from .types import Message, Flags, Channel
+from . import exceptions
 
 
-class Channel(NamedTuple):
-    """Open Channel.
-
-    Attributes
-    ----------
-    runtime: Runtime index.
-    module: Module index for this runtime.
-    fd: Channel index for this module.
-    topic: Topic name.
-    flags: Read, write, or read-write.
-    """
-
-    runtime: int
-    module: int
-    fd: int
-    topic: str
-    flags: int
-
-    def to_str(self) -> str:
-        """Get string representation."""
-        return "[{:02x}.{:02x}.{:02x}] {}:{:02b}".format(
-            self.runtime, self.module, self.fd, self.topic, self.flags)
-
-
+@beartype
 class ChannelManager:
     """Channel manager.
 
@@ -54,13 +24,9 @@ class ChannelManager:
     def __init__(self, mgr):
 
         self.mgr = mgr
-        self.log = logging.getLogger("channels")
+        self.log = logging.getLogger("ch")
         self.matcher = mqtt.MQTTMatcher()
         self.channels = {}
-
-    def _err_nonexistent(self, action, runtime, module, fd):
-        self.log.error("Tried to {} nonexisting channel: {}/{}/{}".format(
-            action, runtime, module, fd))
 
     def open(self, ch: Channel) -> None:
         """Open channel."""
@@ -70,19 +36,25 @@ class ChannelManager:
             self.channels[ch.runtime][ch.module] = {}
 
         if ch.fd in self.channels[ch.runtime][ch.module]:
-            self.close(ch.runtime, ch.module, ch.fd)
+            raise exceptions.ChannelException(
+                "Tried to open already-existing channel",
+                ch.runtime, ch.module, ch.fd)
 
+        # Check for wildcards
         if (ch.flags | Flags.write) != 0:
+            if '+' in ch.topic or '#' in ch.topic:
+                raise exceptions.ChannelException(
+                    "Channel topic name cannot contain a wildcard ('+', '#') "
+                    "in write or read-write mode: {}".format(ch.topic),
+                    ch.runtime, ch.module, ch.fd)
+
+        # Requires subscribing
+        if (ch.flags | Flags.read) != 0:
             try:
                 self.matcher[ch.topic].add(ch)
             except KeyError:
-                try:
-                    self.mgr.subscribe(ch.topic)
-                    self.matcher[ch.topic] = {ch}
-                # Subscribing fails with ValueError if the channel topic is
-                # illegal (i.e. contains wildcard '+' or '#')
-                except ValueError:
-                    pass
+                self.mgr.subscribe(ch.topic)
+                self.matcher[ch.topic] = {ch}
 
         self.channels[ch.runtime][ch.module][ch.fd] = ch
 
@@ -97,17 +69,19 @@ class ChannelManager:
         """
         try:
             channel = self.channels[runtime][module][fd]
-            try:
-                subscribed = self.matcher[channel.topic]
-                if channel in subscribed:
-                    subscribed.remove(channel)
-                if len(subscribed) == 0:
-                    self.mgr.unsubscribe(channel.topic)
-                    del self.matcher[channel.topic]
-            except KeyError:
-                pass
         except KeyError:
-            self._err_nonexistent("close", runtime, module, fd)
+            raise exceptions.ChannelException(
+                "Tried to close nonexisting channel.", runtime, module, fd)
+
+        del self.channels[runtime][module][fd]
+
+        if channel.flags | Flags.read:
+            subscribed = self.matcher[channel.topic]
+            if channel in subscribed:
+                subscribed.remove(channel)
+            if len(subscribed) == 0:
+                self.mgr.unsubscribe(channel.topic)
+                del self.matcher[channel.topic]
 
     def cleanup(self, runtime: int, module: int) -> None:
         """Cleanup all channels associated with a module.
@@ -118,11 +92,13 @@ class ChannelManager:
         module: module index on this runtime.
         """
         try:
-            for fd in self.channels[runtime][module]:
+            fds = list(self.channels[runtime][module].keys())
+            for fd in fds:
                 self.close(runtime, module, fd)
             del self.channels[runtime][module]
         except KeyError:
-            self.log.error("Invalid module: {}.{}".format(runtime, module))
+            raise exceptions.ChannelException(
+                "Tried to cleanup nonexisting module.", runtime, module)
 
     def publish(
             self, runtime: int, module: int, fd: int, payload: bytes) -> None:
@@ -137,13 +113,16 @@ class ChannelManager:
         """
         try:
             channel = self.channels[runtime][module][fd]
-            self.log.debug("Publishing @ {}".format(channel.to_str()))
-            # Loopback
-            self.handle_message(channel.topic, payload, rt=runtime, mod=module)
-            # MQTT
-            self.mgr.publish(channel.topic, payload)
         except KeyError:
-            self._err_nonexistent("publish to", runtime, module, fd)
+            raise exceptions.ChannelException(
+                "Tried to publish to nonexisting channel.",
+                runtime, module, fd)
+
+        self.log.debug("Publishing @ {}".format(channel.to_str()))
+        # Loopback
+        self.handle_message(channel.topic, payload, rt=runtime, mod=module)
+        # MQTT
+        self.mgr.publish(channel.topic, payload)
 
     def handle_message(self, topic: str, payload: bytes, rt=-1, mod=-1):
         """Handle MQTT message.
@@ -153,9 +132,15 @@ class ChannelManager:
         topic, payload: message contents.
         rt, mod: runtime and module indices to exclude for loopback.
         """
+        matched = False
         for topic_matches in self.matcher.iter_match(topic):
             for ch in topic_matches:
+                matched = True
                 if ch.runtime != rt and ch.module != mod:
                     self.log.debug("Matched to channel: {}".format(ch))
                     self.mgr.runtimes[ch.runtime].send(
                         Message(ch.module, ch.fd, payload))
+
+        if not matched:
+            raise exceptions.ChannelException(
+                "Handling message without any matches.", topic)

@@ -1,7 +1,8 @@
 """SilverLine Messaging and Types."""
 
 import json
-from beartype.typing import NamedTuple, Union
+from beartype.typing import NamedTuple
+from beartype import beartype
 
 
 class Header:
@@ -20,6 +21,7 @@ class Header:
     stop = 0x02
 
 
+@beartype
 class Message(NamedTuple):
     """Runtime-manager message.
 
@@ -74,6 +76,7 @@ class Message(NamedTuple):
             h1=h1, h2=h2, payload=bytes(json.dumps(payload), encoding='utf-8'))
 
 
+@beartype
 class MQTTServer(NamedTuple):
     """MQTT login.
 
@@ -92,3 +95,35 @@ class MQTTServer(NamedTuple):
     pwd: str
     ssl: bool
 
+
+class Flags:
+    """Channel flags enum."""
+
+    read = 0b0001
+    write = 0b0010
+    readwrite = 0b0011
+
+
+@beartype
+class Channel(NamedTuple):
+    """Open Channel.
+
+    Attributes
+    ----------
+    runtime: Runtime index.
+    module: Module index for this runtime.
+    fd: Channel index for this module.
+    topic: Topic name.
+    flags: Read, write, or read-write.
+    """
+
+    runtime: int
+    module: int
+    fd: int
+    topic: str
+    flags: int
+
+    def to_str(self) -> str:
+        """Get string representation."""
+        return "[{:02x}.{:02x}.{:02x}] {}:{:02b}".format(
+            self.runtime, self.module, self.fd, self.topic, self.flags)

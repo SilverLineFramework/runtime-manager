@@ -4,15 +4,18 @@ import logging
 import uuid
 import json
 import threading
+import traceback
 
 from abc import abstractmethod
 from beartype.typing import Optional
+from beartype import beartype
 
-from manager.types import Message, Header
+from manager.types import Message, Header, Channel
+from manager import exceptions
 from .util import ModuleLookup
-from manager.channels import Channel
 
 
+@beartype
 class RuntimeManager:
     """Runtime interface layer.
 
@@ -27,8 +30,10 @@ class RuntimeManager:
     APIS = []
     MAX_NMODULES = 0
 
-    def __init__(self, rtid: str, name: str, cfg: dict = {}) -> None:
-        self.log = logging.getLogger("runtime.{}".format(name))
+    def __init__(
+        self, rtid: Optional[str] = None, name: str = "runtime", cfg: dict = {}
+    ) -> None:
+        self.log = logging.getLogger("rt.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = name
         self.index = -1
@@ -69,55 +74,81 @@ class RuntimeManager:
         """Format control topic name."""
         return self.mgr.control_topic(topic, self.rtid, *ids)
 
-    def insert_module(self, data: dict) -> None:
+    def insert_module(self, data: dict) -> int:
         """Insert module into manager."""
         idx = self.modules.free_index(max=self.MAX_NMODULES)
-        if idx >= 0:
-            data["index"] = idx
-            self.modules.add(data)
-            return idx
-        else:
-            self.log.error(
-                "Module limit exceeded: {}".format(self.MAX_NMODULES))
+        if idx < 0:
+            raise exceptions.ModuleException(
+                "Module limit (max={}) exceeded.".format(self.MAX_NMODULES),
+                self.index, data["uuid"])
+        data["index"] = idx
+        self.modules.add(data)
+        return idx
 
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
         index = self.insert_module(data)
         self.send(Message.from_dict(0x80 | index, 0x00, data))
-        self.log.info(
-            "Created module: {} -> x{:02x}".format(data.get("uuid"), index))
+        self.log.info("Created module: {} -> x{:02x}".format(
+            data["uuid"], index))
 
-    def delete_module(self, data: dict) -> None:
+    def delete_module(self, module_id: str) -> None:
         """Delete module."""
         try:
-            index = self.modules.get(data["uuid"])
+            index = self.modules.get(module_id)
             self.send(Message(0x80 | index, 0x01, bytes()))
             self.log.info("Deleted module: x{:02x}".format(index))
         except KeyError:
-            self.log.error(
-                "Tried to delete nonexistent module: {}".format(data["uuid"]))
+            raise exceptions.ModuleException(
+                "Tried to delete nonexisting module.", self.index, module_id)
 
-    def handle_orchestrator_message(self, data: dict) -> None:
+    def cleanup_module(self, idx: int, mid: str, msg: Message) -> None:
+        """Clean up module after exiting."""
+        self.mgr.publish(
+            self.control_topic("control"),
+            self.mgr.control_message("exited", {
+                "type": "module", "uuid": mid,
+                "reason": json.loads(msg.payload)
+            }))
+        self.mgr.channels.cleanup(self.index, idx)
+        self.modules.remove(idx)
+        self.log.info("Exited: x{:02x}".format(idx))
+
+    def on_mqtt_message(self, client, userdata, msg) -> None:
+        """External message callback."""
+        try:
+            self._handle_control_message(msg.payload)
+        except exceptions.SLException as e:
+            self.log.error(e.fmt())
+        except Exception as e:
+            self.log.error("Uncaught exception: {}".format(e))
+            self.log.error("\n".join(traceback.format_exception()))
+
+    def _handle_control_message(self, data: bytes) -> None:
         """Handle control message on {realm}/proc/control/{rtid}."""
         self.log.debug("Received control message: {}".format(data))
-
         try:
+            data = json.loads(data)
             action = (data["action"], data["data"]["type"])
             match action:
                 case ("create", "module"):
                     self.create_module(data["data"])
-                case ("create", "runtime"):
-                    pass
+                # case ("create", "runtime"):
+                #     pass
                 case ("delete", "module"):
                     self.delete_module(data["data"]["uuid"])
-                case ("delete", "runtime"):
-                    pass
+                # case ("delete", "runtime"):
+                #     pass
                 case _:
-                    self.log.error("Invalid message action: {}".format(action))
+                    raise exceptions.InvalidMessage(
+                        "Invalid message action: {}".format(action))
+        except json.JSONDecodeError:
+            raise exceptions.InvalidMessage("Invalid json: {}".format(data))
         except KeyError as e:
-            self.log.error("Message missing required key: {}".format(e))
+            raise exceptions.InvalidMessage(
+                "Message missing required key: {}".format(e))
 
-    def handle_runtime_control_message(self, msg: Message) -> None:
+    def _handle_runtime_control_message(self, msg: Message) -> None:
         """Handle control message."""
         # Index is lower bits of first header byte.
         idx = msg.h1 & 0x7f
@@ -134,15 +165,7 @@ class RuntimeManager:
             case Header.log_runtime:
                 self.mgr.publish(self.control_topic("log"), msg.payload)
             case Header.exited:
-                self.mgr.publish(
-                    self.control_topic("control"),
-                    self.mgr.control_message("exited", {
-                        "type": "module", "uuid": mid,
-                        "reason": json.loads(msg.payload)
-                    }))
-                self.mgr.channels.cleanup(self.index, idx)
-                self.modules.remove(idx)
-                self.log.info("Exited: x{:02x}".format(idx))
+                self.cleanup_module(idx, mid, msg)
             case Header.ch_open:
                 self.mgr.channels.open(Channel(
                     self.index, idx, msg.payload[0],
@@ -155,15 +178,22 @@ class RuntimeManager:
                 self.mgr.publish(
                     self.control_topic("profile", mid), msg.payload)
             case _:
-                self.log.error(
-                    "Unknown msg type: {:02x}.{:02x}".format(msg.h1, msg.h2))
+                raise exceptions.SLException(
+                    "Unknown message type", self.index, msg.h1, msg.h2)
 
-    def handle_runtime_message(self, msg: Message) -> None:
+    def on_runtime_message(self, msg: Message) -> None:
         """Handle message from the runtime."""
-        if 0x80 & msg.h1:
-            self.handle_runtime_control_message(msg)
-        else:
-            self.mgr.channels.publish(self.index, msg.h1, msg.h2, msg.payload)
+        try:
+            if 0x80 & msg.h1:
+                self._handle_runtime_control_message(msg)
+            else:
+                self.mgr.channels.publish(
+                    self.index, msg.h1, msg.h2, msg.payload)
+        except exceptions.SLException as e:
+            self.log.error(e.fmt())
+        except Exception as e:
+            self.log.error("Uncaught exception: {}".format(e))
+            self.log.error("\n".join(traceback.format_exception(e)))
 
     def loop(self) -> None:
         """Run main loop for this runtime."""
@@ -172,7 +202,7 @@ class RuntimeManager:
             if msg is not None:
                 self.log.debug("Received: x{:02x}.{:02x}.{:02x}".format(
                     self.index, msg.h1, msg.h2))
-                self.handle_runtime_message(msg)
+                self.on_runtime_message(msg)
         self.log.debug("Exiting main loop for runtime {}:{}".format(
             self.rtid, self.name))
 

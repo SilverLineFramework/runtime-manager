@@ -3,11 +3,13 @@
 import time
 
 from beartype.typing import Optional
+from beartype import beartype
 
 from manager.types import Message
 from .base import RuntimeManager
 
 
+@beartype
 class RegistrationOnlyRuntime(RuntimeManager):
     """Runtime for debugging the manager."""
 
