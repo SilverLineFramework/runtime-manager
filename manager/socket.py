@@ -28,16 +28,18 @@ class SLSocket:
     server: whether this socket is a server or client socket.
     timeout: connect, receive timeout in seconds.
     base_path: socket base path.
+    chunk_size: size of chunks to read from the socket.
     """
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,
-        timeout: float = 5., base_path="/tmp/sl"
+        timeout: float = 5., base_path="/tmp/sl", chunk_size: int = 4096
     ) -> None:
         self.timeout = timeout
         self.server = server
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.socket.settimeout(timeout)
+        self.chunk_size = chunk_size
 
         if module == -1:
             address = "{}/{:02x}.s".format(base_path, runtime)
@@ -64,11 +66,12 @@ class SLSocket:
             recv = self.connection.recv(6)
             if recv:
                 payloadlen, h1, h2 = struct.unpack("IBB", recv)
-                if payloadlen > 0:
-                    payload = self.connection.recv(payloadlen)
-                else:
-                    payload = bytes()
-                return Message(h1, h2, payload)
+                payload = []
+                while payloadlen > 0:
+                    recv = min(payloadlen, self.chunk_size)
+                    payload.append(self.connection.recv(recv))
+                    payloadlen -= recv
+                return Message(h1, h2, b"".join(payload))
             else:
                 return None
         except TimeoutError:
