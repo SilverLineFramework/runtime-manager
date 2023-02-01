@@ -3,20 +3,20 @@
 import os
 import sys
 import json
-import subprocess
 import threading
+from subprocess import Popen, PIPE
 
-from manager import Message, SLSocket, Header
+from manager import Message, SLSocket, Header, Flags
 
 
 class LinuxMinimalRuntime:
-    """Mimimal linux runtime.
+    """Mimimal linux runtime using wasmer.
 
-    Only supports stdin/stdout for a single module.
+    Only supports one-shot stdin/stdout for a single module.
     """
 
-    def __init__(self, index):
-
+    def __init__(self, index, cmd="python -u linux_minimal_core.py"):
+        self.cmd = cmd
         self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
         self.killed = False
@@ -25,30 +25,20 @@ class LinuxMinimalRuntime:
     def run(self, msg):
         """Run program."""
         self.killed = False
-        self.process = subprocess.Popen(
-            "python -u linux_minimal_core.py",
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+        self.process = Popen(self.cmd, stdin=PIPE, stdout=PIPE, shell=True)
         os.write(self.process.stdin.fileno(), msg.payload)
 
         data = json.loads(msg.payload)
-
         self.socket.write(Message(
             0x80 | 0x00, Header.ch_open,
-            bytes([0x00, 0b11])
+            bytes([0x00, Flags.readwrite])
             + bytes("std/{}".format(data["uuid"]), encoding='utf-8')))
 
         stdout, _ = (self.process.communicate())
         self.socket.write(Message(0x00, 0x00, stdout))
-
         self.socket.write(Message.from_dict(0x80 | 0x00, Header.exited, {
             "status": "killed" if self.killed else "exited"}))
         self.process = None
-
-    def stop(self):
-        """Stop program."""
-        if self.process:
-            self.killed = True
-            self.process.kill()
 
     def handle_message(self, msg: Message) -> None:
         """Handle message from manager."""
@@ -57,13 +47,10 @@ class LinuxMinimalRuntime:
         else:
             match msg.h2:
                 case Header.create:
-                    self.thread = threading.Thread(target=self.run, args=[msg])
-                    self.thread.start()
+                    threading.Thread(target=self.run, args=[msg]).start()
                 case Header.delete:
-                    self.stop()
-                case Header.stop:
-                    self.done = True
-                    self.stop()
+                    self.killed = True
+                    self.process.kill()
                 case _:
                     pass
 
@@ -73,10 +60,6 @@ class LinuxMinimalRuntime:
             msg = self.socket.read()
             if msg is not None:
                 self.handle_message(msg)
-
-    def loop_start(self):
-        """Start loop."""
-        threading.Thread(target=self.loop).start()
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 """Silverline Node Manager."""
 
 from .socket import SLSocket
-from .types import Header, Message, MQTTServer
+from .types import Header, Message, MQTTServer, Flags
 from .manager import Manager
 from . import runtimes
 from .logging import configure_log
