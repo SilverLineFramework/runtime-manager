@@ -4,7 +4,6 @@ import logging
 import uuid
 import ssl
 import json
-import traceback
 from threading import Semaphore
 
 import paho.mqtt.client as mqtt
@@ -38,7 +37,8 @@ class Manager(mqtt.Client):
         self, runtimes: list[RuntimeManager], name: str = "manager",
         mgr_id: str = None, realm: str = "realm", timeout: float = 5.
     ) -> None:
-        self.log = logging.getLogger('manager')
+        self.log = logging.getLogger('mgr')
+        self.log_mq = logging.getLogger('mq')
         self.realm = realm
         self.runtimes = runtimes
         self.timeout = timeout
@@ -50,7 +50,6 @@ class Manager(mqtt.Client):
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
         super().__init__(client_id="{}:{}".format(self.name, self.uuid))
-        self.log = logging.getLogger('mqtt')
 
         self.channels = ChannelManager(self)
 
@@ -79,10 +78,11 @@ class Manager(mqtt.Client):
             topic = rt.control_topic("control")
             self.subscribe(topic)
             self.message_callback_add(topic, rt.on_mqtt_message)
+            metadata = rt.start()
+            metadata["parent"] = self.uuid
             self._register(
                 rt.control_topic("reg"),
-                self.control_message("create", rt.start()),
-                timeout=self.timeout)
+                self.control_message("create", metadata), timeout=self.timeout)
             rt.loop_start()
             self.log.info("Registered: {}:{}".format(rt.name, rt.rtid))
 
@@ -98,7 +98,7 @@ class Manager(mqtt.Client):
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""
-        self.log.info("Disconnected: rc={} ({})".format(
+        self.log_mq.info("Disconnected: rc={} ({})".format(
             rc, mqtt.connack_string(rc)))
 
     def connect(self, server: MQTTServer) -> None:
@@ -114,17 +114,17 @@ class Manager(mqtt.Client):
         # We handle loopback internally.
         self.enable_bridge_mode()
 
-        self.log.info(
+        self.log_mq.info(
             "Connecting MQTT client: {}:{}".format(self.name, self.uuid))
-        self.log.info("SSL: {}".format(server.ssl))
-        self.log.info("Username: {}".format(server.user))
+        self.log_mq.info("SSL: {}".format(server.ssl))
+        self.log_mq.info("Username: {}".format(server.user))
         try:
-            self.log.info("Password file: {}".format(server.pwd))
+            self.log_mq.info("Password file: {}".format(server.pwd))
             with open(server.pwd, 'r') as f:
                 passwd = f.read().rstrip('\n')
         except FileNotFoundError:
             passwd = ""
-            self.log.warn("No password supplied; using an empty password.")
+            self.log_mq.warn("No password supplied; using an empty password.")
 
         self.username_pw_set(server.user, passwd)
         if server.ssl:
@@ -134,7 +134,7 @@ class Manager(mqtt.Client):
         # Waiting for on_connect to release
         self.loop_start()
         semaphore.acquire()
-        self.log.info("Connected to MQTT server.")
+        self.log_mq.info("Connected to MQTT server.")
 
     def on_message(self, client, userdata, msg):
         """Handle message.
@@ -144,11 +144,8 @@ class Manager(mqtt.Client):
         self.log.debug("Handling message @ {}".format(msg.topic))
         try:
             self.channels.handle_message(msg.topic, msg.payload)
-        except exceptions.SLException as e:
-            self.log.error(e.fmt())
         except Exception as e:
-            self.log.error("Uncaught exception: {}".format(e))
-            self.log.error(traceback.format_exception())
+            exceptions.handle_error(e, self.log, msg.topic)
 
     def control_message(self, action: str, payload: dict) -> str:
         """Format control message to the orchestrator."""

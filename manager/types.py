@@ -50,6 +50,8 @@ class Message(NamedTuple):
       by the runtime interface. The limit is enforced by physical limits on the
       value.
 
+    Todos
+    -----
     Add "dir" (list[str]) -- WASI dirs -- attribute to CreateModuleMsg/data
     Add "reason" (object) attribute to ModuleExitMsg/data
 
@@ -97,7 +99,14 @@ class MQTTServer(NamedTuple):
 
 
 class Flags:
-    """Channel flags enum."""
+    """Channel flags enum.
+
+    Bit 0 indicates read permissions, and bit 1 indicates write permissions.
+    Notably, if the write bit is set, the channel topic cannot contain
+    wildcards.
+
+    Higher bits can be saved for other features (such as MQTT QoS).
+    """
 
     read = 0b0001
     write = 0b0010
@@ -122,8 +131,3 @@ class Channel(NamedTuple):
     fd: int
     topic: str
     flags: int
-
-    def to_str(self) -> str:
-        """Get string representation."""
-        return "[{:02x}.{:02x}.{:02x}] {}:{:02b}".format(
-            self.runtime, self.module, self.fd, self.topic, self.flags)

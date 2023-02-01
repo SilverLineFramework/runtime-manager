@@ -1,7 +1,7 @@
 """Inner runtime.
 
 This needs to be a completely separate process from the runtime communication
-layer since we need to capture stdin/stdout without help from the inner WASM
+layer since we want to capture stdin/stdout without help from the inner WASM
 runtime.
 """
 

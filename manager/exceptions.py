@@ -1,5 +1,9 @@
 """SilverLine Manager Exceptions."""
 
+import traceback
+
+from .logging import format_message
+
 
 class UnhandledSLException(Exception):
     """Base class for unhandled exceptions."""
@@ -15,20 +19,9 @@ class SLException(Exception):
         self.msg = msg
         self.args = args
 
-    def _fmt(self, x):
-        if isinstance(x, int):
-            return "{:02x}".format(x)
-        elif isinstance(x, str):
-            return x[:2] + ".." + x[-4:]
-        return x
-
-    def fmt(self) -> str:
+    def fmt(self, *args) -> str:
         """Get error message."""
-        if len(self.args) == 0:
-            return self.msg
-        else:
-            return "[{}] {}".format(
-                ".".join([self._fmt(a) for a in self.args]), self.msg)
+        return format_message(self.msg, *args, *self.args)
 
 
 class ChannelException(SLException):
@@ -47,3 +40,12 @@ class InvalidMessage(SLException):
     """Invalid message."""
 
     pass
+
+
+def handle_error(exc, log, *context):
+    """Error logger."""
+    if isinstance(exc, SLException):
+        log.error(exc.fmt(*context))
+    else:
+        log.error("Uncaught exception: {}".format(exc))
+        log.error("\n".join(traceback.format_exception(exc)))

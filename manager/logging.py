@@ -1,10 +1,7 @@
 """Standardized loggging configuration."""
 
 import logging
-import traceback
 from datetime import datetime
-
-from .exceptions import SLException
 
 
 def configure_log(log="", verbose=2):
@@ -40,3 +37,18 @@ def configure_log(log="", verbose=2):
         format="[%(asctime)s] [%(name)s:%(levelname)s] %(message)s",
         datefmt="%H:%M:%S",
         handlers=handlers)
+
+
+def __fmt(x):
+    if isinstance(x, int):
+        return "x{:02x}".format(x)
+    elif isinstance(x, str):
+        return "u{}..{}".format(x[:2], x[-4:])
+    return x
+
+
+def format_message(msg, *ctx) -> str:
+    """Format message with context."""
+    if len(ctx) == 0:
+        return msg
+    return "[{}] {}".format(".".join([__fmt(x) for x in ctx]), msg)

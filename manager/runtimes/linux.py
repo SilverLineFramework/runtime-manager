@@ -32,7 +32,7 @@ class LinuxRuntime(LinuxMinimalRuntime):
         self.socket_mod[index] = socket.connect(
             self.index, module=index, server=True, timeout=5.)
         self.send(Message.from_dict(0x80 | index, 0x00, data))
-        self.socket_mod.accept()
+        self.socket_mod[index].accept()
 
     def delete_module(self, data: dict) -> None:
         """Delete module."""

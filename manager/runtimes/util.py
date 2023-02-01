@@ -3,14 +3,17 @@
 from beartype.typing import Union
 from beartype import beartype
 
+from manager.exceptions import ModuleException
+
 
 @beartype
 class ModuleLookup:
     """Module lookup by index and by UUID."""
 
-    def __init__(self):
+    def __init__(self, max: int = 128):
         self.modules_idx = {}
         self.modules_uuid = {}
+        self.max_nmodules = max
 
     def add(self, data: dict) -> None:
         """Add item."""
@@ -28,12 +31,20 @@ class ModuleLookup:
         """Get UUID by index."""
         return self.modules_idx[x]["uuid"]
 
-    def free_index(self, max: int = 128) -> int:
+    def free_index(self) -> int:
         """Get first free index."""
-        for i in range(max):
+        for i in range(self.max_nmodules):
             if i not in self.modules_idx:
                 return i
-        return -1
+        raise ModuleException(
+            "Module limit (max={}) exceeded.".format(self.max_nmodules))
+
+    def insert(self, data: dict) -> int:
+        """Insert item."""
+        idx = self.free_index()
+        data["index"] = idx
+        self.add(data)
+        return idx
 
     def remove(self, x: Union[int, str]) -> None:
         """Remove item by index or UUID."""

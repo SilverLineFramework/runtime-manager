@@ -10,12 +10,14 @@ from manager import Message, SLSocket, Header
 
 
 class LinuxMinimalRuntime:
-    """Mimimal linux runtime."""
+    """Mimimal linux runtime.
+
+    Only supports stdin/stdout for a single module.
+    """
 
     def __init__(self, index):
 
-        self.index = index
-        self.socket = SLSocket(self.index, server=False, timeout=5.)
+        self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
         self.killed = False
         self.done = False
@@ -24,21 +26,21 @@ class LinuxMinimalRuntime:
         """Run program."""
         self.killed = False
         self.process = subprocess.Popen(
-            "python -u linux_minimal/linux_minimal.py",
+            "python -u linux_minimal_core.py",
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
         os.write(self.process.stdin.fileno(), msg.payload)
 
         data = json.loads(msg.payload)
 
         self.socket.write(Message(
-            0x80 | self.index, Header.ch_open,
+            0x80 | 0x00, Header.ch_open,
             bytes([0x00, 0b11])
             + bytes("std/{}".format(data["uuid"]), encoding='utf-8')))
 
         stdout, _ = (self.process.communicate())
-        self.socket.write(Message(self.index, 0x00, stdout))
+        self.socket.write(Message(0x00, 0x00, stdout))
 
-        self.socket.write(Message.from_dict(0x80 | self.index, Header.exited, {
+        self.socket.write(Message.from_dict(0x80 | 0x00, Header.exited, {
             "status": "killed" if self.killed else "exited"}))
         self.process = None
 

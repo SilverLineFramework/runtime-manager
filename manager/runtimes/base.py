@@ -4,7 +4,6 @@ import logging
 import uuid
 import json
 import threading
-import traceback
 
 from abc import abstractmethod
 from beartype.typing import Optional
@@ -13,6 +12,8 @@ from beartype import beartype
 from manager.types import Message, Header, Channel
 from manager import exceptions
 from .util import ModuleLookup
+
+from manager.logging import format_message
 
 
 @beartype
@@ -37,7 +38,7 @@ class RuntimeManager:
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = name
         self.index = -1
-        self.modules = ModuleLookup()
+        self.modules = ModuleLookup(max=self.MAX_NMODULES)
 
         self.config = {
             "type": "runtime",
@@ -74,33 +75,22 @@ class RuntimeManager:
         """Format control topic name."""
         return self.mgr.control_topic(topic, self.rtid, *ids)
 
-    def insert_module(self, data: dict) -> int:
-        """Insert module into manager."""
-        idx = self.modules.free_index(max=self.MAX_NMODULES)
-        if idx < 0:
-            raise exceptions.ModuleException(
-                "Module limit (max={}) exceeded.".format(self.MAX_NMODULES),
-                self.index, data["uuid"])
-        data["index"] = idx
-        self.modules.add(data)
-        return idx
-
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
-        index = self.insert_module(data)
+        index = self.modules.insert(data)
         self.send(Message.from_dict(0x80 | index, 0x00, data))
-        self.log.info("Created module: {} -> x{:02x}".format(
-            data["uuid"], index))
+        self.log.info(format_message(
+            "Created module: {}".format(data['uuid']), self.index, index))
 
     def delete_module(self, module_id: str) -> None:
         """Delete module."""
         try:
             index = self.modules.get(module_id)
             self.send(Message(0x80 | index, 0x01, bytes()))
-            self.log.info("Deleted module: x{:02x}".format(index))
+            self.log.info(format_message("Deleted module.", self.index, index))
         except KeyError:
             raise exceptions.ModuleException(
-                "Tried to delete nonexisting module.", self.index, module_id)
+                "Tried to delete nonexisting module.", module_id)
 
     def cleanup_module(self, idx: int, mid: str, msg: Message) -> None:
         """Clean up module after exiting."""
@@ -112,17 +102,14 @@ class RuntimeManager:
             }))
         self.mgr.channels.cleanup(self.index, idx)
         self.modules.remove(idx)
-        self.log.info("Exited: x{:02x}".format(idx))
+        self.log.info(format_message("Module exited.", self.index, idx))
 
     def on_mqtt_message(self, client, userdata, msg) -> None:
         """External message callback."""
         try:
             self._handle_control_message(msg.payload)
-        except exceptions.SLException as e:
-            self.log.error(e.fmt())
         except Exception as e:
-            self.log.error("Uncaught exception: {}".format(e))
-            self.log.error("\n".join(traceback.format_exception()))
+            exceptions.handle_error(e, self.log, self.index)
 
     def _handle_control_message(self, data: bytes) -> None:
         """Handle control message on {realm}/proc/control/{rtid}."""
@@ -178,8 +165,7 @@ class RuntimeManager:
                 self.mgr.publish(
                     self.control_topic("profile", mid), msg.payload)
             case _:
-                raise exceptions.SLException(
-                    "Unknown message type", self.index, msg.h1, msg.h2)
+                raise exceptions.SLException("Unknown message type")
 
     def on_runtime_message(self, msg: Message) -> None:
         """Handle message from the runtime."""
@@ -189,22 +175,18 @@ class RuntimeManager:
             else:
                 self.mgr.channels.publish(
                     self.index, msg.h1, msg.h2, msg.payload)
-        except exceptions.SLException as e:
-            self.log.error(e.fmt())
         except Exception as e:
-            self.log.error("Uncaught exception: {}".format(e))
-            self.log.error("\n".join(traceback.format_exception(e)))
+            exceptions.handle_error(e, self.log, self.index, msg.h1, msg.h2)
 
     def loop(self) -> None:
         """Run main loop for this runtime."""
         while not self.done:
             msg = self.receive()
             if msg is not None:
-                self.log.debug("Received: x{:02x}.{:02x}.{:02x}".format(
-                    self.index, msg.h1, msg.h2))
+                self.log.debug(format_message(
+                    "Received message.", self.index, msg.h1, msg.h2))
                 self.on_runtime_message(msg)
-        self.log.debug("Exiting main loop for runtime {}:{}".format(
-            self.rtid, self.name))
+        self.log.debug(format_message("Exiting main loop.", self.index))
 
     def loop_start(self):
         """Start main loop."""

@@ -6,6 +6,7 @@ from beartype import beartype
 
 from .types import Message, Flags, Channel
 from . import exceptions
+from .logging import format_message
 
 
 @beartype
@@ -37,16 +38,14 @@ class ChannelManager:
 
         if ch.fd in self.channels[ch.runtime][ch.module]:
             raise exceptions.ChannelException(
-                "Tried to open already-existing channel",
-                ch.runtime, ch.module, ch.fd)
+                "Tried to open already-existing channel")
 
         # Check for wildcards
         if (ch.flags | Flags.write) != 0:
             if '+' in ch.topic or '#' in ch.topic:
                 raise exceptions.ChannelException(
                     "Channel topic name cannot contain a wildcard ('+', '#') "
-                    "in write or read-write mode: {}".format(ch.topic),
-                    ch.runtime, ch.module, ch.fd)
+                    "in write or read-write mode: {}".format(ch.topic))
 
         # Requires subscribing
         if (ch.flags | Flags.read) != 0:
@@ -71,7 +70,7 @@ class ChannelManager:
             channel = self.channels[runtime][module][fd]
         except KeyError:
             raise exceptions.ChannelException(
-                "Tried to close nonexisting channel.", runtime, module, fd)
+                "Tried to close nonexisting channel.")
 
         del self.channels[runtime][module][fd]
 
@@ -98,7 +97,7 @@ class ChannelManager:
             del self.channels[runtime][module]
         except KeyError:
             raise exceptions.ChannelException(
-                "Tried to cleanup nonexisting module.", runtime, module)
+                "Tried to cleanup nonexisting module.")
 
     def publish(
             self, runtime: int, module: int, fd: int, payload: bytes) -> None:
@@ -112,17 +111,19 @@ class ChannelManager:
         payload: Message payload.
         """
         try:
-            channel = self.channels[runtime][module][fd]
+            ch = self.channels[runtime][module][fd]
         except KeyError:
             raise exceptions.ChannelException(
-                "Tried to publish to nonexisting channel.",
-                runtime, module, fd)
+                "Tried to publish to nonexisting channel.")
 
-        self.log.debug("Publishing @ {}".format(channel.to_str()))
+        self.log.debug(format_message(
+            "Publishing message: {}:{:02b}".format(ch.topic, ch.flags),
+            runtime, module, fd))
+
         # Loopback
-        self.handle_message(channel.topic, payload, rt=runtime, mod=module)
+        self.handle_message(ch.topic, payload, rt=runtime, mod=module)
         # MQTT
-        self.mgr.publish(channel.topic, payload)
+        self.mgr.publish(ch.topic, payload)
 
     def handle_message(self, topic: str, payload: bytes, rt=-1, mod=-1):
         """Handle MQTT message.
@@ -143,4 +144,4 @@ class ChannelManager:
 
         if not matched:
             raise exceptions.ChannelException(
-                "Handling message without any matches.", topic)
+                "Handling message without any matches.")
