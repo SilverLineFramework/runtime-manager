@@ -1,59 +1,52 @@
-"""SilverLine Messaging and Types."""
+"""SilverLine Runtime Manager Messaging and Types."""
 
 import json
 from beartype.typing import NamedTuple
 from beartype import beartype
 
 
-class Header:
-    """Header enum."""
-
-    keepalive = 0x00
-    log_runtime = 0x01
-    exited = 0x02
-    ch_open = 0x03
-    ch_close = 0x04
-    log_module = 0x05
-    profile = 0x06
-
-    create = 0x00
-    delete = 0x01
-    stop = 0x02
-
-
 @beartype
 class Message(NamedTuple):
-    """Runtime-manager message.
+    """Runtime-manager messaging.
 
-    | Sender  | Header    | Socket      | Message          | Data   |
-    | ------- | --------- | ----------- | -----------------| ------ |
-    | Manager | 1{m}.x00  | sl/{rt}     | Create Module    | json   |
-    | Manager | 1{m}.x01  | sl/{rt}     | Delete Module    | null   |
-    | Manager | 1{-}.x02  | sl/{rt}     | Stop Runtime     | null   |
-    | Manager | 0{m}.{fd} | sl/{rt}/{m} | Receive Message  | u8[]   |
-    | Runtime | 1{-}.x00  | sl/{rt}     | Keepalive        | json   |
-    | Runtime | 1{-}.x01  | sl/{rt}     | Runtime Logging  | char[] |
-    | Runtime | 1{m}.x02  | sl/{rt}     | Module Exited    | json   |
-    | Runtime | 1{m}.x03  | sl/{rt}     | Open Channel     | char[] |
-    | Runtime | 1{m}.x04  | sl/{rt}     | Close Channel    | u8     |
-    | Runtime | 1{m}.x05  | sl/{rt}     | Module Logging   | char[] |
-    | Runtime | 1{m}.x06  | sl/{rt}     | Profiling Data   | char[] |
-    | Runtime | 0{m}.{fd} | sl/{rt}     | Publish Message  | u8[]   |
+    Messages have two header bytes (h1, h2).
+    - The first byte indicates the module index `{m}` with the lower 7 bits,
+      and whether the message is an ordinary channels message or a control
+      message with the upper bit.
+    - The second byte indicates an argument, which is the message type for
+      control messages, and the channel index for channel messages.
+
+    | Sender  | Header    | Message          | Data         |
+    | ------- | --------- | -----------------| ------------ |
+    | Manager | 1{m}.x00  | Create Module    | json         |
+    | Manager | 1{m}.x01  | Delete Module    | null         |
+    | Manager | 1{-}.x02  | Stop Runtime     | null         |
+    | Manager | 0{m}.{fd} | Receive Message  | u8[]         |
+    | Runtime | 1{-}.x00  | Keepalive        | json         |
+    | Runtime | 1{-}.x01  | Runtime Logging  | char[]       |
+    | Runtime | 1{m}.x02  | Module Exited    | json         |
+    | Runtime | 1{m}.x03  | Open Channel     | u8,u8,char[] |
+    | Runtime | 1{m}.x04  | Close Channel    | u8           |
+    | Runtime | 1{m}.x05  | Module Logging   | char[]       |
+    | Runtime | 1{m}.x06  | Profiling Data   | char[]       |
+    | Runtime | 0{m}.{fd} | Publish Message  | u8[]         |
 
     Notes
     -----
-    - Channel open has the target channel index as the first value, and the
-      mode as the second value.
-    - The module index ({m}) is a 7-bit integer (0<=i<128); this index is
-      controlled and enforced by the runtime manager.
-    - The channel index is a 8-bit integer (0<=j<256); this index is controlled
-      by the runtime interface. The limit is enforced by physical limits on the
-      value.
+    - Each runtime is assumed to have its own communication channel, or
+      communicate over a shared channel which can specify the runtime.
+    - Runtimes are limited to 128 modules and 256 channels per module.
+    - The create module mesage forwards orchestrator messages to the runtime
+      communication layer, which is responsible for interpreting it. The only
+      required attribute is ``/data/uuid``.
+    - The keepalive and module exited messages are forwarded to orchestrator
+      as the ``/data`` key; the runtime type (="runtime"), uuid, and name are
+      added by the orchestrator.
 
     Todos
     -----
-    Add "dir" (list[str]) -- WASI dirs -- attribute to CreateModuleMsg/data
-    Add "reason" (object) attribute to ModuleExitMsg/data
+    Add wasi dirs "dir" (list[str]) attribute to Create Module
+    Add "status" (object) attribute to Module Exited
 
     Attributes
     ----------
@@ -78,9 +71,35 @@ class Message(NamedTuple):
             h1=h1, h2=h2, payload=bytes(json.dumps(payload), encoding='utf-8'))
 
 
+class Header:
+    """Header enum with header byte values.
+
+    Change these values and upgrade the underlying connection if larger
+    header values are required, i.e. to support >128 modules or >256 channels.
+
+    Uprading module index assignment (``ModuleLookup.free_index``) not to use
+    brute force search is also likely required.
+    """
+
+    keepalive   = 0x00
+    log_runtime = 0x01
+    exited      = 0x02
+    ch_open     = 0x03
+    ch_close    = 0x04
+    log_module  = 0x05
+    profile     = 0x06
+
+    create      = 0x00
+    delete      = 0x01
+    stop        = 0x02
+
+    control     = 0x80
+    index_bits  = 0x7f
+
+
 @beartype
 class MQTTServer(NamedTuple):
-    """MQTT login.
+    """MQTT server and login information.
 
     Attributes
     ----------
@@ -96,21 +115,6 @@ class MQTTServer(NamedTuple):
     user: str
     pwd: str
     ssl: bool
-
-
-class Flags:
-    """Channel flags enum.
-
-    Bit 0 indicates read permissions, and bit 1 indicates write permissions.
-    Notably, if the write bit is set, the channel topic cannot contain
-    wildcards.
-
-    Higher bits can be saved for other features (such as MQTT QoS).
-    """
-
-    read = 0b0001
-    write = 0b0010
-    readwrite = 0b0011
 
 
 @beartype
@@ -131,3 +135,22 @@ class Channel(NamedTuple):
     fd: int
     topic: str
     flags: int
+
+
+class Flags:
+    """Channel flags enum.
+
+    Bit 0 indicates read permissions, and bit 1 indicates write permissions.
+    Notably, if the write bit is set, the channel topic cannot contain
+    wildcards.
+
+    Higher bits can be saved for other features (such as MQTT QoS).
+    """
+
+    read      = 0b0001
+    write     = 0b0010
+    readwrite = 0b0011
+
+    qos0      = 0b0000
+    qos1      = 0b0100
+    qos2      = 0b1000

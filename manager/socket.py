@@ -16,7 +16,7 @@ class SLSocket:
 
     Sockets use the following protocol::
 
-        [ -- len:4 -- ][h1:1][h2:1][... payload ...]
+        [ -- len:4 -- ][h1:1][h2:1][ ------ payload:len ------ ]
 
     See the documentation of `manager.types.Message` for header values.
     Empty payloads are also supported.

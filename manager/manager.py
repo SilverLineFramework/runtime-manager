@@ -20,9 +20,6 @@ from . import exceptions
 class Manager(mqtt.Client):
     """Silverline node manager.
 
-    NOTE: blocks on initialization until the client connects, and all runtimes
-    are registered.
-
     Parameters
     ----------
     runtimes: runtimes to manage.

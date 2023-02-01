@@ -78,7 +78,8 @@ class RuntimeManager:
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps."""
         index = self.modules.insert(data)
-        self.send(Message.from_dict(0x80 | index, 0x00, data))
+        self.send(Message.from_dict(
+            Header.control | index, Header.create, data))
         self.log.info(format_message(
             "Created module: {}".format(data['uuid']), self.index, index))
 
@@ -86,7 +87,7 @@ class RuntimeManager:
         """Delete module."""
         try:
             index = self.modules.get(module_id)
-            self.send(Message(0x80 | index, 0x01, bytes()))
+            self.send(Message(Header.control | index, Header.delete, bytes()))
             self.log.info(format_message("Deleted module.", self.index, index))
         except KeyError:
             raise exceptions.ModuleException(
@@ -97,9 +98,7 @@ class RuntimeManager:
         self.mgr.publish(
             self.control_topic("control"),
             self.mgr.control_message("exited", {
-                "type": "module", "uuid": mid,
-                "reason": json.loads(msg.payload)
-            }))
+                "type": "module", "uuid": mid, **json.loads(msg.payload)}))
         self.mgr.channels.cleanup(self.index, idx)
         self.modules.remove(idx)
         self.log.info(format_message("Module exited.", self.index, idx))
@@ -138,7 +137,7 @@ class RuntimeManager:
     def _handle_runtime_control_message(self, msg: Message) -> None:
         """Handle control message."""
         # Index is lower bits of first header byte.
-        idx = msg.h1 & 0x7f
+        idx = msg.h1 & Header.index_bits
         mid = self.modules.uuid(idx)
 
         match msg.h2:
@@ -170,7 +169,7 @@ class RuntimeManager:
     def on_runtime_message(self, msg: Message) -> None:
         """Handle message from the runtime."""
         try:
-            if 0x80 & msg.h1:
+            if Header.control & msg.h1:
                 self._handle_runtime_control_message(msg)
             else:
                 self.mgr.channels.publish(

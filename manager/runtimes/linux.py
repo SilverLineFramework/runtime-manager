@@ -2,7 +2,7 @@
 
 from beartype import beartype
 
-from manager.types import Message
+from manager.types import Message, Header
 from manager import socket
 
 from .linux_minimal import LinuxMinimalRuntime
@@ -31,14 +31,15 @@ class LinuxRuntime(LinuxMinimalRuntime):
         index = self.insert_module(data)
         self.socket_mod[index] = socket.connect(
             self.index, module=index, server=True, timeout=5.)
-        self.send(Message.from_dict(0x80 | index, 0x00, data))
+        self.send(Message.from_dict(
+            Header.control | index, Header.create, data))
         self.socket_mod[index].accept()
 
     def delete_module(self, data: dict) -> None:
         """Delete module."""
         try:
             index = self.modules.get(data["uuid"])
-            self.send(Message(0x80 | index, 0x01, bytes()))
+            self.send(Message(Header.control | index, Header.delete, bytes()))
             self.socket_mod[index].close()
             del self.socket_mod[index]
         except KeyError:
@@ -47,7 +48,7 @@ class LinuxRuntime(LinuxMinimalRuntime):
 
     def send(self, msg: Message) -> None:
         """Send message."""
-        if msg.h1 & 0x80 == 0:
+        if msg.h1 & Header.control == 0:
             socket.write(self.socket_mod[msg.h1], msg)
         else:
             socket.write(self.socket, msg)
