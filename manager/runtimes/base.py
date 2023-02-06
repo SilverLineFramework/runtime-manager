@@ -66,6 +66,10 @@ class RuntimeManager:
         """Poll interface and receive message; return None on timeout."""
         pass
 
+    def handle_profile(self, module: int, msg: bytes) -> None:
+        """Handle profiling message."""
+        pass
+
     def bind_manager(self, mgr, index: int) -> None:
         """Set runtime index."""
         self.index = index
@@ -84,7 +88,7 @@ class RuntimeManager:
             "Created module: {}".format(data['uuid']), self.index, index))
 
     def delete_module(self, module_id: str) -> None:
-        """Delete module."""
+        """Delete module; overwrite this method to add additional steps."""
         try:
             index = self.modules.get(module_id)
             self.send(Message(Header.control | index, Header.delete, bytes()))
@@ -161,8 +165,7 @@ class RuntimeManager:
             case Header.log_module:
                 self.mgr.publish(self.control_topic("log", mid), msg.payload)
             case Header.profile:
-                self.mgr.publish(
-                    self.control_topic("profile", mid), msg.payload)
+                self.handle_profile(mid, msg.payload)
             case _:
                 raise exceptions.SLException("Unknown message type")
 

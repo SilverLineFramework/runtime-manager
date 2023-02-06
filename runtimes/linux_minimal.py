@@ -15,7 +15,7 @@ class LinuxMinimalRuntime:
     Only supports one-shot stdin/stdout for a single module.
     """
 
-    def __init__(self, index, cmd="python -u linux_minimal_core.py"):
+    def __init__(self, index, cmd=["wasmer"]):
         self.cmd = cmd
         self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
@@ -25,24 +25,30 @@ class LinuxMinimalRuntime:
     def run(self, msg):
         """Run program."""
         self.killed = False
-        self.process = Popen(self.cmd, stdin=PIPE, stdout=PIPE, shell=True)
-        os.write(self.process.stdin.fileno(), msg.payload)
-
         data = json.loads(msg.payload)
+
+        cmd = self.cmd
+        if "env" in data and data["env"]:
+            cmd += ["--env"] + data["env"]
+        cmd += [data["filename"]] + data["args"][1:]
+        print(cmd)
+        self.process = Popen(cmd, stdin=PIPE, stdout=PIPE, shell=True)
+
         self.socket.write(Message(
-            0x80 | 0x00, Header.ch_open,
+            Header.control | 0x00, Header.ch_open,
             bytes([0x00, Flags.readwrite])
             + bytes("std/{}".format(data["uuid"]), encoding='utf-8')))
 
         stdout, _ = (self.process.communicate())
         self.socket.write(Message(0x00, 0x00, stdout))
-        self.socket.write(Message.from_dict(0x80 | 0x00, Header.exited, {
-            "status": "killed" if self.killed else "exited"}))
+        self.socket.write(Message.from_dict(
+            Header.control | 0x00, Header.exited,
+            {"status": "killed" if self.killed else "exited"}))
         self.process = None
 
     def handle_message(self, msg: Message) -> None:
         """Handle message from manager."""
-        if msg.h1 & 0x80 == 0:
+        if msg.h1 & Header.control == 0:
             self.process.stdin.write(msg.payload)
         else:
             match msg.h2:

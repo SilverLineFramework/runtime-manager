@@ -1,4 +1,4 @@
-"""Linux minimum viable."""
+"""Linux minimum viable runtime."""
 
 import subprocess
 
@@ -28,7 +28,8 @@ class LinuxMinimalRuntime(RuntimeManager):
 
     def __init__(
         self, rtid: str = None, name: str = "runtime-linux-minimal",
-        command: list[str] = ["python", "linux_minimal.py"], cfg: dict = {}
+        command: str = "PYTHONPATH=. python runtimes/linux_minimal.py",
+        cfg: dict = {}
     ) -> None:
         self.command = command
         super().__init__(rtid, name, cfg=cfg)
@@ -36,7 +37,7 @@ class LinuxMinimalRuntime(RuntimeManager):
     def start(self) -> dict:
         """Start runtime, and return the registration config."""
         self.socket = SLSocket(self.index, server=True, timeout=5.)
-        subprocess.Popen(self.command + [str(self.index)])
+        subprocess.Popen("{} {}".format(self.command, self.index), shell=True)
         self.socket.accept()
         return self.config
 
