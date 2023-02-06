@@ -50,15 +50,8 @@ class LinuxMinimalRuntime:
         """Handle message from manager."""
         if msg.h1 & Header.control == 0:
             self.process.stdin.write(msg.payload)
-        else:
-            match msg.h2:
-                case Header.create:
-                    threading.Thread(target=self.run, args=[msg]).start()
-                case Header.delete:
-                    self.killed = True
-                    self.process.kill()
-                case _:
-                    pass
+        elif msg.h2 == Header.create:
+                threading.Thread(target=self.run, args=[msg]).start()
 
     def loop(self):
         """Main loop."""

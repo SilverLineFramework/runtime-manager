@@ -80,8 +80,15 @@ class RuntimeManager:
         return self.mgr.control_topic(topic, self.rtid, *ids)
 
     def create_module(self, data: dict) -> None:
-        """Create module; overwrite this method to add additional steps."""
+        """Create module; overwrite this method to add additional steps.
+        
+        Parameters
+        ----------
+        data: module create message payload; is sent on as a JSON. See
+            documentation for field structure.
+        """
         index = self.modules.insert(data)
+        data["index"] = index
         self.send(Message.from_dict(
             Header.control | index, Header.create, data))
         self.log.info(format_message(
@@ -150,7 +157,8 @@ class RuntimeManager:
                     self.control_topic("keepalive"),
                     self.mgr.control_message("update", {
                         "type": "runtime", "uuid": self.rtid,
-                        "name": self.name, **json.loads(msg.payload)
+                        "apis": self.APIS, "name": self.name,
+                        **json.loads(msg.payload)
                     }))
             case Header.log_runtime:
                 self.mgr.publish(self.control_topic("log"), msg.payload)

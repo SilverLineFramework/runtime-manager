@@ -23,7 +23,7 @@ class LinuxMinimalRuntime(RuntimeManager):
     """
 
     TYPE = "linux/minimal"
-    APIS = []
+    APIS = ["wasm", "wasi", "stdin", "stdout"]
     MAX_NMODULES = 1
 
     def __init__(
