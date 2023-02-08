@@ -10,15 +10,10 @@ class LinuxBenchmarkingRuntime(LinuxMinimalRuntime):
     """Execution time / memory benchmarking runtime."""
 
     TYPE = "linux/benchmarking/basic"
-    APIS = []
+    APIS = ["wasm", "wasi", "profile:basic"]
     MAX_NMODULES = 1
-
-    def __init__(
-        self, rtid: str = None, name: str = "linux-benchmarking-basic",
-        command: list[str] = ["python", "linux_benchmarking.py"],
-        cfg: dict = {}
-    ) -> None:
-        super().__init__(rtid, name, command=command, cfg=cfg)
+    DEFAULT_NAME = "linux-benchmarking-basic"
+    DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_benchmarking.py"
 
     def handle_profile(self, module: int, msg: bytes) -> None:
         """Handle profiling message."""

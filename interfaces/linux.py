@@ -1,6 +1,7 @@
 """Linux runtime."""
 
 from beartype import beartype
+from beartype.typing import Optional
 
 from manager import Message, Header, SLSocket
 from .linux_minimal import LinuxMinimalRuntime
@@ -11,14 +12,16 @@ class LinuxRuntime(LinuxMinimalRuntime):
     """Default Linux Runtime."""
 
     TYPE = "linux/default"
-    APIS = ["channels", "wasi:unstable", "wasi:snapshot_preview1"]
+    APIS = ["wasm", "wasi", "channels", "profile:basic"]
     MAX_NMODULES = 128
+    DEFAULT_NAME = "linux-default"
+    DEFAULT_COMMAND = "./runtimes/linux-default/runtime"
 
     def __init__(
-        self, rtid: str = None, name: str = "linux-default",
-        path: str = "./todo"
+        self, rtid: str = None, name: Optional[str] = None,
+        command: Optional[str] = None
     ) -> None:
-        super().__init__(rtid, name, path, {
+        super().__init__(rtid, name=name, command=command, cfg={
             "page_size": 65536, "aot_target": {},
             "metadata": None, "platform": None
         })

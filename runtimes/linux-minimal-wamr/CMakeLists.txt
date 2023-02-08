@@ -70,6 +70,8 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
+add_definitions(-DBH_VPRINTF=msg_printf)
+
 add_executable(
     # Common files
     ../common/deadline.c

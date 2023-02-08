@@ -1,7 +1,7 @@
 """Runtime-manager interfaces."""
 
 from .benchmarking import LinuxBenchmarkingRuntime
-from .linux_minimal import LinuxMinimalRuntime
+from .linux_minimal import LinuxMinimalRuntime, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnlyRuntime
 
@@ -22,7 +22,7 @@ tree = {
         },
         "minimal": {
             "wasmer": LinuxMinimalRuntime,
-            "wamr": None
+            "wamr": LinuxMinimalWAMR
         },
         "default": LinuxRuntime,
         "kernel": None

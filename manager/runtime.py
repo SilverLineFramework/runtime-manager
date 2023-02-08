@@ -30,13 +30,15 @@ class RuntimeManager:
     TYPE = "abstract"
     APIS = []
     MAX_NMODULES = 0
+    DEFAULT_NAME = "runtime"
 
     def __init__(
-        self, rtid: Optional[str] = None, name: str = "runtime", cfg: dict = {}
+        self, rtid: Optional[str] = None, name: Optional[str] = None,
+        cfg: dict = {}
     ) -> None:
         self.log = logging.getLogger("rt.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
-        self.name = name
+        self.name = self.DEFAULT_NAME if name is None else name
         self.index = -1
         self.modules = ModuleLookup(max=self.MAX_NMODULES)
 

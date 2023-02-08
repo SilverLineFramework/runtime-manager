@@ -17,18 +17,20 @@ class LinuxMinimalRuntime(RuntimeManager):
     rtid: Runtime UUID.
     name: Runtime shortname.
     command: Command to execute runtime binary.
+    cfg: Additional config attributes.
     """
 
     TYPE = "linux/minimal/python"
     APIS = ["wasm", "wasi", "stdin", "stdout"]
     MAX_NMODULES = 1
+    DEFAULT_NAME = "linux-minimal-python"
+    DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_minimal.py"
 
     def __init__(
-        self, rtid: str = None, name: str = "linux-minimal-python",
-        command: str = "PYTHONPATH=. python runtimes/linux_minimal.py",
-        cfg: dict = {}
+        self, rtid: str = None, name: Optional[str] = None,
+        command: Optional[str] = None, cfg: dict = {}
     ) -> None:
-        self.command = command
+        self.command = self.DEFAULT_COMMAND if command is None else command
         super().__init__(rtid, name, cfg=cfg)
 
     def start(self) -> dict:
@@ -45,3 +47,14 @@ class LinuxMinimalRuntime(RuntimeManager):
     def receive(self) -> Optional[Message]:
         """Receive message."""
         return self.socket.read()
+
+
+@beartype
+class LinuxMinimalWAMR(LinuxMinimalRuntime):
+    """Minimal linux WAMR runtime."""
+
+    TYPE = "linux/minimal/wamr"
+    APIS = ["wasm", "wasi", "stdout"]
+    MAX_NMODULES = 1
+    DEFAULT_NAME = "linux-minimal-wamr"
+    DEFAULT_COMMAND = "./linux-minimal-wamr/runtime"
