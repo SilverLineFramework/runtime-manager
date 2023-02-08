@@ -3,9 +3,9 @@
 from .socket import SLSocket
 from .types import Header, Message, MQTTServer, Flags
 from .manager import Manager
-from . import runtimes
+from .runtime import RuntimeManager
 from .logging import configure_log
 
 __all__ = [
-    "SLSocket", "Header", "Message", "MQTTServer",
-    "Manager", "runtimes", "configure_log"]
+    "SLSocket", "Header", "Message", "MQTTServer", "Flags",
+    "Manager", "RuntimeManager", "configure_log"]

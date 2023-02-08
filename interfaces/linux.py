@@ -2,9 +2,7 @@
 
 from beartype import beartype
 
-from manager.types import Message, Header
-from manager import socket
-
+from manager import Message, Header, SLSocket
 from .linux_minimal import LinuxMinimalRuntime
 
 
@@ -17,8 +15,8 @@ class LinuxRuntime(LinuxMinimalRuntime):
     MAX_NMODULES = 128
 
     def __init__(
-        self, rtid: str = None, name: str = "runtime-linux-default",
-        path: str = "./runtime"
+        self, rtid: str = None, name: str = "linux-default",
+        path: str = "./todo"
     ) -> None:
         super().__init__(rtid, name, path, {
             "page_size": 65536, "aot_target": {},
@@ -29,7 +27,7 @@ class LinuxRuntime(LinuxMinimalRuntime):
     def create_module(self, data: dict) -> None:
         """Create module."""
         index = self.insert_module(data)
-        self.socket_mod[index] = socket.connect(
+        self.socket_mod[index] = SLSocket(
             self.index, module=index, server=True, timeout=5.)
         self.send(Message.from_dict(
             Header.control | index, Header.create, data))
@@ -49,6 +47,6 @@ class LinuxRuntime(LinuxMinimalRuntime):
     def send(self, msg: Message) -> None:
         """Send message."""
         if msg.h1 & Header.control == 0:
-            socket.write(self.socket_mod[msg.h1], msg)
+            self.socket_mod[msg.h1].write(msg)
         else:
-            socket.write(self.socket, msg)
+            self.socket.write(msg)

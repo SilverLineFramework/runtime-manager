@@ -1,4 +1,4 @@
-"""Common utilities."""
+"""Module tracking."""
 
 from beartype.typing import Union
 from beartype import beartype

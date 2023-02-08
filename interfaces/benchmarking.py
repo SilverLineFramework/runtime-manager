@@ -9,12 +9,12 @@ from .linux_minimal import LinuxMinimalRuntime
 class LinuxBenchmarkingRuntime(LinuxMinimalRuntime):
     """Execution time / memory benchmarking runtime."""
 
-    TYPE = "linux/benchmarking"
+    TYPE = "linux/benchmarking/basic"
     APIS = []
     MAX_NMODULES = 1
 
     def __init__(
-        self, rtid: str = None, name: str = "runtime-benchmarking",
+        self, rtid: str = None, name: str = "linux-benchmarking-basic",
         command: list[str] = ["python", "linux_benchmarking.py"],
         cfg: dict = {}
     ) -> None:

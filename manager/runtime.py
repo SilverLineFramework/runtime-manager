@@ -9,9 +9,9 @@ from abc import abstractmethod
 from beartype.typing import Optional
 from beartype import beartype
 
-from manager.types import Message, Header, Channel
-from manager import exceptions
-from .util import ModuleLookup
+from .types import Message, Header, Channel
+from . import exceptions
+from .module import ModuleLookup
 
 from manager.logging import format_message
 
@@ -161,6 +161,7 @@ class RuntimeManager:
                         **json.loads(msg.payload)
                     }))
             case Header.log_runtime:
+                self.log.debug(msg.payload)
                 self.mgr.publish(self.control_topic("log"), msg.payload)
             case Header.exited:
                 self.cleanup_module(idx, mid, msg)
@@ -171,6 +172,7 @@ class RuntimeManager:
             case Header.ch_close:
                 self.mgr.channels.close(self.index, msg.payload[0])
             case Header.log_module:
+                self.log.debug(msg.payload)
                 self.mgr.publish(self.control_topic("log", mid), msg.payload)
             case Header.profile:
                 self.handle_profile(mid, msg.payload)
@@ -189,21 +191,24 @@ class RuntimeManager:
             exceptions.handle_error(e, self.log, self.index, msg.h1, msg.h2)
 
     def loop(self) -> None:
-        """Run main loop for this runtime."""
-        while not self.done:
-            msg = self.receive()
-            if msg is not None:
-                self.log.debug(format_message(
-                    "Received message.", self.index, msg.h1, msg.h2))
-                self.on_runtime_message(msg)
-        self.log.debug(format_message("Exiting main loop.", self.index))
+        """Run main loop once for this runtime."""
+        msg = self.receive()
+        if msg is not None:
+            self.log.debug(format_message(
+                "Received message.", self.index, msg.h1, msg.h2))
+            self.on_runtime_message(msg)
 
-    def loop_start(self):
+    def loop_start(self) -> None:
         """Start main loop."""
-        self.thread = threading.Thread(target=self.loop)
+        def _loop():
+            while not self.done:
+                self.loop()
+            self.log.debug(format_message("Exiting main loop.", self.index))
+
+        self.thread = threading.Thread(target=_loop)
         self.thread.start()
 
-    def loop_stop(self):
+    def loop_stop(self) -> None:
         """Stop main loop."""
         self.done = True
         self.thread.join()

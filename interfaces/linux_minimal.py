@@ -5,10 +5,7 @@ import subprocess
 from beartype.typing import Optional
 from beartype import beartype
 
-from manager.types import Message
-from manager import SLSocket
-
-from .base import RuntimeManager
+from manager import Message, SLSocket, RuntimeManager
 
 
 @beartype
@@ -22,12 +19,12 @@ class LinuxMinimalRuntime(RuntimeManager):
     command: Command to execute runtime binary.
     """
 
-    TYPE = "linux/minimal"
+    TYPE = "linux/minimal/python"
     APIS = ["wasm", "wasi", "stdin", "stdout"]
     MAX_NMODULES = 1
 
     def __init__(
-        self, rtid: str = None, name: str = "runtime-linux-minimal",
+        self, rtid: str = None, name: str = "linux-minimal-python",
         command: str = "PYTHONPATH=. python runtimes/linux_minimal.py",
         cfg: dict = {}
     ) -> None:
