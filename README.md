@@ -80,10 +80,11 @@ class RuntimeManager:
 
 ###  Example
 
-The ```linux/minimal``` runtime is the minimal code required to run WebAssembly modules and receive the output. The minimal linux runtime uses the ```SLSocket``` communication channel:
+The ```linux/minimal``` runtime is the minimal code required to run WebAssembly modules and receive the output. The minimal linux runtime uses the ```SLSocket``` communication channel, with packet format:
 ```
-[ -- len:4 -- ][h1:1][h2:1][ ------ payload:len ------ ]
+[ -- len:2 -- ][h1:1][h2:1][ ------ payload:len ------ ]
 ```
+The header has total size 4 bytes. Note that the length item in the header corresponds to the length of the payload portion, not the entire message.
 
 See ```runtimes/linux_minimal.py``` (runtime-side) and ```manager/runtimes/linux_minimal.py``` (manager-side) for a minimal example.
 

@@ -161,7 +161,7 @@ class RuntimeManager:
                         **json.loads(msg.payload)
                     }))
             case Header.log_runtime:
-                self.log.debug(msg.payload)
+                self.log.debug(msg.payload.decode('utf-8'))
                 self.mgr.publish(self.control_topic("log"), msg.payload)
             case Header.exited:
                 self.cleanup_module(idx, mid, msg)
@@ -172,7 +172,7 @@ class RuntimeManager:
             case Header.ch_close:
                 self.mgr.channels.close(self.index, msg.payload[0])
             case Header.log_module:
-                self.log.debug(msg.payload)
+                self.log.debug(msg.payload.decode('utf-8'))
                 self.mgr.publish(self.control_topic("log", mid), msg.payload)
             case Header.profile:
                 self.handle_profile(mid, msg.payload)

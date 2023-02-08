@@ -1,0 +1,6 @@
+[submodule "runtimes/common/cJSON"]
+	path = runtimes/common/cJSON
+	url = https://github.com/DaveGamble/cJSON
+[submodule "runtimes/common/wasm-micro-runtime"]
+	path = runtimes/common/wasm-micro-runtime
+	url = git@github.com:bytecodealliance/wasm-micro-runtime.git

@@ -16,7 +16,7 @@ class SLSocket:
 
     Sockets use the following protocol::
 
-        [ -- len:4 -- ][h1:1][h2:1][ ------ payload:len ------ ]
+        [ -- len:2 -- ][h1:1][h2:1][ ------ payload:len ------ ]
 
     See the documentation of `manager.types.Message` for header values.
     Empty payloads are also supported.
@@ -30,6 +30,9 @@ class SLSocket:
     base_path: socket base path.
     chunk_size: size of chunks to read from the socket.
     """
+
+    HEADER_FMT = "HBB"
+    HEADER_SIZE = 4
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,
@@ -63,9 +66,9 @@ class SLSocket:
     def read(self) -> Optional[Message]:
         """Read with timeout."""
         try:
-            recv = self.connection.recv(6)
+            recv = self.connection.recv(self.HEADER_SIZE)
             if recv:
-                payloadlen, h1, h2 = struct.unpack("IBB", recv)
+                payloadlen, h1, h2 = struct.unpack(self.HEADER_FMT, recv)
                 payload = []
                 while payloadlen > 0:
                     recv = min(payloadlen, self.chunk_size)
@@ -79,7 +82,7 @@ class SLSocket:
 
     def write(self, msg: Message) -> None:
         """Send message to socket."""
-        header = struct.pack("IBB", len(msg.payload), msg.h1, msg.h2)
+        header = struct.pack(self.HEADER_FMT, len(msg.payload), msg.h1, msg.h2)
         try:
             self.connection.sendall(header)
             if len(msg.payload) > 0:
