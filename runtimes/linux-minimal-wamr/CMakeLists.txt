@@ -91,7 +91,6 @@ add_executable(
     ${COMMON_DIR}/sockets.c
     ${COMMON_DIR}/wamr.c
     # Runtime files
-    src/outputs.c
     src/runtime.c
     ${UNCOMMON_SHARED_SOURCE}
 )

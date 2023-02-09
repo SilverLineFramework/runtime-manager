@@ -67,4 +67,21 @@ void slsocket_write(int fd, message_t *msg) {
     send(fd, msg->payload, msg->payloadlen, 0);
 }
 
+/**
+ * @brief Write buffer to socket (non-msg version of slsocket_write)
+ * @param fd File descriptor of socket.
+ * @param h1 First header value.
+ * @param h2 Second header value.
+ * @param payload Message payload.
+ * @param payloadlen Length of payload buffer.
+ */
+void slsocket_rwrite(int fd, int h1, int h2, char *payload, int payloadlen) {
+    message_t msg;
+    msg.h1 = h1;
+    msg.h2 = h2;
+    msg.payload = payload;
+    msg.payloadlen = payloadlen;
+    slsocket_write(fd, &msg);
+}
+
 /** @} */
