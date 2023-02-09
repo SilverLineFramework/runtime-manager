@@ -9,8 +9,8 @@
  * ```c
  * wamr_create_module(mod, args);
  * while (!done) {
- *     wamr_inst_module(mod);
- *     wamr_run_module(mod);
+ *     wamr_inst_module(mod, context);
+ *     wamr_run_module(mod, args);
  * }
  * wamr_destroy_module(mod);
  * ```
@@ -26,11 +26,11 @@
 #include "module.h"
 
 #if !defined(DOXYGEN_SHOULD_SKIP_THIS)
-bool wamr_init(static NativeSymbol *exports);
+bool wamr_init(NativeSymbol *exports);
 bool wamr_create_module(module_wamr_t *mod, module_args_t *args);
 bool wamr_inst_module(module_wamr_t *mod, void *context);
 bool wamr_run_module(module_wamr_t *mod, module_args_t *args);
-void wamr_destroy_module(module_t *mod);
+void wamr_destroy_module(module_wamr_t *mod);
 #endif
 
 #endif

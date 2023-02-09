@@ -13,6 +13,8 @@
 
 #include "runtime.h"
 
+#define STD_MAX_LEN 4096
+
 /**
  * @brief Log a message
  *
@@ -23,16 +25,15 @@ void log_msg(int level, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    message_t msg;
     char buf[LOG_MAX_LEN];
-    vsnprintf(&buf[1], LOG_MAX_LEN - 1, format, args);
+    int len = vsnprintf(&buf[1], LOG_MAX_LEN, format, args);
     buf[0] = 0x80 | (level < 256 ? level : 256);
-    buf[LOG_MAX_LEN - 1] = '\0';
 
-    msg.payloadlen = strlen(buf);
+    message_t msg;
     msg.h1 = 0x80 | 0x00;
     msg.h2 = 0x01;
     msg.payload = buf;
+    msg.payloadlen = len + 1;
     slsocket_write(runtime.socket, &msg);
 }
 
@@ -40,18 +41,17 @@ void log_msg(int level, const char *format, ...) {
  * @brief vprintf override to redirect stdout to socket.
  */
 int socket_vprintf(const char *format, va_list ap) {
-    message_t msg;
-    char buf[4096];
-    vsnprintf(buf, sizeof(buf), format, ap);
+    char buf[STD_MAX_LEN];
+    int len = vsnprintf(buf, STD_MAX_LEN, format, ap);
 
-    buf[4095] = '\0';
-    msg.payloadlen = strlen(buf);
-    msg.h1 = 0;
-    msg.h2 = 0;
+    message_t msg;
+    msg.h1 = 0x00;
+    msg.h2 = 0x00;
     msg.payload = buf;
+    msg.payloadlen = len;
     slsocket_write(runtime.socket, &msg);
 
-    return 0;
+    return len;
 }
 
 /** @} */

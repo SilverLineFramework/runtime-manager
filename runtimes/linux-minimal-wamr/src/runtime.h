@@ -1,5 +1,8 @@
 /**
- * @addtogroup linux-minimal-wamr
+ * @defgroup linux-minimal-wamr
+ * 
+ * Minimal WAMR-based linux C runtime implementation.
+ * 
  * @{
  * @file runtime.h
  * @brief Main runtime.

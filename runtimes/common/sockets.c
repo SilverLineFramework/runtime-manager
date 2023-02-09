@@ -22,7 +22,6 @@ int slsocket_open(int runtime, int module) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) { return fd; }
 
-
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;

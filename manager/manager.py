@@ -30,6 +30,14 @@ class Manager(mqtt.Client):
     server: MQTT server parameters.
     """
 
+    _BANNER = r"""
+      ___ _                 
+     / __(_)_ _ _ _ _  _ ___
+    | (__| | '_| '_| || (_-<
+     \___|_|_| |_|  \_,_/__/
+    SilverLine  Node Manager
+    """
+
     def __init__(
         self, runtimes: list[RuntimeManager], name: str = "manager",
         mgr_id: str = None, realm: str = "realm", timeout: float = 5.
@@ -57,6 +65,8 @@ class Manager(mqtt.Client):
             host="localhost", port=1883, user="cli", pwd="", ssl=False)
     ) -> None:
         """Connect manager."""
+        print(self._BANNER)
+
         metadata = {"type": "manager", "uuid": self.uuid, "name": self.name}
         self.will_set(
             self.control_topic("reg", self.uuid), qos=2,

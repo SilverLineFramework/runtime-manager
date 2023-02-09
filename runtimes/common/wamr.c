@@ -34,8 +34,13 @@ bool wamr_init(NativeSymbol *exports) {
     init_args.mem_alloc_option.allocator.free_func = free;
 
     // Register native API
-    init_args.native_symbols = exports;
-    init_args.n_native_symbols = sizeof(exports) / sizeof(NativeSymbol *);
+    if (exports != NULL) {
+        init_args.native_symbols = exports;
+        init_args.n_native_symbols = sizeof(exports) / sizeof(NativeSymbol *);
+    } else {
+        init_args.native_symbols = NULL;
+        init_args.n_native_symbols = 0;
+    }
     init_args.native_module_name = "env";
 
     // Initialize runtime
@@ -58,7 +63,7 @@ static bool wamr_load_module(module_wamr_t *mod) {
     char err[ERROR_SIZE];
     log_msg(L_DBG, "Loading module...");
     mod->module = wasm_runtime_load(mod->file, mod->size, err, ERROR_SIZE);
-    if (mod->module == NULL) { log_msg(L_ERR, "%s\n", err); }
+    if (mod->module == NULL) { log_msg(L_ERR, "%s", err); }
     return (mod->module != NULL);
 }
 
@@ -67,7 +72,7 @@ static bool wamr_load_module(module_wamr_t *mod) {
  */
 static bool wamr_set_wasi_args(module_wamr_t *mod, module_args_t *args) {
 #if WASM_ENABLE_LIBC_WASI != 0
-    log_msg(L_DBG, "Set WASI args...\n");
+    log_msg(L_DBG, "Set WASI args...");
     wasm_runtime_set_wasi_args(
         mod->module,
         (const char **) args->dirs.data, args->dirs.len,
@@ -83,17 +88,17 @@ static bool wamr_set_wasi_args(module_wamr_t *mod, module_args_t *args) {
  */
 bool wamr_inst_module(module_wamr_t *mod, void *context) {
     if (mod->inst != NULL) {
-        log_msg(L_DBG, "Reinstantiating module...\n");
+        log_msg(L_DBG, "Reinstantiating module...");
         wasm_runtime_deinstantiate(mod->inst);
     } else {
-        log_msg(L_DBG, "Instantiating module...\n");
+        log_msg(L_DBG, "Instantiating module...");
     }
 
     char err[ERROR_SIZE];
     mod->inst = wasm_runtime_instantiate(
         mod->module, STACK_SIZE, HEAP_SIZE, err, ERROR_SIZE);
 
-    if (mod->inst == NULL) { log_msg(L_ERR, "%s\n", err); }
+    if (mod->inst == NULL) { log_msg(L_ERR, "%s", err); }
     else { wasm_runtime_set_custom_data(mod->inst, context); }
     return (mod->inst != NULL);
 }
@@ -103,10 +108,10 @@ bool wamr_inst_module(module_wamr_t *mod, void *context) {
  */
 static bool wamr_init_aot_signal() {
 #if WAMR_DISABLE_HW_BOUND_CHECK == 0
-    log_msg(L_DBG, "Initializing AOT signals...\n");
+    log_msg(L_DBG, "Initializing AOT signals...");
     /* Enable thread specific signal and stack guard pages */
     // if (!aot_signal_init()) {
-    //     log_msg(L_ERR, "AOT Signal Init failed! Skipping module\n");
+    //     log_msg(L_ERR, "AOT Signal Init failed! Skipping module");
     //     return false;
     // }
 #endif
@@ -119,9 +124,9 @@ static bool wamr_init_aot_signal() {
 bool wamr_run_module(module_wamr_t *mod, module_args_t *args) {
     int argc = args->argv.len;
     char **argv = args->argv.data;
-    log_msg(L_INF, "Running main: %s | argc: %d\n", args->path, argc);
+    log_msg(L_INF, "Running main: %s | argc: %d", args->path, argc);
     bool res = wasm_application_execute_main(mod->inst, argc, argv);
-    log_msg(L_INF, "Finished main.\n");
+    log_msg(L_INF, "Finished main.");
     return res;
 }
 
@@ -131,13 +136,13 @@ bool wamr_run_module(module_wamr_t *mod, module_args_t *args) {
 bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
     // `&&` chaining should short-circuit and skip steps once any of these
     // functions return false.
-    log_msg(L_INF, "Creating WAMR module...\n");
+    log_msg(L_INF, "Creating WAMR module...");
     bool result = (
         // wamr_init_aot_signal() &&
         wamr_read_module(mod, args) &&
         wamr_load_module(mod) &&
         wamr_set_wasi_args(mod, args));
-    log_msg(L_INF, "Done creating WAMR module.\n");
+    log_msg(L_INF, "Done creating WAMR module.");
     return result;
 }
 

@@ -83,8 +83,9 @@ add_definitions(-DBH_VPRINTF=socket_vprintf)
 
 add_executable(
     linux-minimal-wamr
+    # cJSON
+    ${COMMON_DIR}/cJSON/cJSON.c
     # Common files
-    ${COMMON_DIR}/deadline.c
     ${COMMON_DIR}/json_parse.c
     ${COMMON_DIR}/json_utils.c
     ${COMMON_DIR}/sockets.c
