@@ -69,7 +69,6 @@ class RuntimeManagerMixins:
         """Handle control message."""
         # Index is lower bits of first header byte.
         idx = msg.h1 & Header.index_bits
-        mid = self.modules.uuid(idx)
 
         match msg.h2:
             case Header.keepalive:
@@ -77,7 +76,7 @@ class RuntimeManagerMixins:
             case Header.log_runtime:
                 self.handle_log(msg.payload, module=-1)
             case Header.exited:
-                self.cleanup_module(idx, mid, msg)
+                self.cleanup_module(idx, self.modules.uuid(idx), msg)
             case Header.ch_open:
                 self.mgr.channels.open(Channel(
                     self.index, idx, msg.payload[0],
@@ -85,9 +84,9 @@ class RuntimeManagerMixins:
             case Header.ch_close:
                 self.mgr.channels.close(self.index, msg.payload[0])
             case Header.log_module:
-                self.handle_log(msg.payload, module=mid)
+                self.handle_log(msg.payload, module=self.modules.uuid(idx))
             case Header.profile:
-                self.handle_profile(mid, msg.payload)
+                self.handle_profile(self.modules.uuid(idx), msg.payload)
             case _:
                 raise exceptions.SLException("Unknown message type")
 

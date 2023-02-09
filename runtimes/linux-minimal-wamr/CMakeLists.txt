@@ -79,7 +79,7 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 include_directories(${RUNTIMES_DIR}/common)
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-add_definitions(-DBH_VPRINTF=msg_printf)
+add_definitions(-DBH_VPRINTF=socket_vprintf)
 
 add_executable(
     linux-minimal-wamr
@@ -90,7 +90,8 @@ add_executable(
     ${COMMON_DIR}/sockets.c
     ${COMMON_DIR}/wamr.c
     # Runtime files
-    src/main.c
+    src/outputs.c
+    src/runtime.c
     ${UNCOMMON_SHARED_SOURCE}
 )
 

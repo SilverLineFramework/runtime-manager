@@ -105,10 +105,10 @@ static bool wamr_init_aot_signal() {
 #if WAMR_DISABLE_HW_BOUND_CHECK == 0
     log_msg(L_DBG, "Initializing AOT signals...\n");
     /* Enable thread specific signal and stack guard pages */
-    if (!aot_signal_init()) {
-        log_msg(L_ERR, "AOT Signal Init failed! Skipping module\n");
-        return false;
-    }
+    // if (!aot_signal_init()) {
+    //     log_msg(L_ERR, "AOT Signal Init failed! Skipping module\n");
+    //     return false;
+    // }
 #endif
     return true;
 }
@@ -133,7 +133,7 @@ bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
     // functions return false.
     log_msg(L_INF, "Creating WAMR module...\n");
     bool result = (
-        wamr_init_aot_signal() &&
+        // wamr_init_aot_signal() &&
         wamr_read_module(mod, args) &&
         wamr_load_module(mod) &&
         wamr_set_wasi_args(mod, args));
@@ -148,7 +148,7 @@ bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
  */
 void wamr_destroy_module(module_wamr_t *mod) {
 #if WAMR_DISABLE_HW_BOUND_CHECK == 0
-    aot_signal_destroy();
+    // aot_signal_destroy();
 #endif
     if (mod != NULL) {
         if (mod->inst != NULL) { wasm_runtime_deinstantiate(mod->inst); }

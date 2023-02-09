@@ -57,4 +57,4 @@ class LinuxMinimalWAMR(LinuxMinimalRuntime):
     APIS = ["wasm", "wasi", "stdout"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-wamr"
-    DEFAULT_COMMAND = "./linux-minimal-wamr/runtime"
+    DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/linux-minimal-wamr"

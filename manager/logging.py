@@ -32,9 +32,15 @@ def configure_log(log="", verbose=2):
             logging.FileHandler("{}{}.log".format(
                 log, datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))))
 
+    logging.addLevelName(logging.CRITICAL, 'CRI')
+    logging.addLevelName(logging.ERROR, 'ERR')
+    logging.addLevelName(logging.WARNING, 'WRN')
+    logging.addLevelName(logging.INFO, 'INF')
+    logging.addLevelName(logging.DEBUG, 'DBG')
+
     logging.basicConfig(
         level=level,
-        format="[%(asctime)s] [%(name)s:%(levelname)s] %(message)s",
+        format="[%(asctime)s] [%(levelname)s:%(name)s] %(message)s",
         datefmt="%H:%M:%S",
         handlers=handlers)
 

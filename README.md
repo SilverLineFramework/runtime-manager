@@ -2,6 +2,26 @@
 
 ![Manager Architecture](manager_architecture.PNG)
 
+## Logging & Naming Conventions
+
+Messages are logged with the header `[time] [{module}:{LEVEL}] {message}`.
+Modules include `mq` (MQTT/Channels), `mgr` (Node manager), `if` (Runtime interface), and `rt.{name}` (Runtime), where `name` indicates the originating runtime for that message.
+
+**Table of Abbreviations:**
+
+| Name / Module | Abbreviation(s) |
+| --- | --- |
+| MQTT | `mq` |
+| Channels | `ch` |
+| Node Manager | `mgr` |
+| Runtime | `rt`, `rt.{name}` |
+| Runtime Interface | `if`, `if.{name}` |
+| Critical | `CRITICAL`, `CRI`, `L_CRI` |
+| Error | `ERROR`, `ERR`, `L_ERR` |
+| Warning | `WARN`, `WRN`, `L_WRN` |
+| Info | `INFO`, `INF`, `L_INF` |
+| Debug | `DEBUG`, `DBG`, `L_DBG` |
+
 ## Creating Runtimes
 
 ### Runtime Manager
@@ -189,7 +209,17 @@ Runtime logging messages are forwarded to the manager's logger. The first byte i
 | 1 | Level /7 | ---------- Message (char[]) ---------- |
 ```
 
-Logging levels are specified according to [Python's convention](https://docs.python.org/3/library/logging.html#logging-levels).
+Logging levels are specified according to [Python's convention](https://docs.python.org/3/library/logging.html#logging-levels). This allows logging messages to show up correctly alongside logging messages from the manager; for example,
+```c
+log_msg(L_ERR, "This is an error message.");
+```
+will show up alongside manager log messages:
+```c
+[13:43:28] [DBG:if.example] [x00.x80.x01] Received message.
+[13:43:28] [ERR:rt.example] This is an error message.
+```
+
+Note that logged messages do not need to include a newline, since the manager's logging library automatically includes one.
 
 ### Module Exited
 

@@ -1,12 +1,14 @@
 /**
  * @addtogroup linux-minimal-wamr
  * @{
+ * @file runtime.h
+ * @brief Main runtime.
  */
 
-#include "../../common/wamr.h"
+#include "module.h"
 
-#ifndef LINUX_MINIMAL_WAMR_MODULE_H
-#define LINUX_MINIMAL_WAMR_MODULE_H
+#ifndef RUNTIME_H
+#define RUNTIME_H
 
 /**
  * @brief Module data.
@@ -28,6 +30,8 @@ typedef struct {
     int socket;
 } runtime_t;
 
-#endif
 
+extern runtime_t runtime;
+
+#endif
 /** @} */

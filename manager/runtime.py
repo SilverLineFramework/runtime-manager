@@ -122,4 +122,5 @@ class RuntimeManager(RuntimeManagerMixins):
         if payload[0] & 0x80 == 0:
             self.log_rt.debug(payload.decode('unicode-escape'))
         else:
-            self.log_rt.log(payload[0], payload[1:].decode('unicode-escape'))
+            self.log_rt.log(
+                payload[0] & 0x7f, payload[1:].decode('unicode-escape'))

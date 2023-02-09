@@ -20,18 +20,21 @@
  */
 int slsocket_open(int runtime, int module) {
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) { return fd; }
+
 
     struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(struct sockaddr_un));
     addr.sun_family = AF_UNIX;
-    memset(&addr, 0, sizeof(addr));
     if (module == -1) {
         sprintf(addr.sun_path, "/tmp/sl/%02x.s", runtime);
     } else {
         sprintf(addr.sun_path, "/tmp/sl/%02x.%02x.s", runtime, module);
     }
 
-    int rc = connect(fd, (const struct sockaddr *) &addr, sizeof(addr));
-    return rc;
+    int res = connect(fd, (const struct sockaddr *) &addr, sizeof(addr));
+    if (res < 0) { return res; }
+    else { return fd; }
 }
 
 /**
@@ -41,14 +44,14 @@ int slsocket_open(int runtime, int module) {
  */
 message_t *slsocket_read(int fd) {
     message_t *msg = malloc(sizeof(message_t));
-    recv(fd, (char *) msg, 4, MSG_WAITALL);
+    if(recv(fd, (char *) msg, 4, MSG_WAITALL) < 4) { return NULL; };
 
     int payloadlen = msg->payloadlen;
     msg->payload = malloc(payloadlen);
     char *head = msg->payload;
     while (payloadlen > 0) {
-        int recv_size = payloadlen < 4096 ? payloadlen : 4096;
-        recv(fd, head, recv_size, MSG_WAITALL);
+        int recv_tgt = payloadlen < 4096 ? payloadlen : 4096;
+        int recv_size = recv(fd, head, recv_tgt, MSG_WAITALL);
         payloadlen -= recv_size;
         head += recv_size;
     }
