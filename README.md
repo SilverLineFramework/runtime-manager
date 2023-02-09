@@ -110,11 +110,11 @@ The following messages are currently specified:
 | Manager | 1{-}.x02  | Stop Runtime     | null         | .../control/{rt} |
 | Manager | 0{m}.{fd} | Receive Message  | u8[]         | {topic}          |
 | Runtime | 1{-}.x00  | Keepalive        | json         | .../control/{rt} |
-| Runtime | 1{-}.x01  | Runtime Logging  | char[]       | .../control/{rt} |
+| Runtime | 1{-}.x01  | Runtime Logging  | u8,char[]    | n/a              |
 | Runtime | 1{m}.x02  | Module Exited    | json         | .../control/{rt} |
 | Runtime | 1{m}.x03  | Open Channel     | u8,u8,char[] | n/a              |
 | Runtime | 1{m}.x04  | Close Channel    | u8           | n/a              |
-| Runtime | 1{m}.x05  | Module Logging   | char[]       | .../log/{m}      |
+| Runtime | 1{m}.x05  | Module Logging   | u8,char[]    | n/a              |
 | Runtime | 1{m}.x06  | Profiling Data   | char[]       | .../profile/...  |
 | Runtime | 0{m}.{fd} | Publish Message  | u8[]         | {topic}          |
 
@@ -183,7 +183,13 @@ The ```other fields``` can be any JSON passed by the runtime; the keys inside th
 
 ### Runtime Logging
 
-Runtime logging messages are forwarded to ```{realm}/proc/log/{runtime_id}``` with no additional processing.
+Runtime logging messages are forwarded to the manager's logger. The first byte indicates the logging level if the leading bit is set to 1; if the first byte has a leading bit 0 (i.e. a valid ASCII character), the message is logged as a whole.
+
+```
+| 1 | Level /7 | ---------- Message (char[]) ---------- |
+```
+
+Logging levels are specified according to [Python's convention](https://docs.python.org/3/library/logging.html#logging-levels).
 
 ### Module Exited
 
@@ -228,7 +234,7 @@ The close channel message takes a single argument - the channel index (unsigned 
 
 ### Module Logging
 
-Logging messages are directly forwarded to ```{realm}/proc/log/{module_id}```.
+Module logging messages are currently handled identically to runtime logging messages.
 
 ### Profiling
 

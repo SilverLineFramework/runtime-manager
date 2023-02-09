@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 3.0)
 project (linux-minimal-wamr)
 
+get_filename_component(RUNTIMES_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
+set (COMMON_DIR ${RUNTIMES_DIR}/common)
+set (WAMR_ROOT_DIR ${COMMON_DIR}/wasm-micro-runtime)
+
 # --------------------------------------------------------------------------- #
 #                              WAMR Configuration                             #
 # --------------------------------------------------------------------------- #
@@ -58,7 +62,6 @@ if (WAMR_BUILD_TARGET MATCHES "X86_.*" OR WAMR_BUILD_TARGET STREQUAL "AMD_64")
 endif ()
 
 # build out vmlib
-set (WAMR_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../common/wasm-micro-runtime)
 include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
@@ -67,18 +70,25 @@ add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 #                            Runtime Configuration                            #
 # --------------------------------------------------------------------------- #
 
+message(STATUS "${RUNTIMES_DIR}")
+message(STATUS "${COMMON_DIR}")
+message(STATUS "${WAMR_ROOT_DIR}")
+message(STATUS "${CMAKE_CURRENT_LIST_DIR}")
+
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
+include_directories(${RUNTIMES_DIR}/common)
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
 add_definitions(-DBH_VPRINTF=msg_printf)
 
 add_executable(
+    linux-minimal-wamr
     # Common files
-    ../common/deadline.c
-    ../common/json_parse.c
-    ../common/json_utils.c
-    ../common/sockets.c
-    ../common/wamr.c
+    ${COMMON_DIR}/deadline.c
+    ${COMMON_DIR}/json_parse.c
+    ${COMMON_DIR}/json_utils.c
+    ${COMMON_DIR}/sockets.c
+    ${COMMON_DIR}/wamr.c
     # Runtime files
     src/main.c
     ${UNCOMMON_SHARED_SOURCE}

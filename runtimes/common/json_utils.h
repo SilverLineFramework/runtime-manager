@@ -14,11 +14,11 @@
  * @brief JSON parsing abstractions
  */
 
-#ifndef ARTS_JSON_UTILS_H
-#define ARTS_JSON_UTILS_H
-
 #include <stdbool.h>
 #include "cJSON/cJSON.h"
+
+#ifndef COMMON_JSON_UTILS_H
+#define COMMON_JSON_UTILS_H
 
 /**
  * @brief String array struct.

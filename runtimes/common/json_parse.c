@@ -5,8 +5,9 @@
  * @brief Common JSON parsing routines.
  */
 
+#include <stdlib.h>
 #include "cJSON/cJSON.h"
-#include "wamr.h"
+#include "module.h"
 #include "json_utils.h"
 
 /**
@@ -14,7 +15,7 @@
  */
 bool parse_module_args(cJSON *data, module_args_t *dst) {
     return (
-        get_string_value(data, "filename", &dst->file) &&
+        get_string_value(data, "filename", &dst->path) &&
         get_string_array(data, "dirs", &dst->dirs) &&
         get_string_array(data, "env", &dst->env) &&
         get_string_array(data, "args", &dst->argv));
@@ -36,9 +37,9 @@ bool parse_metadata_args(cJSON *data, module_metadata_t *dst) {
  */
 void destroy_module_args(module_args_t *dst) {
     if (dst != NULL) {
-        destroy_string_array(dst->dirs);
-        destroy_string_array(dst->env);
-        destroy_string_array(dst->argv);
+        string_array_destroy(&dst->dirs);
+        string_array_destroy(&dst->env);
+        string_array_destroy(&dst->argv);
         free(dst->path);
     }
 }

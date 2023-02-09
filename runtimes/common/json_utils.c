@@ -12,13 +12,9 @@
 #include <uuid/uuid.h>
 
 #include "cJSON/cJSON.h"
-#include "config.h"
 #include "logging.h"
 
 #include "json_utils.h"
-
-/** Errno-like reporting (todo). */
-char json_error[256];
 
 /**
  * @brief Helper to malloc & copy a string.
@@ -109,7 +105,7 @@ bool get_string_array(cJSON *data, char *key, array_string_t *dst) {
     }
     // Attr exists, but not array -> raise exception
     else if (!cJSON_IsArray(attr)) {
-        snprintf(json_error, 256, "Key '%s' should be an array.\n", key);
+        log_msg(L_WRN, "Key '%s' should be an array.\n", key);
         return false;
     }
     // Attr exists and is a proper array
@@ -120,9 +116,7 @@ bool get_string_array(cJSON *data, char *key, array_string_t *dst) {
         for(int i = 0; i < dst->len; i++) {
             cJSON *element = cJSON_GetArrayItem(attr, i);
             if (!cJSON_IsString(element)) {
-                snprintf(
-                    json_error, 256,
-                    "Key '%s', index %d should be a string.\n", key, i);
+                log_msg(L_WRN, "Key '%s'/[%d] should be a string.\n", key, i);
                 free(dst->data);
                 return false;
             }
@@ -144,7 +138,7 @@ bool get_string_array(cJSON *data, char *key, array_string_t *dst) {
 bool get_integer_value(cJSON *data, char *key, int *dst) {
     cJSON *attr = cJSON_GetObjectItemCaseSensitive(data, key);
     if(!cJSON_IsNumber(attr)) {
-        snprintf(json_error, 256, "Key '%s' should be a number.\n", key);
+        log_msg(L_WRN, "Key '%s' should be a number.\n", key);
         return false;
     } else {
         *dst = attr->valueint;

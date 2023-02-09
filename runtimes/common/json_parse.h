@@ -6,9 +6,7 @@
  */
 
 #include "cJSON/cJSON.h"
-#include <stdbool.h>
-
-#include "wamr.h"
+#include "module.h"
 
 #ifndef COMMON_JSON_PARSE_H
 

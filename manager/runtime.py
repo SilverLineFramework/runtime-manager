@@ -3,22 +3,26 @@
 import logging
 import uuid
 import json
-import threading
 
 from abc import abstractmethod
 from beartype.typing import Optional
 from beartype import beartype
 
-from .types import Message, Header, Channel
+from .types import Message, Header
 from . import exceptions
 from .module import ModuleLookup
 
-from manager.logging import format_message
+from .logging import format_message
+from .runtime_mixins import RuntimeManagerMixins
 
 
 @beartype
-class RuntimeManager:
+class RuntimeManager(RuntimeManagerMixins):
     """Runtime interface layer.
+
+    The constructor can be overwritten to provide more control over
+    initialization and config. Generally, configuration should be set using
+    the ``TYPE``, ``APIS``, ``MAX_NMODULES``, and ``DEFAULT_NAME`` attributes.
 
     Parameters
     ----------
@@ -36,10 +40,12 @@ class RuntimeManager:
         self, rtid: Optional[str] = None, name: Optional[str] = None,
         cfg: dict = {}
     ) -> None:
-        self.log = logging.getLogger("rt.{}".format(name))
+        self.log = logging.getLogger("if.{}".format(name))
+        self.log_rt = logging.getLogger("rt.{}".format(name))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = self.DEFAULT_NAME if name is None else name
         self.index = -1
+        self.manager = None
         self.modules = ModuleLookup(max=self.MAX_NMODULES)
 
         self.config = {
@@ -68,22 +74,9 @@ class RuntimeManager:
         """Poll interface and receive message; return None on timeout."""
         pass
 
-    def handle_profile(self, module: int, msg: bytes) -> None:
-        """Handle profiling message."""
-        pass
-
-    def bind_manager(self, mgr, index: int) -> None:
-        """Set runtime index."""
-        self.index = index
-        self.mgr = mgr
-
-    def control_topic(self, topic: str, *ids: list[str]) -> str:
-        """Format control topic name."""
-        return self.mgr.control_topic(topic, self.rtid, *ids)
-
     def create_module(self, data: dict) -> None:
         """Create module; overwrite this method to add additional steps.
-        
+
         Parameters
         ----------
         data: module create message payload; is sent on as a JSON. See
@@ -106,111 +99,27 @@ class RuntimeManager:
             raise exceptions.ModuleException(
                 "Tried to delete nonexisting module.", module_id)
 
-    def cleanup_module(self, idx: int, mid: str, msg: Message) -> None:
-        """Clean up module after exiting."""
+    def handle_profile(self, module: int, msg: bytes) -> None:
+        """Handle profiling message.
+
+        Does nothing by default, and must be implemented by inheriting
+        classes.
+        """
+        pass
+
+    def handle_keepalive(self, payload: bytes) -> None:
+        """Send runtime keepalive; overwrite to add additional metadata."""
         self.mgr.publish(
-            self.control_topic("control"),
-            self.mgr.control_message("exited", {
-                "type": "module", "uuid": mid, **json.loads(msg.payload)}))
-        self.mgr.channels.cleanup(self.index, idx)
-        self.modules.remove(idx)
-        self.log.info(format_message("Module exited.", self.index, idx))
+            self.control_topic("keepalive"),
+            self.mgr.control_message("update", {
+                "type": "runtime", "uuid": self.rtid,
+                "apis": self.APIS, "name": self.name,
+                **json.loads(payload)
+            }))
 
-    def on_mqtt_message(self, client, userdata, msg) -> None:
-        """External message callback."""
-        try:
-            self._handle_control_message(msg.payload)
-        except Exception as e:
-            exceptions.handle_error(e, self.log, self.index)
-
-    def _handle_control_message(self, data: bytes) -> None:
-        """Handle control message on {realm}/proc/control/{rtid}."""
-        self.log.debug("Received control message: {}".format(data))
-        try:
-            data = json.loads(data)
-            action = (data["action"], data["data"]["type"])
-            match action:
-                case ("create", "module"):
-                    self.create_module(data["data"])
-                # case ("create", "runtime"):
-                #     pass
-                case ("delete", "module"):
-                    self.delete_module(data["data"]["uuid"])
-                # case ("delete", "runtime"):
-                #     pass
-                case _:
-                    raise exceptions.InvalidMessage(
-                        "Invalid message action: {}".format(action))
-        except json.JSONDecodeError:
-            raise exceptions.InvalidMessage("Invalid json: {}".format(data))
-        except KeyError as e:
-            raise exceptions.InvalidMessage(
-                "Message missing required key: {}".format(e))
-
-    def _handle_runtime_control_message(self, msg: Message) -> None:
-        """Handle control message."""
-        # Index is lower bits of first header byte.
-        idx = msg.h1 & Header.index_bits
-        mid = self.modules.uuid(idx)
-
-        match msg.h2:
-            case Header.keepalive:
-                self.mgr.publish(
-                    self.control_topic("keepalive"),
-                    self.mgr.control_message("update", {
-                        "type": "runtime", "uuid": self.rtid,
-                        "apis": self.APIS, "name": self.name,
-                        **json.loads(msg.payload)
-                    }))
-            case Header.log_runtime:
-                self.log.debug(msg.payload.decode('utf-8'))
-                self.mgr.publish(self.control_topic("log"), msg.payload)
-            case Header.exited:
-                self.cleanup_module(idx, mid, msg)
-            case Header.ch_open:
-                self.mgr.channels.open(Channel(
-                    self.index, idx, msg.payload[0],
-                    msg.payload[2:].decode('utf-8'), msg.payload[1]))
-            case Header.ch_close:
-                self.mgr.channels.close(self.index, msg.payload[0])
-            case Header.log_module:
-                self.log.debug(msg.payload.decode('utf-8'))
-                self.mgr.publish(self.control_topic("log", mid), msg.payload)
-            case Header.profile:
-                self.handle_profile(mid, msg.payload)
-            case _:
-                raise exceptions.SLException("Unknown message type")
-
-    def on_runtime_message(self, msg: Message) -> None:
-        """Handle message from the runtime."""
-        try:
-            if Header.control & msg.h1:
-                self._handle_runtime_control_message(msg)
-            else:
-                self.mgr.channels.publish(
-                    self.index, msg.h1, msg.h2, msg.payload)
-        except Exception as e:
-            exceptions.handle_error(e, self.log, self.index, msg.h1, msg.h2)
-
-    def loop(self) -> None:
-        """Run main loop once for this runtime."""
-        msg = self.receive()
-        if msg is not None:
-            self.log.debug(format_message(
-                "Received message.", self.index, msg.h1, msg.h2))
-            self.on_runtime_message(msg)
-
-    def loop_start(self) -> None:
-        """Start main loop."""
-        def _loop():
-            while not self.done:
-                self.loop()
-            self.log.debug(format_message("Exiting main loop.", self.index))
-
-        self.thread = threading.Thread(target=_loop)
-        self.thread.start()
-
-    def loop_stop(self) -> None:
-        """Stop main loop."""
-        self.done = True
-        self.thread.join()
+    def handle_log(self, payload: bytes, module: int = -1) -> None:
+        """Handle logging message."""
+        if payload[0] & 0x80 == 0:
+            self.log_rt.debug(payload.decode('unicode-escape'))
+        else:
+            self.log_rt.log(payload[0], payload[1:].decode('unicode-escape'))

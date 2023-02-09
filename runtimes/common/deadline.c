@@ -9,10 +9,14 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <stdio.h>
-
-#include "logging.h"
+#include <stdlib.h>
+#include <syscall.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
 
 #include "deadline.h"
+#include "logging.h"
 
 /**
  * @brief Set scheduler attributes (scheduler class, period
@@ -48,10 +52,10 @@ static void system_command (char* cmd) {
 
     FILE *fp = popen(cmd, "r");
     if (fp == NULL) {
-        log_msg(LOG_ERROR, "ERROR: Could not create pipe for \'%s\' \n", cmd);
+        log_msg(L_ERR, "ERROR: Could not create pipe for \'%s\' \n", cmd);
     } else {
         while((nread = getline(&line, &len, fp)) != -1) {
-            log_msg(LOG_ERROR, "%s", line);
+            log_msg(L_ERR, "%s", line);
         }
         free(line);
     }
@@ -68,7 +72,7 @@ bool sched_apply(sched_attr_t *attr) {
 
     // Move to CFS cpuset
     if (attr->sched_policy == SCHED_OTHER) {
-        log_msg(LOG_MODULES, LOG_INFO, "Scheduler Class: CFS\n");
+        log_msg(L_INF, "Scheduler Class: CFS\n");
         sprintf(
             command,
             "(echo %d > /sys/fs/cgroup/cpuset/cfs-partition/tasks) 2>&1", pid);
@@ -77,9 +81,9 @@ bool sched_apply(sched_attr_t *attr) {
     // Move to RT cpuset
     else {
         uint32_t util = (attr->sched_runtime * 100) / attr->sched_period;
-        log_msg(LOG_INFO, "Scheduler Class: SCHED_DEADLINE\n");
+        log_msg(L_INF, "Scheduler Class: SCHED_DEADLINE\n");
         log_msg(
-            LOG_INFO, "sched_deadline: utilization=%d%% runtime=%llu \n",
+            L_INF, "sched_deadline: utilization=%d%% runtime=%llu \n",
             util, attr->sched_runtime);
         sprintf(
             command,
@@ -89,10 +93,11 @@ bool sched_apply(sched_attr_t *attr) {
         // attributes
         system_command(command);
         if (sched_setattr(0, (const sched_attr_t *) attr, 0) < 0) {
-            log_msg(LOG_ERROR, "sched_setattr %s\n", strerror(errno));
+            log_msg(L_ERR, "sched_setattr %s\n", strerror(errno));
             return false;
         }
     }
+
     return true;
 }
 
@@ -113,7 +118,7 @@ void sched_clear() {
     attr.sched_deadline = 0;
     attr.sched_period = 0;
     if (sched_setattr(pid, (const sched_attr_t *) &attr, 0) < 0) {
-        log_msg(LOG_ERROR, "sched_setattr %s\n", strerror(errno));
+        log_msg(L_ERR, "sched_setattr %s\n", strerror(errno));
     }
 }
 
