@@ -91,8 +91,7 @@ int main(int argc, char **argv) {
                     run_module(&runtime.mod);
                 }
             }
-            free(msg->payload);
-            free(msg);
+            slsocket_free(msg);
         }
     }
 }

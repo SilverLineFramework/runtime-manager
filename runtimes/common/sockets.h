@@ -55,6 +55,7 @@ int slsocket_open(int runtime, int module);
 message_t *slsocket_read(int fd);
 void slsocket_write(int fd, message_t *msg);
 void slsocket_rwrite(int fd, int h1, int h2, char *payload, int payloadlen);
+void slsocket_free(message_t *msg);
 #endif
 
 #endif

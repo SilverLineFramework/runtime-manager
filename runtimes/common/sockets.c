@@ -43,7 +43,10 @@ int slsocket_open(int runtime, int module) {
  */
 message_t *slsocket_read(int fd) {
     message_t *msg = malloc(sizeof(message_t));
-    if(recv(fd, (char *) msg, 4, MSG_WAITALL) < 4) { return NULL; };
+    if(recv(fd, (char *) msg, 4, MSG_WAITALL) < 4) {
+        free(msg);
+        return NULL;
+    };
 
     int payloadlen = msg->payloadlen;
     msg->payload = malloc(payloadlen);
@@ -82,6 +85,14 @@ void slsocket_rwrite(int fd, int h1, int h2, char *payload, int payloadlen) {
     msg.payload = payload;
     msg.payloadlen = payloadlen;
     slsocket_write(fd, &msg);
+}
+
+/**
+ * @brief Free Message.
+ */
+void slsocket_free(message_t *msg) {
+    free(msg->payload);
+    free(msg);
 }
 
 /** @} */
