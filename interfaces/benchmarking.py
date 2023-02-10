@@ -9,7 +9,7 @@ from .linux_minimal import LinuxMinimalRuntime
 class LinuxBenchmarkingRuntime(LinuxMinimalRuntime):
     """Execution time / memory benchmarking runtime."""
 
-    TYPE = "linux/benchmarking/basic"
+    TYPE = "linux/profiling/basic"
     APIS = ["wasm", "wasi", "profile:basic"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-benchmarking-basic"

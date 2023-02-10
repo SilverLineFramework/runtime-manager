@@ -21,37 +21,6 @@ In benchmark.json::
             ...
         ]
     }
-
-In module create message::
-
-    {
-        ...
-        "repeat": 100,
-        ...
-    }
-
-
-realm/proc/profile/{mode}/{module-uuid}
-All unsighed integers.
-mode = "benchmarking":
-    24b:   [utime /32 ][stime /32 ][maxrss /u32]
-
-mode = "opcodes":
-    1024b: [ ------------ op_count /32 x 256 ------------ ]
-
-mode = "instrumented":
-    4Nb:   [ ------------ loop_count /32 x N ------------ ]
-
-mode = "deployed":
-    (periodic mode)
-    32b:   [ ---- start /u64 ---- ][ wall /32 ][utime /32 ]
-           [stime /32 ][maxrss /32][ch_in /32 ][ch_out /32]
-
-
-Benchmark message::
-
-    wall /32
-    cpu /32
 """
 
 import os
@@ -72,11 +41,7 @@ class LinuxBenchmarkingRuntimeWasmer:
         self.stop = False
         self.done = False
 
-    def run(self, msg):
-        """Run program."""
-        self.stop = False
-        data = json.loads(msg.payload)
-
+    def __run(self, data):
         stats = np.zeros([data["resources"]["repeat"], 3], dtype=np.uint32)
         for i in range(data["resources"]["repeat"]):
             self.process = os.fork()
@@ -90,18 +55,27 @@ class LinuxBenchmarkingRuntimeWasmer:
                         Header.control | 0x00, Header.log_module,
                         "Nonzero exit code: {}".format(status)
                     ))
-                stats[i][0] = rusage.ru_utime
-                stats[i][1] = rusage.ru_stime
+                stats[i][0] = int(rusage.ru_utime * 10**6)
+                stats[i][1] = int(rusage.ru_stime * 10**6)
                 stats[i][2] = rusage.ru_maxrss
 
             if self.stop:
-                break
+                return stats[:i + 1]
+
+        return stats
+
+    def run(self, msg):
+        """Run program."""
+        self.stop = False
+        data = json.loads(msg.payload)
+
+        stats = self.__run(data)
 
         self.socket.write(Message(
             Header.control | 0x00, Header.profile, stats.tobytes()))
         self.socket.write(Message.from_dict(
             Header.control | 0x00, Header.exited,
-            {"status": "killed" if self.killed else "exited"}))
+            {"status": "killed" if self.stop else "exited"}))
 
     def handle_message(self, msg: Message) -> None:
         """Handle message from manager."""
@@ -113,8 +87,6 @@ class LinuxBenchmarkingRuntimeWasmer:
                     threading.Thread(target=self.run, args=[msg]).start()
                 case Header.delete:
                     self.stop = True
-                    if self.process is not None:
-                        os.kill(self.process)
                 case _:
                     pass
 

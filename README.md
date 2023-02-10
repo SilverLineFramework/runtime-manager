@@ -268,7 +268,28 @@ Module logging messages are currently handled identically to runtime logging mes
 
 ### Profiling
 
-Profiling messages are forwarded to ```{realm}/proc/profile/{profile_type}/{module_id}```.
+Profiling messages are forwarded to ```{realm}/proc/profile/{profile_type}/{module_id}```. 
+
+*Benchmarking* (```type=benchmarking```): only basic timing information in microseconds.
+```
+24b:   [utime /u32 ][stime /u32 ][maxrss /u32]
+```
+
+*Opcode Counting* (```type=opcodes```): WASM opcode counts in interpreted mode.
+```
+1024b: [ ------------- op_count /u32 x 256 -------------- ]
+```
+
+*Instrumented* (```type=instrumented```): Loop instrumentation counts.
+```
+4Nb:   [ ------------- loop_count /u32 x N -------------- ]
+```
+
+*Deployed Profiling* (```type=deployed```): timing, memory, and network information.
+```
+32b:   [ ----- start /u64 ----- ][ wall /u32 ][utime /u32 ]
+       [stime /u32 ][maxrss /u32][ch_in /u32 ][ch_out /u32]
+```
 
 ### Publish Message
 
