@@ -15,10 +15,23 @@ class RuntimeManagerMixins:
     circumstances).
     """
 
-    def bind_manager(self, mgr, index: int) -> None:
-        """Set runtime index."""
+    def _start(self, mgr, index: int) -> None:
+        """Full runtime start procedure."""
         self.index = index
         self.mgr = mgr
+
+        topic = self.control_topic("control")
+        self.mgr.subscribe(topic)
+        self.mgr.message_callback_add(topic, self.on_mqtt_message)
+
+        metadata = self.start()
+        metadata["parent"] = self.mgr.uuid
+        self.mgr._register(
+            self.control_topic("reg"),
+            self.mgr.control_message("create", metadata))
+        self.loop_start()
+        self.log.info("Registered: {}:{} (x{:02x})".format(
+            self.name, self.rtid, self.index))
 
     def control_topic(self, topic: str, *ids: list[str]) -> str:
         """Format control topic name."""
@@ -78,9 +91,9 @@ class RuntimeManagerMixins:
             case Header.exited:
                 self.cleanup_module(idx, self.modules.uuid(idx), msg)
             case Header.ch_open:
-                self.mgr.channels.open(Channel(
-                    self.index, idx, msg.payload[0],
-                    msg.payload[2:].decode('utf-8'), msg.payload[1]))
+                self.mgr.channels.open(
+                    runtime=self.index, module=idx, fd=msg.payload[0],
+                    topic=msg.payload[2:], flags=msg.payload[1])
             case Header.ch_close:
                 self.mgr.channels.close(self.index, msg.payload[0])
             case Header.log_module:

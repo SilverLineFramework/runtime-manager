@@ -97,9 +97,9 @@ class RuntimeManager(RuntimeManagerMixins):
             self.log.info(format_message("Deleted module.", self.index, index))
         except KeyError:
             raise exceptions.ModuleException(
-                "Tried to delete nonexisting module.", module_id)
+                "Tried to delete nonexisting module: {}".format(module_id))
 
-    def handle_profile(self, module: int, msg: bytes) -> None:
+    def handle_profile(self, module: str, msg: bytes) -> None:
         """Handle profiling message.
 
         Does nothing by default, and must be implemented by inheriting

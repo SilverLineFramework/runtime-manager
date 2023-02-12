@@ -2,20 +2,32 @@
 
 from beartype import beartype
 
-from .linux_minimal import LinuxMinimalRuntime
+from .linux_minimal import LinuxMinimal
 
 
 @beartype
-class LinuxBenchmarkingRuntime(LinuxMinimalRuntime):
-    """Execution time / memory benchmarking runtime."""
+class Benchmarking(LinuxMinimal):
+    """Execution time / memory usage benchmarking runtime."""
 
-    TYPE = "linux/profiling/basic"
-    APIS = ["wasm", "wasi", "profile:basic"]
+    TYPE = "benchmarking/basic"
+    APIS = ["wasm", "wasi", "profile:benchmarking"]
     MAX_NMODULES = 1
-    DEFAULT_NAME = "linux-benchmarking-basic"
+    DEFAULT_NAME = "benchmarking-basic"
     DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_benchmarking.py"
 
-    def handle_profile(self, module: int, msg: bytes) -> None:
+    def handle_profile(self, module: str, msg: bytes) -> None:
         """Handle profiling message."""
         self.mgr.publish(
             self.control_topic("profile/benchmarking", module), msg)
+
+
+@beartype
+class OpcodeCount(LinuxMinimal):
+    """Opcode counting runtime."""
+
+    TYPE = "benchmarking/opcodes"
+    APIS = ["wasm", "wasi", "profile:opcodes"]
+
+    MAX_NMODULES = 1
+    DEFAULT_NAME = "benchmarking-opcodes"
+    DEFAULT_COMMAND = "./runtimes/profiling-opcodes/build/runtime"

@@ -9,7 +9,7 @@ from manager import Message, RuntimeManager
 
 
 @beartype
-class RegistrationOnlyRuntime(RuntimeManager):
+class RegistrationOnly(RuntimeManager):
     """Dummy runtime for basic debugging."""
 
     TYPE = "debug/none"

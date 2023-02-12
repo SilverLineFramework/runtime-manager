@@ -4,11 +4,11 @@ from beartype import beartype
 from beartype.typing import Optional
 
 from manager import Message, Header, SLSocket
-from .linux_minimal import LinuxMinimalRuntime
+from .linux_minimal import LinuxMinimal
 
 
 @beartype
-class LinuxRuntime(LinuxMinimalRuntime):
+class LinuxRuntime(LinuxMinimal):
     """Default Linux Runtime."""
 
     TYPE = "linux/default"

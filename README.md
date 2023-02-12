@@ -9,18 +9,18 @@ Modules include `mq` (MQTT/Channels), `mgr` (Node manager), `if` (Runtime interf
 
 **Table of Abbreviations:**
 
-| Name / Module | Abbreviation(s) |
-| --- | --- |
-| MQTT | `mq` |
-| Channels | `ch` |
-| Node Manager | `mgr` |
-| Runtime | `rt`, `rt.{name}` |
-| Runtime Interface | `if`, `if.{name}` |
-| Critical | `CRITICAL`, `CRI`, `L_CRI` |
-| Error | `ERROR`, `ERR`, `L_ERR` |
-| Warning | `WARN`, `WRN`, `L_WRN` |
-| Info | `INFO`, `INF`, `L_INF` |
-| Debug | `DEBUG`, `DBG`, `L_DBG` |
+| Name / Module     | Abbreviation(s)            |
+| ----------------- | -------------------------- |
+| MQTT              | `mq`                       |
+| Channels          | `ch`                       |
+| Node Manager      | `mgr`                      |
+| Runtime           | `rt`, `rt.{name}`          |
+| Runtime Interface | `if`, `if.{name}`          |
+| Critical          | `CRITICAL`, `CRI`, `L_CRI` |
+| Error             | `ERROR`, `ERR`, `L_ERR`    |
+| Warning           | `WARN`, `WRN`, `L_WRN`     |
+| Info              | `INFO`, `INF`, `L_INF`     |
+| Debug             | `DEBUG`, `DBG`, `L_DBG`    |
 
 ## Creating Runtimes
 

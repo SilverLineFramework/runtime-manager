@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include "cJSON/cJSON.h"
 #include "logging.h"
@@ -21,19 +22,6 @@
 
 runtime_t runtime;
 
-void log_msg(int level, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-
-    char buf[LOG_MAX_LEN];
-    int len = vsnprintf(&buf[1], LOG_MAX_LEN, format, args);
-    if (len > LOG_MAX_LEN) { len = LOG_MAX_LEN; }
-    buf[0] = H_CONTROL | (level < 256 ? level : 256);
-
-    slsocket_rwrite(
-        runtime.socket, H_CONTROL | 0x00, H_LOG_RUNTIME, buf, len + 1);
-}
-
 int socket_vprintf(const char *format, va_list ap) {
     char buf[STD_MAX_LEN];
     int len = vsnprintf(buf, STD_MAX_LEN, format, ap);
@@ -43,17 +31,13 @@ int socket_vprintf(const char *format, va_list ap) {
 }
 
 bool run_module(module_t *mod) {
-    char openmsg[256];
+    char openmsg[] = "__$SL/std";
     openmsg[0] = 0x00;
     openmsg[1] = CH_WRONLY;
-    int len = sprintf(&openmsg[2], "std/%s", mod->meta.uuid) + 2;
-    slsocket_rwrite(runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, len);
+    slsocket_rwrite(
+        runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, sizeof(openmsg));
 
-    bool res = (
-        wamr_create_module(&mod->wamr, &mod->args) &&
-        wamr_inst_module(&mod->wamr, NULL) &&
-        wamr_run_module(&mod->wamr, &mod->args));
-    wamr_destroy_module(&mod->wamr);
+    bool res = wamr_run_once(&mod->args, NULL);
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(
@@ -74,9 +58,10 @@ bool create_module(module_t *mod, message_t *msg) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 1) { exit(-1); }
+    if (argc < 2) { exit(-1); }
     runtime.socket = slsocket_open(atoi(argv[1]), -1);
     if (runtime.socket < 0) { exit(-1); }
+    log_init(runtime.socket);
 
     bool res = wamr_init(NULL);
     if (!res) { exit(-1); }

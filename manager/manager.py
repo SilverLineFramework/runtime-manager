@@ -35,7 +35,7 @@ class Manager(mqtt.Client):
      / __(_)_ _ _ _ _  _ ___
     | (__| | '_| '_| || (_-<
      \___|_|_| |_|  \_,_/__/
-    SilverLine  Node Manager
+    SilverLine: Node Manager
     """
 
     def __init__(
@@ -76,24 +76,15 @@ class Manager(mqtt.Client):
         self.log.info("Registering manager...")
         self._register(
             self.control_topic("reg", self.uuid),
-            self.control_message("create", metadata), timeout=self.timeout)
+            self.control_message("create", metadata))
         self.log.info("Manager registered.")
 
         self.log.info("Registering {} runtimes.".format(len(self.runtimes)))
         for i, rt in enumerate(self.runtimes):
-            rt.bind_manager(self, i)
-            topic = rt.control_topic("control")
-            self.subscribe(topic)
-            self.message_callback_add(topic, rt.on_mqtt_message)
-            metadata = rt.start()
-            metadata["parent"] = self.uuid
-            self._register(
-                rt.control_topic("reg"),
-                self.control_message("create", metadata), timeout=self.timeout)
-            rt.loop_start()
-            self.log.info("Registered: {}:{}".format(rt.name, rt.rtid))
+            rt._start(self, i)
 
-        self.log.info("Done registering runtimes.")
+        self.log.info("Initialization complete.")
+        print()
 
     def stop(self):
         """Stop manager."""
@@ -167,14 +158,13 @@ class Manager(mqtt.Client):
         """Format control topic."""
         return "{}/proc/{}/{}".format(self.realm, topic, "/".join(ids))
 
-    def _register(self, topic: str, msg: str, timeout: float = 5.) -> None:
+    def _register(self, topic: str, msg: str) -> None:
         """Blocking registration.
 
         Parameters
         ----------
         topic: MQTT topic.
         msg: Message payload in final encoded form.
-        timeout: Registration timeout.
         """
         self.subscribe(topic)
 
@@ -187,7 +177,7 @@ class Manager(mqtt.Client):
         self.message_callback_add(topic, _handler)
         self.publish(topic, msg)
 
-        if not sem.acquire(timeout=timeout):
+        if not sem.acquire(timeout=self.timeout):
             self.log.error("Registration timed out on {}.".format(topic))
         self.message_callback_remove(topic)
         self.unsubscribe(topic)

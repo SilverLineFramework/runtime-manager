@@ -8,7 +8,6 @@
 #ifndef LOGGING_H
 #define LOGGING_H
 
-#include <stdarg.h>
 #include <stdbool.h>
 
 #define L_CRI 50
@@ -20,14 +19,10 @@
 
 #define LOG_MAX_LEN 1024
 
-/**
- * @brief Logging function; should be implemented by including programs.
- * 
- * @param level Logging level; uses Python's log level convention.
- * @param format Format string.
- * @param ap Argument list (varargs).
- */
+#if !defined(DOXYGEN_SHOULD_SKIP_THIS)
+void log_init(int fd);
 void log_msg(int level, const char *format, ...);
+#endif
 
 #endif /* LOGGING_H */
 /** @} */

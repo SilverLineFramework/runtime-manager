@@ -32,7 +32,7 @@ import numpy as np
 from manager import Message, SLSocket, Header
 
 
-class LinuxBenchmarkingRuntimeWasmer:
+class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 
     def __init__(self, index):
@@ -42,11 +42,13 @@ class LinuxBenchmarkingRuntimeWasmer:
         self.done = False
 
     def __run(self, data):
-        stats = np.zeros([data["resources"]["repeat"], 3], dtype=np.uint32)
-        for i in range(data["resources"]["repeat"]):
+        # repeat = data.get("resources", {}).get("repeat", 1)
+        repeat = 1
+        stats = np.zeros([repeat, 3], dtype=np.uint32)
+        for i in range(repeat):
             self.process = os.fork()
             if self.process == 0:
-                os.execve("wasmer", [
+                os.execvp("wasmer", [
                     "--env", *data["env"], data["filename"], *data["args"]])
             else:
                 _, status, rusage = os.wait4(self.process, 0)
@@ -99,4 +101,4 @@ class LinuxBenchmarkingRuntimeWasmer:
 
 
 if __name__ == '__main__':
-    LinuxBenchmarkingRuntimeWasmer(int(sys.argv[1])).loop()
+    LinuxBenchmarkingRuntime(int(sys.argv[1])).loop()

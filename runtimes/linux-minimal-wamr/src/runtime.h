@@ -17,8 +17,6 @@
  * @brief Module data.
  */
 typedef struct {
-    /** WAMR state. */
-    module_wamr_t wamr;
     /** Args */
     module_args_t args;
     /** Metadata */

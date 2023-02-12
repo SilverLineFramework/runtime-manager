@@ -29,33 +29,46 @@ class ChannelManager:
         self.matcher = mqtt.MQTTMatcher()
         self.channels = {}
 
-    def open(self, ch: Channel) -> None:
+    def open(
+        self, runtime: int, module: int, fd: int, topic: bytes, flags: int
+    ) -> None:
         """Open channel."""
-        if ch.runtime not in self.channels:
-            self.channels[ch.runtime] = {}
-        if ch.module not in self.channels[ch.runtime]:
-            self.channels[ch.runtime][ch.module] = {}
+        if runtime not in self.channels:
+            self.channels[runtime] = {}
+        if module not in self.channels[runtime]:
+            self.channels[runtime][module] = {}
 
-        if ch.fd in self.channels[ch.runtime][ch.module]:
+        if fd in self.channels[runtime][module]:
             raise exceptions.ChannelException(
                 "Tried to open already-existing channel")
 
+        # Handle standard translation
+        topic = topic.rstrip(b'\0').decode('utf-8')
+        if topic.startswith("$SL/"):
+            _uuid = self.mgr.runtimes[runtime].modules.uuid(module)
+            topic = "/".join([self.mgr.realm, topic.lstrip("$SL/"), _uuid])
+
         # Check for wildcards
-        if (ch.flags | Flags.write) != 0:
-            if '+' in ch.topic or '#' in ch.topic:
+        if (flags | Flags.write) != 0:
+            if '+' in topic or '#' in topic:
                 raise exceptions.ChannelException(
                     "Channel topic name cannot contain a wildcard ('+', '#') "
-                    "in write or read-write mode: {}".format(ch.topic))
+                    "in write or read-write mode: {}".format(topic))
+
+        ch = Channel(
+            runtime=runtime, module=module, fd=fd, topic=topic, flags=flags)
 
         # Requires subscribing
-        if (ch.flags | Flags.read) != 0:
+        if (flags | Flags.read) != 0:
             try:
-                self.matcher[ch.topic].add(ch)
+                self.matcher[topic].add(ch)
             except KeyError:
-                self.mgr.subscribe(ch.topic)
-                self.matcher[ch.topic] = {ch}
+                self.mgr.subscribe(topic)
+                self.matcher[topic] = {ch}
 
-        self.channels[ch.runtime][ch.module][ch.fd] = ch
+        self.log.debug(
+            "Opened channel: {} (flags=x{:02x})".format(topic, flags))
+        self.channels[runtime][module][fd] = ch
 
     def close(self, runtime: int, module: int, fd: int) -> None:
         """Close channel.
@@ -96,8 +109,8 @@ class ChannelManager:
                 self.close(runtime, module, fd)
             del self.channels[runtime][module]
         except KeyError:
-            raise exceptions.ChannelException(
-                "Tried to cleanup nonexisting module.")
+            # This will always happen if the module does not open any channels.
+            pass
 
     def publish(
             self, runtime: int, module: int, fd: int, payload: bytes) -> None:

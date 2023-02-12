@@ -82,7 +82,7 @@ include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 add_definitions(-DBH_VPRINTF=socket_vprintf)
 
 add_executable(
-    linux-minimal-wamr
+    runtime
     # cJSON
     ${COMMON_DIR}/cJSON/cJSON.c
     # Common files
@@ -90,10 +90,11 @@ add_executable(
     ${COMMON_DIR}/json_utils.c
     ${COMMON_DIR}/sockets.c
     ${COMMON_DIR}/wamr.c
+    ${COMMON_DIR}/logging.c
     # Runtime files
     src/runtime.c
     ${UNCOMMON_SHARED_SOURCE}
 )
 
 target_link_libraries (
-    linux-minimal-wamr vmlib -lm -ldl -lpthread -lrt -lrt -larchive)
+    runtime vmlib -lm -ldl -lpthread -lrt -lrt -larchive)

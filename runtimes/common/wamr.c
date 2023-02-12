@@ -104,21 +104,6 @@ bool wamr_inst_module(module_wamr_t *mod, void *context) {
 }
 
 /**
- * @brief Initialize AOT signals.
- */
-static bool wamr_init_aot_signal() {
-#if WAMR_DISABLE_HW_BOUND_CHECK == 0
-    log_msg(L_DBG, "Initializing AOT signals...");
-    /* Enable thread specific signal and stack guard pages */
-    // if (!aot_signal_init()) {
-    //     log_msg(L_ERR, "AOT Signal Init failed! Skipping module");
-    //     return false;
-    // }
-#endif
-    return true;
-}
-
-/**
  * @brief Run module.
  */
 bool wamr_run_module(module_wamr_t *mod, module_args_t *args) {
@@ -138,7 +123,7 @@ bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
     // functions return false.
     log_msg(L_INF, "Creating WAMR module...");
     bool result = (
-        // wamr_init_aot_signal() &&
+        wasm_runtime_init_thread_env() &&
         wamr_read_module(mod, args) &&
         wamr_load_module(mod) &&
         wamr_set_wasi_args(mod, args));
@@ -160,6 +145,23 @@ void wamr_destroy_module(module_wamr_t *mod) {
         if (mod->module != NULL) { wasm_runtime_unload(mod->module); }
         if (mod->file != NULL) { wasm_runtime_free(mod->file); }
     }
+}
+
+/**
+ * @brief Create and run a WAMR WebAssembly module once.
+ *
+ * @param args Module arguments.
+ * @param context Optional context to add to module in WAMR.
+ * @return success indicator.
+ */
+bool wamr_run_once(module_args_t *args, void *context) {
+    module_wamr_t mod;
+    bool res = (
+        wamr_create_module(&mod, args) &&
+        wamr_inst_module(&mod, context) &&
+        wamr_run_module(&mod, args));
+    wamr_destroy_module(&mod);
+    return res;
 }
 
 /** @} */

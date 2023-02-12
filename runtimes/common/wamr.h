@@ -31,6 +31,7 @@ bool wamr_create_module(module_wamr_t *mod, module_args_t *args);
 bool wamr_inst_module(module_wamr_t *mod, void *context);
 bool wamr_run_module(module_wamr_t *mod, module_args_t *args);
 void wamr_destroy_module(module_wamr_t *mod);
+bool wamr_run_once(module_args_t *args, void *context);
 #endif
 
 #endif

@@ -9,7 +9,7 @@ from manager import Message, SLSocket, RuntimeManager
 
 
 @beartype
-class LinuxMinimalRuntime(RuntimeManager):
+class LinuxMinimal(RuntimeManager):
     """Minimal linux runtime communicating with AF_UNIX sockets.
 
     Parameters
@@ -50,11 +50,11 @@ class LinuxMinimalRuntime(RuntimeManager):
 
 
 @beartype
-class LinuxMinimalWAMR(LinuxMinimalRuntime):
+class LinuxMinimalWAMR(LinuxMinimal):
     """Minimal linux WAMR runtime."""
 
     TYPE = "linux/minimal/wamr"
     APIS = ["wasm", "wasi", "stdout"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-wamr"
-    DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/linux-minimal-wamr"
+    DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/runtime"

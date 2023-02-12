@@ -25,19 +25,6 @@
 
 runtime_t runtime;
 
-void log_msg(int level, const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-
-    char buf[LOG_MAX_LEN];
-    int len = vsnprintf(&buf[1], LOG_MAX_LEN, format, args);
-    if (len > LOG_MAX_LEN) { len = LOG_MAX_LEN; }
-    buf[0] = H_CONTROL | (level < 256 ? level : 256);
-
-    slsocket_rwrite(
-        runtime.socket, H_CONTROL | 0x00, H_LOG_RUNTIME, buf, len + 1);
-}
-
 int socket_vprintf(const char *format, va_list ap) {
     char buf[STD_MAX_LEN];
     int len = vsnprintf(buf, STD_MAX_LEN, format, ap);
@@ -83,7 +70,7 @@ bool create_module(module_t *mod, message_t *msg) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 1) { exit(-1); }
+    if (argc < 2) { exit(-1); }
     runtime.socket = slsocket_open(atoi(argv[1]), -1);
     if (runtime.socket < 0) { exit(-1); }
 
