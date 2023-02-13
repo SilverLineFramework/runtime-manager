@@ -25,13 +25,6 @@
 
 runtime_t runtime;
 
-int socket_vprintf(const char *format, va_list ap) {
-    char buf[STD_MAX_LEN];
-    int len = vsnprintf(buf, STD_MAX_LEN, format, ap);
-    if (len > STD_MAX_LEN) { len = STD_MAX_LEN; }
-    slsocket_rwrite(runtime.socket, 0x00, 0x00, buf, len);
-    return len;
-}
 
 bool run_module(module_t *mod) {
     char openmsg[256];
@@ -44,12 +37,13 @@ bool run_module(module_t *mod) {
         wamr_create_module(&mod->wamr, &mod->args) &&
         wamr_inst_module(&mod->wamr, NULL) &&
         wamr_run_module(&mod->wamr, &mod->args));
-    wamr_destroy_module(&mod->wamr);
 
     uint64_t *table = ((WASMModuleInstance *) mod->wamr.inst)->opcode_table;
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_PROFILE,
         (char *) table, 256 * sizeof(uint64_t));
+
+    wamr_destroy_module(&mod->wamr);
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(

@@ -21,7 +21,7 @@ class LinuxMinimal(RuntimeManager):
     """
 
     TYPE = "linux/minimal/python"
-    APIS = ["wasm", "wasi", "stdin", "stdout"]
+    APIS = ["wasm", "wasi", "stdio:in", "stdio:out"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-python"
     DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_minimal.py"
@@ -60,7 +60,7 @@ class LinuxMinimalWAMR(LinuxMinimal):
     """Minimal linux WAMR runtime."""
 
     TYPE = "linux/minimal/wamr"
-    APIS = ["wasm", "wasi", "stdout"]
+    APIS = ["wasm", "wasi", "stdio:out"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-wamr"
     DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/runtime"

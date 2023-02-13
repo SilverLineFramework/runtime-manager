@@ -79,8 +79,6 @@ include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 include_directories(${RUNTIMES_DIR}/common)
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-add_definitions(-DBH_VPRINTF=socket_vprintf)
-
 add_executable(
     runtime
     # cJSON

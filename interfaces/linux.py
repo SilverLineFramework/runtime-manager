@@ -12,7 +12,7 @@ class LinuxRuntime(LinuxMinimal):
     """Default Linux Runtime."""
 
     TYPE = "linux/default"
-    APIS = ["wasm", "wasi", "channels", "profile:basic"]
+    APIS = ["wasm", "wasi", "channels", "stdio:out", "profile:basic"]
     MAX_NMODULES = 128
     DEFAULT_NAME = "linux-default"
     DEFAULT_COMMAND = "./runtimes/linux-default/runtime"

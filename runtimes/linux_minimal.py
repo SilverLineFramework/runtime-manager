@@ -30,7 +30,7 @@ class LinuxMinimalRuntime:
         self.socket.write(Message(
             Header.control | 0x00, Header.ch_open,
             bytes([0x00, Flags.readwrite])
-            + bytes("$SL/std", encoding='utf-8')))
+            + bytes("$SL/proc/stdio", encoding='utf-8')))
 
         stdout, _ = (self.process.communicate())
         self.socket.write(Message(0x00, 0x00, stdout))

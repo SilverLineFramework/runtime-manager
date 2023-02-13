@@ -31,7 +31,7 @@ int socket_vprintf(const char *format, va_list ap) {
 }
 
 bool run_module(module_t *mod) {
-    char openmsg[] = "__$SL/std";
+    char openmsg[] = "__$SL/proc/stdio";
     openmsg[0] = 0x00;
     openmsg[1] = CH_WRONLY;
     slsocket_rwrite(
