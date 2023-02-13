@@ -64,6 +64,10 @@ class RuntimeManager(RuntimeManagerMixins):
         """Start runtime, and return the registration config."""
         pass
 
+    def stop(self) -> None:
+        """Stop runtime."""
+        pass
+
     @abstractmethod
     def send(self, msg: Message) -> None:
         """Send message to runtime."""

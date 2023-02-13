@@ -35,10 +35,16 @@ class LinuxMinimal(RuntimeManager):
 
     def start(self) -> dict:
         """Start runtime, and return the registration config."""
-        self.socket = SLSocket(self.index, server=True, timeout=5.)
-        subprocess.Popen("{} {}".format(self.command, self.index), shell=True)
+        self.socket = SLSocket(self.index, server=True, timeout=1.)
+        self.process = subprocess.Popen(
+            "{} {}".format(self.command, self.index), shell=True)
         self.socket.accept()
         return self.config
+
+    def stop(self) -> None:
+        """Stop process."""
+        self.socket.close()
+        self.process.terminate()
 
     def send(self, msg: Message) -> None:
         """Send message."""

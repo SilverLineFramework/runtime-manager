@@ -50,6 +50,8 @@ class Manager(mqtt.Client):
 
         self.uuid = str(uuid.uuid4()) if mgr_id is None else mgr_id
         self.name = name
+        self.metadata = {
+            "type": "manager", "uuid": self.uuid, "name": self.name}
 
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
@@ -67,16 +69,15 @@ class Manager(mqtt.Client):
         """Connect manager."""
         print(self._BANNER)
 
-        metadata = {"type": "manager", "uuid": self.uuid, "name": self.name}
         self.will_set(
             self.control_topic("reg", self.uuid), qos=2,
-            payload=self.control_message("delete", metadata))
+            payload=self.control_message("delete", self.metadata))
         self.connect(server)
 
         self.log.info("Registering manager...")
         self._register(
             self.control_topic("reg", self.uuid),
-            self.control_message("create", metadata))
+            self.control_message("create", self.metadata))
         self.log.info("Manager registered.")
 
         self.log.info("Registering {} runtimes.".format(len(self.runtimes)))
@@ -88,11 +89,17 @@ class Manager(mqtt.Client):
 
     def stop(self):
         """Stop manager."""
+        self.log.info("Stopping runtimes...")
         for rt in self.runtimes:
+            rt.stop()
             rt.loop_stop()
 
+        self.publish(
+            self.control_topic("reg", self.uuid),
+            self.control_message("delete", self.metadata), qos=2)
         self.loop_stop()
         self.disconnect()
+        self.log.info("Manager and runtime(s) stopped.")
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""

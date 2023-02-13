@@ -2,6 +2,7 @@
 
 import os
 import socket
+import select
 import struct
 
 from beartype.typing import Optional
@@ -58,16 +59,19 @@ class SLSocket:
         else:
             self.socket.connect(address)
             self.connection = self.socket
+            self.connection.setblocking(0)
 
     def accept(self) -> None:
         """Accept connection."""
         self.connection, _ = self.socket.accept()
+        self.connection.setblocking(0)
 
     def read(self) -> Optional[Message]:
         """Read with timeout."""
-        try:
+        ready = select.select([self.connection], [], [], self.timeout)
+        if ready[0]:
             recv = self.connection.recv(self.HEADER_SIZE)
-            if recv:
+            if len(recv) == self.HEADER_SIZE:
                 payloadlen, h1, h2 = struct.unpack(self.HEADER_FMT, recv)
                 payload = []
                 while payloadlen > 0:
@@ -75,10 +79,7 @@ class SLSocket:
                     payload.append(self.connection.recv(recv))
                     payloadlen -= recv
                 return Message(h1, h2, b"".join(payload))
-            else:
-                return None
-        except TimeoutError:
-            return None
+        return None
 
     def write(self, msg: Message) -> None:
         """Send message to socket."""
@@ -89,3 +90,7 @@ class SLSocket:
                 self.connection.sendall(msg.payload)
         except TimeoutError:
             pass
+
+    def close(self) -> None:
+        """Close socket (and interrupt currently reading operations)."""
+        self.socket.shutdown(socket.SHUT_RDWR)

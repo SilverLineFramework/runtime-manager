@@ -31,7 +31,7 @@ class LinuxRuntime(LinuxMinimal):
         """Create module."""
         index = self.insert_module(data)
         self.socket_mod[index] = SLSocket(
-            self.index, module=index, server=True, timeout=5.)
+            self.index, module=index, server=True, timeout=1.)
         self.send(Message.from_dict(
             Header.control | index, Header.create, data))
         self.socket_mod[index].accept()

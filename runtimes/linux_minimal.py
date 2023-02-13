@@ -16,7 +16,7 @@ class LinuxMinimalRuntime:
 
     def __init__(self, index: int, cmd: str = "wasmer run"):
         self.cmd = cmd
-        self.socket = SLSocket(index, server=False, timeout=5.)
+        self.socket = SLSocket(index, server=False, timeout=1.)
 
     def run(self, msg: Message) -> None:
         """Run program."""

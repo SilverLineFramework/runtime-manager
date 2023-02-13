@@ -12,4 +12,6 @@ mgr = Manager([rt1, rt2, rt3])
 mgr.start(MQTTServer("localhost", 1883, "cli", "../mqtt_pwd.txt", False))
 
 input()
+
+mgr.stop()
 exit()
