@@ -3,9 +3,10 @@
 import json
 import threading
 
+from common import format_message
+
 from . import exceptions
-from .types import Channel, Message, Header
-from .logging import format_message
+from .types import Message, Header
 
 
 class RuntimeManagerMixins:

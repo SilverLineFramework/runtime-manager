@@ -6,7 +6,7 @@ from beartype import beartype
 
 from .types import Message, Flags, Channel
 from . import exceptions
-from .logging import format_message
+from common import format_message
 
 
 @beartype

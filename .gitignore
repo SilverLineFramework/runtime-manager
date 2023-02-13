@@ -1,4 +1,7 @@
+# Silverline files
 .vscode
+data/
+log/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

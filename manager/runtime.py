@@ -8,11 +8,11 @@ from abc import abstractmethod
 from beartype.typing import Optional
 from beartype import beartype
 
+from common import format_message
+
 from .types import Message, Header
 from . import exceptions
 from .module import ModuleLookup
-
-from .logging import format_message
 from .runtime_mixins import RuntimeManagerMixins
 
 

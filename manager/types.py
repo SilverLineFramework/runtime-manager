@@ -98,26 +98,6 @@ class Header:
 
 
 @beartype
-class MQTTServer(NamedTuple):
-    """MQTT server and login information.
-
-    Attributes
-    ----------
-    host: MQTT server web address.
-    port: Server port number (usually 1883 or 8883 if using SSL).
-    user: Username.
-    pwd: Password.
-    ssl: Whether server has TLS/SSL enabled.
-    """
-
-    host: str
-    port: int
-    user: str
-    pwd: str
-    ssl: bool
-
-
-@beartype
 class Channel(NamedTuple):
     """Open Channel.
 

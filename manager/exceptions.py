@@ -2,7 +2,7 @@
 
 import traceback
 
-from .logging import format_message
+from common import format_message
 
 
 class UnhandledSLException(Exception):

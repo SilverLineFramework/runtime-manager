@@ -277,7 +277,7 @@ Profiling messages are forwarded to ```{realm}/proc/profile/{profile_type}/{modu
 
 *Opcode Counting* (```type=opcodes```): WASM opcode counts in interpreted mode.
 ```
-1024b: [ ------------- op_count /u32 x 256 -------------- ]
+2048b: [ ------------- op_count /u64 x 256 -------------- ]
 ```
 
 *Instrumented* (```type=instrumented```): Loop instrumentation counts.

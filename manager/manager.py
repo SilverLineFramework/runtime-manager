@@ -2,40 +2,42 @@
 
 import logging
 import uuid
-import ssl
 import json
 from threading import Semaphore
 
 import paho.mqtt.client as mqtt
 
 from beartype import beartype
+from beartype.typing import Optional
 
+from common.mqtt import MQTTClient, MQTTServer
 from .runtime import RuntimeManager
-from .types import MQTTServer
 from .channels import ChannelManager
 from . import exceptions
 
 
 @beartype
-class Manager(mqtt.Client):
-    """Silverline node manager.
+class Manager(MQTTClient):
+    """Silverline node manager (Cirrus).
+
+    The node manager is a thin layer that operates at a high level -- just like
+    a cirrus cloud.
 
     Parameters
     ----------
     runtimes: runtimes to manage.
     name: manager short name.
     mgr_id: manager UUID.
-    realm: SilverLine realm.
+    realm: Silverline realm.
     timeout: Timeout duration (seconds).
-    server: MQTT server parameters.
     """
 
     _BANNER = r"""
-      ___ _                 
+      ___ _
      / __(_)_ _ _ _ _  _ ___
     | (__| | '_| '_| || (_-<
      \___|_|_| |_|  \_,_/__/
-    SilverLine: Node Manager
+    Silverline: Node Manager
     """
 
     def __init__(
@@ -43,7 +45,7 @@ class Manager(mqtt.Client):
         mgr_id: str = None, realm: str = "realm", timeout: float = 5.
     ) -> None:
         self.log = logging.getLogger('mgr')
-        self.log_mq = logging.getLogger('mq')
+
         self.realm = realm
         self.runtimes = runtimes
         self.timeout = timeout
@@ -52,22 +54,21 @@ class Manager(mqtt.Client):
         self.name = name
         self.metadata = {
             "type": "manager", "uuid": self.uuid, "name": self.name}
+        self.channels = ChannelManager(self)
 
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
-        super().__init__(client_id="{}:{}".format(self.name, self.uuid))
-
-        self.channels = ChannelManager(self)
-
-        super().__init__()
+        super().__init__(name="{}:{}".format(self.name, self.uuid))
 
     def start(
-        self, server: MQTTServer = MQTTServer(
-            host="localhost", port=1883, user="cli", pwd="", ssl=False)
+        self, server: Optional[MQTTServer] = None
     ) -> None:
         """Connect manager."""
         print(self._BANNER)
+
+        # We handle loopback internally; must be called before connect!
+        self.enable_bridge_mode()
 
         self.will_set(
             self.control_topic("reg", self.uuid), qos=2,
@@ -85,7 +86,7 @@ class Manager(mqtt.Client):
             rt._start(self, i)
 
         self.log.info("Initialization complete.")
-        print()
+        print()  # empty line after initialization
 
     def stop(self):
         """Stop manager."""
@@ -103,43 +104,8 @@ class Manager(mqtt.Client):
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""
-        self.log_mq.info("Disconnected: rc={} ({})".format(
+        self.log.info("Disconnected: rc={} ({})".format(
             rc, mqtt.connack_string(rc)))
-
-    def connect(self, server: MQTTServer) -> None:
-        """Connect to MQTT server."""
-        semaphore = Semaphore()
-        semaphore.acquire()
-
-        def _on_connect(mqttc, obj, flags, rc):
-            semaphore.release()
-
-        self.on_connect = _on_connect
-
-        # We handle loopback internally.
-        self.enable_bridge_mode()
-
-        self.log_mq.info(
-            "Connecting MQTT client: {}:{}".format(self.name, self.uuid))
-        self.log_mq.info("SSL: {}".format(server.ssl))
-        self.log_mq.info("Username: {}".format(server.user))
-        try:
-            self.log_mq.info("Password file: {}".format(server.pwd))
-            with open(server.pwd, 'r') as f:
-                passwd = f.read().rstrip('\n')
-        except FileNotFoundError:
-            passwd = ""
-            self.log_mq.warn("No password supplied; using an empty password.")
-
-        self.username_pw_set(server.user, passwd)
-        if server.ssl:
-            self.tls_set(cert_reqs=ssl.CERT_NONE)
-        super().connect(server.host, server.port, 60)
-
-        # Waiting for on_connect to release
-        self.loop_start()
-        semaphore.acquire()
-        self.log_mq.info("Connected to MQTT server.")
 
     def on_message(self, client, userdata, msg):
         """Handle message.

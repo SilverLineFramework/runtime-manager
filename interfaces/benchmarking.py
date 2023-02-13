@@ -14,15 +14,15 @@ class Benchmarking(LinuxMinimal):
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-basic"
     DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_benchmarking.py"
+    PROFILE_TOPIC = "benchmarking"
 
     def handle_profile(self, module: str, msg: bytes) -> None:
         """Handle profiling message."""
-        self.mgr.publish(
-            self.control_topic("profile/benchmarking", module), msg)
+        self.mgr.publish(self.control_topic(self.PROFILE_TOPIC, module), msg)
 
 
 @beartype
-class OpcodeCount(LinuxMinimal):
+class OpcodeCount(Benchmarking):
     """Opcode counting runtime."""
 
     TYPE = "benchmarking/opcodes"
@@ -31,3 +31,4 @@ class OpcodeCount(LinuxMinimal):
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-opcodes"
     DEFAULT_COMMAND = "./runtimes/profiling-opcodes/build/runtime"
+    PROFILE_TOPIC = "profile/opcodes"
