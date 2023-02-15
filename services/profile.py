@@ -18,7 +18,7 @@ class Profile(MQTTClient):
     """Profiling server."""
 
     _BANNER = r"""
-     ___       _ _ 
+     ___       _ _
     | _ ) __ _| | |___  ___ _ _
     | _ \/ _` | | / _ \/ _ \ ' \
     |___/\__,_|_|_\___/\___/_||_|
@@ -35,7 +35,7 @@ class Profile(MQTTClient):
         self.realm = realm
         self.base_topic = "{}/proc/profile/".format(self.realm)
         self.base_path = base_path
-        super().__init__(name="{}:{}".format(self.name, self.uuid))
+        super().__init__(client_id="{}:{}".format(self.name, self.uuid))
 
     def start(self, server: Optional[MQTTServer] = None) -> None:
         """Start profiling server."""

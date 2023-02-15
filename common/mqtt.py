@@ -49,12 +49,13 @@ class MQTTClient(mqtt.Client):
 
     Parameters
     ----------
-    name: client ID.
+    client_id: client ID.
     """
 
-    def __init__(self, name: str = "client") -> None:
+    def __init__(self, client_id: str = "client") -> None:
         self.__log = logging.getLogger('mq')
-        super().__init__(client_id=name)
+        self.client_id = client_id
+        super().__init__(client_id=client_id)
 
     def connect(self, server: Optional[MQTTServer] = None) -> None:
         """Connect to MQTT server.
@@ -77,7 +78,7 @@ class MQTTClient(mqtt.Client):
         self.on_connect = _on_connect
 
         self.__log.info(
-            "Connecting MQTT client: {}:{}".format(self.name, self.uuid))
+            "Connecting MQTT client: {}".format(self.client_id))
         self.__log.info("SSL: {}".format(server.ssl))
         self.__log.info("Username: {}".format(server.user))
         try:

@@ -22,9 +22,11 @@ class LinuxMinimalRuntime:
         """Run program."""
         data = json.loads(msg.payload)
         cmd = [self.cmd]
-        if "env" in data and data["env"]:
-            cmd += ["--env"] + data["env"]
-        cmd += [data["filename"]] + data["args"][1:]
+        args = data.get("args", {})
+        if "env" in args and args["env"]:
+            cmd += ["--env"] + args["env"]
+        cmd += data.get("file") + args.get("argv", [])[1:]
+
         self.process = Popen(
             " ".join(cmd), stdin=PIPE, stdout=PIPE, shell=True)
         self.socket.write(Message(

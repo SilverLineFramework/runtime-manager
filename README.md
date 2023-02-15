@@ -147,7 +147,7 @@ From orchestrator:
 {
     "object_id": "fcb2780b-abdd-43b6-bc13-895baa2075a3",
     "action": "create",
-    "type": "arts_req",
+    "type": "req",
     "data": {
         "type": "module",
         "uuid": "44c72c87-c4ec-4759-b587-30ddc8590f6b",
@@ -189,7 +189,7 @@ Runtimes can publish arbitrary JSON for keepalive messages:
 {
     "object_id": "50c2f088-a5b6-48c5-bbc7-4a693b0117a2",
     "action": "update",
-    "type": "arts_req",
+    "type": "req",
     "data": {
         "type": "runtime",
         "uuid": "5f937916-d29d-4f66-801e-3d69f57728e2",
@@ -229,7 +229,7 @@ On module exit, any metadata (```other fields```) returned as a JSON is forwarde
 {
     "object_id": "fcb2780b-abdd-43b6-bc13-895baa2075b4",
     "action": "exited",
-    "type": "arts_req",
+    "type": "req",
     "data": {
         "type": "module",
         "uuid": "44c72c87-c4ec-4759-b587-30ddc8590f6b",

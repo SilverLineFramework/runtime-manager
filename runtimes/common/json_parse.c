@@ -14,11 +14,13 @@
  * @brief Parse module arguments (path, env, argv, dirs, etc).
  */
 bool parse_module_args(cJSON *data, module_args_t *dst) {
+    cJSON *args = cJSON_GetObjectItem(data, "args");
     return (
+        (args != NULL) &&
         get_string_value(data, "filename", &dst->path) &&
         get_string_array(data, "dirs", &dst->dirs) &&
-        get_string_array(data, "env", &dst->env) &&
-        get_string_array(data, "args", &dst->argv));
+        get_string_array(args, "env", &dst->env) &&
+        get_string_array(args, "argv", &dst->argv));
 }
 
 /**

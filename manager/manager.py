@@ -59,7 +59,7 @@ class Manager(MQTTClient):
         # Append a UUID here since client_id must be unique.
         # If this is not added, MQTT will disconnect with rc=7
         # (Connection Refused: unknown reason.)
-        super().__init__(name="{}:{}".format(self.name, self.uuid))
+        super().__init__(client_id="{}:{}".format(self.name, self.uuid))
 
     def start(
         self, server: Optional[MQTTServer] = None
@@ -123,7 +123,7 @@ class Manager(MQTTClient):
         return json.dumps({
             "object_id": str(uuid.uuid4()),
             "action": action,
-            "type": "arts_req",
+            "type": "req",
             "data": payload
         })
 
