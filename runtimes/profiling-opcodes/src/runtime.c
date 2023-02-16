@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
     if (argc < 2) { exit(-1); }
     runtime.socket = slsocket_open(atoi(argv[1]), -1);
     if (runtime.socket < 0) { exit(-1); }
+    log_init(runtime.socket);
 
     bool res = wamr_init(NULL);
     if (!res) { exit(-1); }
@@ -76,7 +77,9 @@ int main(int argc, char **argv) {
         message_t *msg = slsocket_read(runtime.socket);
         if (msg != NULL) {
             if ((msg->h1 & H_CONTROL) != 0) {
-                log_msg(L_DBG, "Runtime received message: %s", msg->payload);
+                log_msg(
+                    L_DBG, "Runtime received message: %.*s",
+                    msg->payloadlen, msg->payload);
                 if (create_module(&runtime.mod, msg)) {
                     run_module(&runtime.mod);
                 }

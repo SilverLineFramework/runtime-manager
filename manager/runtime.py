@@ -53,6 +53,7 @@ class RuntimeManager(RuntimeManagerMixins):
             "uuid": self.rtid,
             "name": self.name,
             "runtime_type": self.TYPE,
+            "max_nmodules": self.MAX_NMODULES,
             "apis": self.APIS,
         }
         self.config.update(cfg)

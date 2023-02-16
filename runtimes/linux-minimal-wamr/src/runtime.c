@@ -71,7 +71,9 @@ int main(int argc, char **argv) {
         message_t *msg = slsocket_read(runtime.socket);
         if (msg != NULL) {
             if ((msg->h1 & H_CONTROL) != 0) {
-                log_msg(L_DBG, "Runtime received message: %s", msg->payload);
+                log_msg(
+                    L_DBG, "Runtime received message: %.*s",
+                    msg->payloadlen, msg->payload);
                 if (create_module(&runtime.mod, msg)) {
                     run_module(&runtime.mod);
                 }

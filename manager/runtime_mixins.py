@@ -81,25 +81,24 @@ class RuntimeManagerMixins:
 
     def __handle_runtime_control_message(self, msg: Message) -> None:
         """Handle control message."""
-        # Index is lower bits of first header byte.
-        idx = msg.h1 & Header.index_bits
-
-        match msg.h2:
-            case Header.keepalive:
+        match (msg.h1 & Header.control, msg.h1 & Header.index_bits, msg.h2):
+            case (0x00, h1, h2):
+                self.mgr.channels.publish(self.index, h1, h2, msg.payload)
+            case (Header.control, _, Header.keepalive):
                 self.handle_keepalive(msg.payload)
-            case Header.log_runtime:
+            case (Header.control, _, Header.log_runtime):
                 self.handle_log(msg.payload, module=-1)
-            case Header.exited:
+            case (Header.control, idx, Header.exited):
                 self.cleanup_module(idx, self.modules.uuid(idx), msg)
-            case Header.ch_open:
+            case (Header.control, idx, Header.ch_open):
                 self.mgr.channels.open(
                     runtime=self.index, module=idx, fd=msg.payload[0],
                     topic=msg.payload[2:], flags=msg.payload[1])
-            case Header.ch_close:
+            case (Header.control, _, Header.ch_close):
                 self.mgr.channels.close(self.index, msg.payload[0])
-            case Header.log_module:
-                self.handle_log(msg.payload, module=self.modules.uuid(idx))
-            case Header.profile:
+            case (Header.control, idx, Header.log_module):
+                self.handle_log(msg.payload, module=idx)
+            case (Header.control, idx, Header.profile):
                 self.handle_profile(self.modules.uuid(idx), msg.payload)
             case _:
                 raise exceptions.SLException("Unknown message type")
@@ -107,11 +106,7 @@ class RuntimeManagerMixins:
     def on_runtime_message(self, msg: Message) -> None:
         """Handle message from the runtime."""
         try:
-            if Header.control & msg.h1:
-                self.__handle_runtime_control_message(msg)
-            else:
-                self.mgr.channels.publish(
-                    self.index, msg.h1, msg.h2, msg.payload)
+            self.__handle_runtime_control_message(msg)
         except Exception as e:
             exceptions.handle_error(e, self.log, self.index, msg.h1, msg.h2)
 

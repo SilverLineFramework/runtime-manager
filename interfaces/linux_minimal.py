@@ -1,5 +1,7 @@
 """Linux minimum viable runtime."""
 
+import os
+import signal
 import subprocess
 
 from beartype.typing import Optional
@@ -37,14 +39,15 @@ class LinuxMinimal(RuntimeManager):
         """Start runtime, and return the registration config."""
         self.socket = SLSocket(self.index, server=True, timeout=1.)
         self.process = subprocess.Popen(
-            "{} {}".format(self.command, self.index), shell=True)
+            "{} {}".format(self.command, self.index), shell=True,
+            preexec_fn=os.setsid)
         self.socket.accept()
         return self.config
 
     def stop(self) -> None:
         """Stop process."""
         self.socket.close()
-        self.process.terminate()
+        os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
 
     def send(self, msg: Message) -> None:
         """Send message."""

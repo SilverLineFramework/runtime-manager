@@ -42,18 +42,18 @@ class LinuxBenchmarkingRuntime:
         self.done = False
 
     def __run(self, data):
-        cmd = []
         args = data.get("args", {})
+        cmd = ["run"]
         if "env" in args and args["env"]:
             cmd += ["--env"] + args["env"]
-        cmd += data.get("file") + args.get("argv", [])[1:]
+        cmd += [data.get("file")] + args.get("argv", [])[1:]
 
         repeat = args.get("repeat", 1)
         stats = np.zeros([repeat, 3], dtype=np.uint32)
         for i in range(repeat):
             self.process = os.fork()
             if self.process == 0:
-                os.execvp("wasmer", args)
+                os.execvp("wasmer", cmd)
             else:
                 _, status, rusage = os.wait4(self.process, 0)
                 if status != 0:
@@ -98,7 +98,7 @@ class LinuxBenchmarkingRuntime:
 
     def loop(self):
         """Main loop."""
-        while not self.done:
+        while True:
             msg = self.socket.read()
             if msg is not None:
                 self.handle_message(msg)

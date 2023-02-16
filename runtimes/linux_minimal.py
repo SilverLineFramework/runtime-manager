@@ -25,7 +25,7 @@ class LinuxMinimalRuntime:
         args = data.get("args", {})
         if "env" in args and args["env"]:
             cmd += ["--env"] + args["env"]
-        cmd += data.get("file") + args.get("argv", [])[1:]
+        cmd += [data.get("file")] + args.get("argv", [])[1:]
 
         self.process = Popen(
             " ".join(cmd), stdin=PIPE, stdout=PIPE, shell=True)
@@ -48,12 +48,11 @@ class LinuxMinimalRuntime:
 
     def loop(self) -> None:
         """Main loop."""
-        msg = self.socket.read()
-        if msg is not None:
-            self.handle_message(msg)
+        while True:
+            msg = self.socket.read()
+            if msg is not None:
+                self.handle_message(msg)
 
 
 if __name__ == '__main__':
-    rt = LinuxMinimalRuntime(int(sys.argv[1]))
-    while True:
-        rt.loop()
+    LinuxMinimalRuntime(int(sys.argv[1])).loop()

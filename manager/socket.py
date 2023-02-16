@@ -2,7 +2,6 @@
 
 import os
 import socket
-import select
 import struct
 
 from beartype.typing import Optional
@@ -30,6 +29,7 @@ class SLSocket:
     timeout: connect, receive timeout in seconds.
     base_path: socket base path.
     chunk_size: size of chunks to read from the socket.
+    retries: maximum number of times to try sending data if send fails.
     """
 
     HEADER_FMT = "HBB"
@@ -37,13 +37,15 @@ class SLSocket:
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,
-        timeout: float = 5., base_path="/tmp/sl", chunk_size: int = 4096
+        timeout: float = 5., base_path="/tmp/sl", chunk_size: int = 4096,
+        retries: int = 10
     ) -> None:
         self.timeout = timeout
         self.server = server
         self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.socket.settimeout(timeout)
         self.chunk_size = chunk_size
+        self.retries = retries
 
         if module == -1:
             address = "{}/{:02x}.s".format(base_path, runtime)
@@ -59,17 +61,16 @@ class SLSocket:
         else:
             self.socket.connect(address)
             self.connection = self.socket
-            self.connection.setblocking(0)
+            self.connection.settimeout(self.timeout)
 
     def accept(self) -> None:
         """Accept connection."""
         self.connection, _ = self.socket.accept()
-        self.connection.setblocking(0)
+        self.connection.settimeout(self.timeout)
 
     def read(self) -> Optional[Message]:
         """Read with timeout."""
-        ready = select.select([self.connection], [], [], self.timeout)
-        if ready[0]:
+        try:
             recv = self.connection.recv(self.HEADER_SIZE)
             if len(recv) == self.HEADER_SIZE:
                 payloadlen, h1, h2 = struct.unpack(self.HEADER_FMT, recv)
@@ -79,15 +80,25 @@ class SLSocket:
                     payload.append(self.connection.recv(recv))
                     payloadlen -= recv
                 return Message(h1, h2, b"".join(payload))
-        return None
+            return None
+        except TimeoutError:
+            return None
+
+    def _send(self, packet):
+        for _ in range(self.retries):
+            try:
+                return self.connection.sendall(packet)
+            except TimeoutError:
+                pass
+        raise TimeoutError
 
     def write(self, msg: Message) -> None:
         """Send message to socket."""
         header = struct.pack(self.HEADER_FMT, len(msg.payload), msg.h1, msg.h2)
         try:
-            self.connection.sendall(header)
+            self._send(header)
             if len(msg.payload) > 0:
-                self.connection.sendall(msg.payload)
+                self._send(msg.payload)
         except TimeoutError:
             pass
 

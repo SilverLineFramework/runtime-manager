@@ -66,14 +66,14 @@ class Manager(MQTTClient):
     ) -> None:
         """Connect manager."""
         print(self._BANNER)
-
-        # We handle loopback internally; must be called before connect!
-        self.enable_bridge_mode()
+        for rt in self.runtimes:
+            print("    {}{}".format(rt.name.ljust(8), rt.TYPE))
+        print()
 
         self.will_set(
             self.control_topic("reg", self.uuid), qos=2,
             payload=self.control_message("delete", self.metadata))
-        self.connect(server)
+        self.connect(server, bridge=True)
 
         self.log.info("Registering manager...")
         self._register(
@@ -117,15 +117,6 @@ class Manager(MQTTClient):
             self.channels.handle_message(msg.topic, msg.payload)
         except Exception as e:
             exceptions.handle_error(e, self.log, msg.topic)
-
-    def control_message(self, action: str, payload: dict) -> str:
-        """Format control message to the orchestrator."""
-        return json.dumps({
-            "object_id": str(uuid.uuid4()),
-            "action": action,
-            "type": "req",
-            "data": payload
-        })
 
     def control_topic(self, topic: str, *ids: str) -> str:
         """Format control topic."""
