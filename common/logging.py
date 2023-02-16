@@ -1,5 +1,6 @@
 """Standardized logging configuration."""
 
+import os
 import logging
 from rich.logging import RichHandler
 from rich.text import Text
@@ -29,6 +30,9 @@ def configure_log(log: Optional[str] = None, level: int = 20) -> None:
     log: File to save log to (if not None). Will save to `{log}-{date}.log`.
     verbose: Logging level to use (python convension; 0 is most verbose).
     """
+    if log is not None:
+        os.makedirs(log, exist_ok=True)
+
     console = Console(theme=Theme({
         "logging.level.cri": "bold red",
         "logging.level.err": "bold bright_red",

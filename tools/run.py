@@ -32,7 +32,7 @@ def _parse():
         "-u", "--utilization", type=float, default=0.0,
         help="Utilization for sched_deadline. If 0.0, uses CFS.")
     p.add_argument(
-        "-p", "--repeat", default=0,
+        "-k", "--repeat", type=int, default=0,
         help="Number of times to run module if benchmarking.")
 
     return p
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
-    client = SilverlineClient.from_json(args.cfg, connect=True, name="cli")
+    client = SilverlineClient.from_config(args.cfg, connect=True, name="cli")
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
         if rtid is None:

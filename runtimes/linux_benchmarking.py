@@ -1,27 +1,4 @@
-"""Linux benchmarking runtime.
-
-Benchmark spec::
-
-    benchmark/
-        benchmark.wasm
-        benchmark.json
-        data/ (optional)
-            data.file.1
-            data.file.2
-            ...
-
-In benchmark.json::
-
-    {
-        "args": ["argv", "to", "pass"],
-        "env": ["envvar=value"],
-        "inputs": [
-            {"args": ["--data", "data.file.1"], "env": ["index=1"]},
-            {"args": ["--data", "data.file.2"], "env": ["index=2"]},
-            ...
-        ]
-    }
-"""
+"""Linux benchmarking runtime."""
 
 import os
 import sys
@@ -41,16 +18,9 @@ class LinuxBenchmarkingRuntime:
         self.stop = False
         self.done = False
 
-    def __run(self, data):
-        args = data.get("args", {})
-        cmd = ["run"]
-        if "env" in args and args["env"]:
-            cmd += ["--env"] + args["env"]
-        cmd += [data.get("file")] + args.get("argv", [])[1:]
-
-        repeat = args.get("repeat", 1)
-        stats = np.zeros([repeat, 3], dtype=np.uint32)
-        for i in range(repeat):
+    def __run(self, cmd, repeat):
+        stats = []
+        for _ in range(repeat):
             self.process = os.fork()
             if self.process == 0:
                 os.execvp("wasmer", cmd)
@@ -61,21 +31,30 @@ class LinuxBenchmarkingRuntime:
                         Header.control | 0x00, Header.log_module,
                         "Nonzero exit code: {}".format(status)
                     ))
-                stats[i][0] = int(rusage.ru_utime * 10**6)
-                stats[i][1] = int(rusage.ru_stime * 10**6)
-                stats[i][2] = rusage.ru_maxrss
-
+                stats.append((
+                    int(rusage.ru_utime * 10**6),
+                    int(rusage.ru_stime * 10**6),
+                    rusage.ru_maxrss))
             if self.stop:
-                return stats[:i + 1]
+                break
 
-        return stats
+        self.socket.write(Message.from_str(
+            Header.control | 0x00, Header.log_module,
+            "Exited with {} samples.".format(len(stats))))
+        return np.array(stats, dtype=np.uint32)
 
     def run(self, msg):
         """Run program."""
         self.stop = False
         data = json.loads(msg.payload)
 
-        stats = self.__run(data)
+        args = data.get("args", {})
+        cmd = ["run", "--singlepass"]
+        if "env" in args and args["env"]:
+            cmd += ["--env"] + args["env"]
+        cmd += [data.get("file")] + args.get("argv", [])[1:]
+
+        stats = self.__run(cmd, args.get("repeat", 1))
 
         self.socket.write(Message(
             Header.control | 0x00, Header.profile, stats.tobytes()))
@@ -85,16 +64,15 @@ class LinuxBenchmarkingRuntime:
 
     def handle_message(self, msg: Message) -> None:
         """Handle message from manager."""
-        if msg.h1 & Header.control == 0:
-            pass
-        else:
-            match msg.h2:
-                case Header.create:
-                    threading.Thread(target=self.run, args=[msg]).start()
-                case Header.delete:
-                    self.stop = True
-                case _:
-                    pass
+        match (msg.h1 & Header.control, msg.h1 & Header.index_bits, msg.h2):
+            case (0x00, _, _):
+                pass
+            case (Header.control, _, Header.create):
+                threading.Thread(target=self.run, args=[msg]).start()
+            case (Header.control, _, Header.delete):
+                self.stop = True
+            case _:
+                pass
 
     def loop(self):
         """Main loop."""

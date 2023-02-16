@@ -1,20 +1,28 @@
 """Profiling server."""
 
-import uuid
 import logging
 import os
 import argparse
+import json
+import traceback
 
 import numpy as np
 
 from beartype import beartype
-from beartype.typing import Optional
+from beartype.typing import Optional, Union
 
-from common import MQTTClient, MQTTServer, configure_log
+from common import SilverlineClient, MQTTServer, configure_log
+
+
+class ProfilerException(Exception):
+    """Base class for profiling-related exceptions."""
+
+    def __init__(self, msg):
+        self.msg = msg
 
 
 @beartype
-class Profile(MQTTClient):
+class Profiler(SilverlineClient):
     """Profiling server."""
 
     _BANNER = r"""
@@ -26,34 +34,51 @@ class Profile(MQTTClient):
     """
 
     def __init__(
-        self, name: str = "profile", profiler_id: Optional[str] = None,
-        realm: str = "realm", base_path: str = "data"
+        self, name: str = "profiler", base_path: str = "data",
+        api: str = "localhost:8000"
     ) -> None:
+        super().__init__(name=name, api=api)
+
         self.log = logging.getLogger("profile")
         self.name = name
-        self.uuid = str(uuid.uuid4()) if profiler_id is None else profiler_id
-        self.realm = realm
-        self.base_topic = "{}/proc/profile/".format(self.realm)
         self.base_path = base_path
-        super().__init__(client_id="{}:{}".format(self.name, self.uuid))
+        self._modules = {}
+        self._runtimes = {}
+
+    @classmethod
+    def from_config(cls, cfg: Union[str, dict], *args, **kwargs) -> "Profiler":
+        """Create from configuration."""
+        if isinstance(cfg, str):
+            with open(cfg) as f:
+                cfg = json.load(f)
+        api = "http://{}:{}/api".format(
+            cfg.get("http", "localhost"), cfg.get("http_port", 8000))
+        data = cfg.get("data_dir", "data")
+        client = cls(*args, api=api, base_path=data, **kwargs)
+        client.start(MQTTServer.from_config(cfg))
+        return client
 
     def start(self, server: Optional[MQTTServer] = None) -> None:
         """Start profiling server."""
         print(self._BANNER)
         self.connect(server)
-
-        self.subscribe("{}#".format(self.base_topic))
-        self.message_callback_add(
-            "{}control".format(self.base_topic), self.on_control_message)
+        self.subscribe(self.control_topic("profile", "#"))
 
     def stop(self):
         """Stop profiling server."""
         self.loop_stop()
         self.disconnect()
 
-    def on_control_message(self, client, userdata, msg):
-        """Control messages."""
-        pass
+        self.log.info(
+            "Saving metadata for {} runtimes.".format(len(self._runtimes)))
+        if len(self._runtimes) > 0:
+            with open(os.path.join(self.base_path, "runtimes.json"), 'w') as f:
+                json.dump(self._runtimes, f, indent=4)
+        self.log.info(
+            "Saving metadata for {} modules.".format(len(self._modules)))
+        if len(self._modules) > 0:
+            with open(os.path.join(self.base_path, "modules.json"), 'w') as f:
+                json.dump(self._modules, f, indent=4)
 
     def decode(self, payload: bytes, mtype: str):
         """Decode message."""
@@ -86,27 +111,46 @@ class Profile(MQTTClient):
                     "ch_out": data[:, 7]
                 }
             case _:
-                return None
+                raise ProfilerException("Invalid type: {}".format(mtype))
+
+    def metadata(self, rtid, mid):
+        """Get runtime/module metadata."""
+        if rtid not in self._runtimes:
+            self._runtimes[rtid] = self.get_runtime(rtid)
+        if mid not in self._modules:
+            self._modules[mid] = self.get_module(mid)
+        return {
+            "runtime": self._runtimes[rtid].get("name", ""),
+            "module": self._modules[mid].get("name", ""),
+            "filename": self._modules[mid].get("file", "")
+        }
+
+    def __on_message(self, msg) -> None:
+        try:
+            mtype, rtid, mid = msg.topic.replace(
+                self.control_topic("profile") + "/", "").split('/')
+        except ValueError:
+            raise ProfilerException("Invalid topic: {}".format(msg.topic))
+
+        decoded = self.decode(msg.payload, mtype)
+        meta = self.metadata(rtid, mid)
+
+        path = os.path.join(
+            self.base_path, rtid, "{}.{}.npz".format(mid, mtype))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        np.savez(path, **meta, **decoded)
+        self.log.info("Saved profiling data: {}".format(path))
 
     def on_message(self, client, userdata, msg):
         """Handle message."""
         self.log.debug("Received message on topic: {}".format(msg.topic))
         try:
-            mtype, rtid, mid = msg.topic.replace(
-                self.base_topic, "").split('/')
-        except ValueError:
-            self.log.error("Invalid topic: {}".format(msg.topic))
-
-        decoded = self.decode(msg.payload, mtype)
-        if decoded is None:
-            self.log.error("Invalid message type: {}. Topic was: {}".format(
-                mtype, msg.topic))
-        else:
-            path = os.path.join(
-                self.base_path, rtid, "{}.{}.npz".format(mid, mtype))
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            np.savez(path, **decoded)
-            self.log.info("Saved profiling data: {}".format(path))
+            self.__on_message(msg)
+        except ProfilerException as e:
+            self.log.error(e.msg)
+        except Exception as e:
+            self.log.critical("Uncaught exception: {}".format(e))
+            self.log.critical("\n".join(traceback.format_exception(e)))
 
 
 if __name__ == '__main__':
@@ -119,11 +163,15 @@ if __name__ == '__main__':
     args = p.parse_args()
 
     # log_dir = os.path.join(args.log_dir, "profile/")
-    # os.makedirs(log_dir, exist_ok=True)
     configure_log(log=None, level=0)
 
-    profiler = Profile(name="profiler", realm="realm", base_path="data")
-    # profiler.start(MQTTServer.from_json(args.config))
-    profiler.start(None)
+    profiler = Profiler.from_config(args.config, name="profiler")
 
-    input()
+    try:
+        input()
+    except KeyboardInterrupt:
+        print(" Exiting due to KeyboardInterrupt.\n")
+        pass
+
+    profiler.stop()
+    exit()

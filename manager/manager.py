@@ -2,7 +2,6 @@
 
 import logging
 import uuid
-import json
 from threading import Semaphore
 
 import paho.mqtt.client as mqtt
@@ -61,9 +60,7 @@ class Manager(MQTTClient):
         # (Connection Refused: unknown reason.)
         super().__init__(client_id="{}:{}".format(self.name, self.uuid))
 
-    def start(
-        self, server: Optional[MQTTServer] = None
-    ) -> None:
+    def start(self, server: Optional[MQTTServer] = None) -> None:
         """Connect manager."""
         print(self._BANNER)
         for rt in self.runtimes:
@@ -117,10 +114,6 @@ class Manager(MQTTClient):
             self.channels.handle_message(msg.topic, msg.payload)
         except Exception as e:
             exceptions.handle_error(e, self.log, msg.topic)
-
-    def control_topic(self, topic: str, *ids: str) -> str:
-        """Format control topic."""
-        return "{}/proc/{}/{}".format(self.realm, topic, "/".join(ids))
 
     def _register(self, topic: str, msg: str) -> None:
         """Blocking registration.

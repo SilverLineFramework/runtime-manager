@@ -14,7 +14,7 @@ class Benchmarking(LinuxMinimal):
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-basic"
     DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_benchmarking.py"
-    PROFILE_TOPIC = "benchmarking"
+    PROFILE_TOPIC = "profile/benchmarking"
 
     def handle_profile(self, module: str, msg: bytes) -> None:
         """Handle profiling message."""

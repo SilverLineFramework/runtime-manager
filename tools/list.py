@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     args = _parse().parse_args()
 
-    client = SilverlineClient.from_json(args.cfg)
+    client = SilverlineClient.from_config(args.cfg)
     runtimes = client.get_runtimes()
 
     _table(runtimes)

@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
-    client = SilverlineClient.from_json(args.cfg, connect=True, name="cli")
+    client = SilverlineClient.from_config(args.cfg, connect=True, name="cli")
     for mod in args.modules:
         mid = client.infer_module(mod)
         if mid is None:

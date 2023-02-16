@@ -9,7 +9,7 @@ from threading import Semaphore
 import paho.mqtt.client as mqtt
 
 from beartype import beartype
-from beartype.typing import NamedTuple, Optional
+from beartype.typing import NamedTuple, Optional, Union
 
 
 @beartype
@@ -23,6 +23,7 @@ class MQTTServer(NamedTuple):
     user: Username.
     pwd: Password.
     ssl: Whether server has TLS/SSL enabled.
+    realm: MQTT topic realm prefix.
     """
 
     host: str
@@ -30,18 +31,21 @@ class MQTTServer(NamedTuple):
     user: str
     pwd: str
     ssl: bool
+    realm: str
 
     @classmethod
-    def from_json(cls, path: str):
+    def from_config(cls, cfg: Union[str, dict]):
         """Load settings from JSON configuration file."""
-        with open(path) as f:
-            data = json.load(f)
+        if isinstance(cfg, str):
+            with open(cfg) as f:
+                cfg = json.load(f)
         return cls(
-            host=data.get("mqtt", "localhost"),
-            port=data.get("mqtt_port", 1883),
-            user=data.get("mqtt_username", "cli"),
-            pwd=data.get("pwd", ""),
-            ssl=data.get("use_ssl", False))
+            host=cfg.get("mqtt", "localhost"),
+            port=cfg.get("mqtt_port", 1883),
+            user=cfg.get("mqtt_username", "cli"),
+            pwd=cfg.get("pwd", ""),
+            ssl=cfg.get("use_ssl", False),
+            realm=cfg.get("realm", "realm"))
 
 
 @beartype
@@ -54,9 +58,10 @@ class MQTTClient(mqtt.Client):
     """
 
     def __init__(self, client_id: str = "client") -> None:
+        super().__init__(client_id=client_id)
+
         self.__log = logging.getLogger('mq')
         self.client_id = client_id
-        super().__init__(client_id=client_id)
 
     def connect(
         self, server: Optional[MQTTServer] = None, bridge: bool = False
@@ -72,11 +77,10 @@ class MQTTClient(mqtt.Client):
         """
         if bridge:
             self.enable_bridge_mode()
-
         if server is None:
-            server = MQTTServer(
-                host="localhost", port=1883, user="cli", pwd="", ssl=False)
+            server = MQTTServer.from_config({})
 
+        self.realm = server.realm
         semaphore = Semaphore()
         semaphore.acquire()
 
@@ -116,3 +120,7 @@ class MQTTClient(mqtt.Client):
             "type": "req",
             "data": payload
         })
+
+    def control_topic(self, *topic: str) -> str:
+        """Format control topic in the form ``{realm}/proc/{...}``."""
+        return "{}/proc/{}".format(self.realm, "/".join(topic))

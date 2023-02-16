@@ -10,8 +10,8 @@ rt2 = interfaces.LinuxMinimalWAMR(name="wamr")
 rt3 = interfaces.Benchmarking(name="bench")
 rt4 = interfaces.OpcodeCount(name="intrp")
 
-mgr = Manager([rt1, rt2, rt3, rt4])
-mgr.start(MQTTServer("localhost", 1883, "cli", "../mqtt_pwd.txt", False))
+mgr = Manager([rt3])
+mgr.start(MQTTServer.from_config("config.json"))
 
 try:
     input()

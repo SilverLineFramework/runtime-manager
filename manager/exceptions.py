@@ -47,5 +47,5 @@ def handle_error(exc, log, *context):
     if isinstance(exc, SLException):
         log.error(exc.fmt(*context))
     else:
-        log.error("Uncaught exception: {}".format(exc))
-        log.error("\n".join(traceback.format_exception(exc)))
+        log.critical("Uncaught exception: {}".format(exc))
+        log.critical("\n".join(traceback.format_exception(exc)))

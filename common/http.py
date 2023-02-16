@@ -4,7 +4,7 @@ import json
 import uuid
 import requests
 
-from beartype.typing import Optional
+from beartype.typing import Optional, Union
 from beartype import beartype
 
 from .mqtt import MQTTClient, MQTTServer
@@ -14,23 +14,24 @@ from .mqtt import MQTTClient, MQTTServer
 class SilverlineClient(MQTTClient):
     """Silverline HTTP Client."""
 
-    def __init__(
-        self, *args, name: str = "cli", api: str = "localhost:8000", **kwargs
-    ) -> None:
+    def __init__(self, name: str = "cli", api: str = "localhost:8000") -> None:
+        super().__init__(client_id="{}:{}".format(name, str(uuid.uuid4())))
+
         self.api = api
-        super().__init__(
-            *args, client_id="{}:{}".format(name, str(uuid.uuid4())), **kwargs)
 
     @classmethod
-    def from_json(cls, path: str, *args, connect=False, **kwargs):
-        """Create from JSON file."""
-        with open(path) as f:
-            data = json.load(f)
+    def from_config(
+        cls, cfg: Union[str, dict], *args, connect=False, **kwargs
+    ) -> "SilverlineClient":
+        """Create from configuration."""
+        if isinstance(cfg, str):
+            with open(cfg) as f:
+                cfg = json.load(f)
         api = "http://{}:{}/api".format(
-            data.get("http", "localhost"), data.get("http_port", 8000))
+            cfg.get("http", "localhost"), cfg.get("http_port", 8000))
         client = cls(*args, api=api, **kwargs)
         if connect:
-            client.connect(MQTTServer.from_json(path))
+            client.connect(MQTTServer.from_config(cfg))
         return client
 
     def create_module(
@@ -73,7 +74,7 @@ class SilverlineClient(MQTTClient):
             "file": file,
             "args": args
         })
-        self.publish("realm/proc/control/", payload, qos=2)
+        self.publish(self.control_topic("control"), payload, qos=2)
 
         return module_uuid
 
@@ -81,7 +82,7 @@ class SilverlineClient(MQTTClient):
         """Delete module."""
         payload = self.control_message("delete", {
             "type": "module", "uuid": module})
-        self.publish("realm/proc/control", payload, qos=2)
+        self.publish(self.control_topic("control"), payload, qos=2)
 
     def infer_runtime(self, runtime: str) -> Optional[str]:
         """Infer runtime UUIDs."""
