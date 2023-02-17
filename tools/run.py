@@ -57,4 +57,4 @@ if __name__ == '__main__':
                 log.info("Created: {}:{} --> {}:{}".format(
                     f, mid[-4:], rt, rtid[-4:]))
 
-    client.loop_stop()
+    client.stop()

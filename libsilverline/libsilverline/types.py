@@ -100,3 +100,27 @@ class Flags:
     qos0      = 0b0000
     qos1      = 0b0100
     qos2      = 0b1000
+
+
+class State:
+    """Silverline entity state enum.
+
+    Standard representations of possible states for Silverline entities
+    (modules, runtimes, etc.):
+    - alive ('A'): currently executing or available for execution.
+    - dead ('D'): module or runtime is finished executing or otherwise "gone
+        for good."
+    - exiting ('E'): module has been requested to exit, but not yet exited/
+        confirmed exiting.
+    - killed ('K'): module or runtime was killed, but might be revived in the
+        future (i.e., modules killed by runtime disconnection can be
+        resurrected if a runtime reconnects)
+    - queued ('Q'): module is queued for execution due to a lack of available
+        resources.
+    """
+
+    alive   = 'A'
+    dead    = 'D'
+    exiting = 'E'
+    killed  = 'K'
+    queued  = 'Q'

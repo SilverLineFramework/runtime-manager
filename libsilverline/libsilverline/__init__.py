@@ -3,7 +3,7 @@
 from .logging import configure_log, format_message
 from .mqtt import MQTTClient, MQTTServer
 from .http import SilverlineClient
-from .types import Message, Header, Channel, Flags
+from .types import Message, Header, Channel, Flags, State
 from .socket import SLSocket
 
 __all__ = [
@@ -13,6 +13,6 @@ __all__ = [
     "MQTTServer",
     "SilverlineClient",
     "ArgumentParser",
-    "Message", "Header", "Channel", "Flags",
+    "Message", "Header", "Channel", "Flags", "State",
     "SLSocket"
 ]

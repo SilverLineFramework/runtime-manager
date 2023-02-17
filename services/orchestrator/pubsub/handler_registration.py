@@ -3,7 +3,8 @@
 from django.conf import settings
 from django.forms.models import model_to_dict
 
-from orchestrator.models import State, Runtime, Module, Manager
+from orchestrator.models import Runtime, Module, Manager
+from libsilverline import State
 
 from . import messages
 from .handler_base import ControlHandler
@@ -21,17 +22,17 @@ class Registration(ControlHandler):
         try:
             rt_uuid = msg.get('data', 'uuid')
             runtime = Runtime.objects.get(uuid=rt_uuid)
-            runtime.status = State.ALIVE
+            runtime.status = State.alive
             runtime.save()
 
-            modules = Module.objects.filter(
-                parent=runtime, status=State.KILLED)
+            modules = list(
+                Module.objects.filter(parent=runtime, status=State.killed))
             self._log.warn("Dead runtime resurrected: {}".format(rt_uuid))
             self._log.warn("Respawning {} modules.".format(len(modules)))
 
             # Respawn dead modules
             for mod in modules:
-                mod.status = State.ALIVE
+                mod.status = State.alive
                 mod.save()
 
             return [
@@ -59,13 +60,13 @@ class Registration(ControlHandler):
     def delete_runtime(self, rtid):
         """Delete runtime."""
         runtime = self._get_object(rtid, model=Runtime)
-        runtime.status = State.DEAD
+        runtime.status = State.dead
         runtime.save()
 
         # Also mark all related modules as dead, but with respawn enabled
-        killed = Module.objects.filter(parent=runtime, status=State.ALIVE)
+        killed = Module.objects.filter(parent=runtime, status=State.alive)
         for mod in killed:
-            mod.status = State.KILLED
+            mod.status = State.killed
             mod.save()
         if len(killed) > 0:
             self.log.warn(
@@ -82,11 +83,11 @@ class Registration(ControlHandler):
     def delete_manager(self, msg):
         """Delete runtime manager."""
         manager = self._get_object(msg.get('data', 'uuid'), model=Manager)
-        manager.status = State.DEAD
+        manager.status = State.dead
         manager.save()
 
         # Also kill the runtimes
-        killed = Runtime.objects.filter(parent=manager, status=State.ALIVE)
+        killed = Runtime.objects.filter(parent=manager, status=State.alive)
         for rt in killed:
             self.delete_runtime(rt.uuid)
         if len(killed) > 0:

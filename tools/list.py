@@ -20,6 +20,7 @@ def _parse():
 def _table(runtimes):
     table = Table()
     table.add_column("uuid:name", justify="left")
+    table.add_column("type", justify="left")
     table.add_column("modules", justify="left")
     for rt in runtimes:
         _rt = Text(rt["uuid"][-4:], style="bold blue")
@@ -27,13 +28,14 @@ def _table(runtimes):
         _rt.append(rt["name"], style="bold white")
 
         _mod = Text()
-        for mod in rt["children"]:
+        for i, mod in enumerate(rt["children"]):
             _mod.append(mod["uuid"][-4:], style="bold green")
             _mod.append(":")
             _mod.append(mod["name"])
-            _mod.append("  ")
+            if i != len(rt["children"]) - 1:
+                _mod.append("  ")
 
-        table.add_row(_rt, _mod)
+        table.add_row(_rt, rt["runtime_type"], _mod)
 
     Console().print(table)
 
@@ -45,4 +47,3 @@ if __name__ == '__main__':
 
     client = SilverlineClient.from_config(args.cfg).start()
     _table(client.get_runtimes())
-    client.stop()

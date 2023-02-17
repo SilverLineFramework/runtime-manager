@@ -3,7 +3,8 @@
 from django.forms.models import model_to_dict
 from django.conf import settings
 
-from orchestrator.models import State, Runtime, Module
+from orchestrator.models import Runtime, Module
+from libsilverline import State
 
 from .handler_base import ControlHandler
 from . import messages
@@ -42,7 +43,7 @@ class Control(ControlHandler):
 
         try:
             module = self._get_object(msg.get('data', 'uuid'), model=Module)
-            if module.status == State.ALIVE:
+            if module.status == State.alive:
                 # module is running, will error out with a duplicate UUID
                 raise messages.DuplicateUUID(data, obj_type='module')
             else:
@@ -55,13 +56,13 @@ class Control(ControlHandler):
         parent = self.__get_runtime_or_schedule(msg)
         module.parent = parent
 
-        active = Module.objects.filter(parent=parent, status=State.ALIVE)
+        active = Module.objects.filter(parent=parent, status=State.alive)
         if active.count() >= parent.max_nmodules:
-            module.status = State.QUEUED
+            module.status = State.queued
             module.save()
             self.log.info("Module queued: {}".format(module.uuid))
         else:
-            module.status = State.ALIVE
+            module.status = State.alive
             module.save()
             return messages.Request(
                 "/".join([settings.REALM, "proc/control", module.parent.uuid]),
@@ -71,7 +72,7 @@ class Control(ControlHandler):
         """Handle delete message."""
         module_id = msg.get('data', 'uuid')
         module = self._get_object(module_id, model=Module)
-        module.status = State.EXITING
+        module.status = State.exiting
         module.save()
 
         return messages.Request(
@@ -82,14 +83,14 @@ class Control(ControlHandler):
         """Remove module from database."""
         module_id = msg.get('data', 'uuid')
         module = self._get_object(module_id, model=Module)
-        module.status = State.DEAD
+        module.status = State.dead
         module.save()
 
         queue = Module.objects.filter(
-            parent=module.parent, status=State.QUEUED)
+            parent=module.parent, status=State.queued)
         if queue.count() > 0:
             head = queue.order_by('index')[0]
-            head.state = State.ALIVE
+            head.state = State.alive
             return messages.Request(
                 "/".join([settings.REALM, "proc/control", head.parent.uuid]),
                 "create", {"type": "module", **model_to_dict(head)})

@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
-    client = SilverlineClient.from_config(args.cfg, connect=True, name="cli")
+    client = SilverlineClient.from_config(args.cfg, name="cli").start()
     for mod in args.modules:
         mid = client.infer_module(mod)
         if mid is None:
@@ -31,4 +31,4 @@ if __name__ == '__main__':
             client.delete_module(mid)
             log.info("Deleted: {}".format(mid))
 
-    client.loop_stop()
+    client.stop()

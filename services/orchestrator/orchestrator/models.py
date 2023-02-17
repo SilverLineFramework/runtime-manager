@@ -5,15 +5,7 @@ import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-
-class State(models.TextChoices):
-    """Module state enum."""
-
-    QUEUED = 'Q', _('QUEUED')
-    ALIVE = 'A', _('ALIVE')
-    DEAD = 'D', _('DEAD')
-    EXITING = 'E', _('EXITING')
-    KILLED = 'K', _('KILLED')
+from libsilverline import State
 
 
 class FaultCrash(models.TextChoices):
@@ -147,9 +139,8 @@ class Module(models.Model):
     channels = models.JSONField(default=_emptylist, blank=True)
     "Channels to open at startup."
 
-    status = models.CharField(max_length=2, default=State.ALIVE)
-    "Module state (Q=Queued, A=Alive, D=Dead, E=Exiting, K=Killed). Killed "
-    "modules respawn if the parent is resurrected."
+    status = models.CharField(max_length=2, default=State.alive)
+    "Module state."
 
     def __str__(self):
         """Django admin page display row."""
