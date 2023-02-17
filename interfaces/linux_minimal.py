@@ -27,7 +27,7 @@ class LinuxMinimal(RuntimeManager):
     APIS = ["wasm", "wasi", "stdio:in", "stdio:out"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-python"
-    DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_minimal.py"
+    DEFAULT_COMMAND = "PYTHONPATH=. ./env/bin/python runtimes/linux_minimal.py"
 
     def __init__(
         self, rtid: str = None, name: Optional[str] = None,

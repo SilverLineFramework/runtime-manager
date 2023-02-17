@@ -13,7 +13,7 @@ class Benchmarking(LinuxMinimal):
     APIS = ["wasm", "wasi", "profile:benchmarking"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-basic"
-    DEFAULT_COMMAND = "PYTHONPATH=. python runtimes/linux_benchmarking.py"
+    DEFAULT_COMMAND = "PYTHONPATH=. ./env/bin/python runtimes/linux_benchmarking.py"
     PROFILE_TOPIC = "profile/benchmarking"
 
     def handle_profile(self, module: str, msg: bytes) -> None:

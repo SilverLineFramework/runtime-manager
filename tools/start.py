@@ -25,10 +25,10 @@ if __name__ == '__main__':
     configure_log(args.log, args.verbose)
 
     rt1 = interfaces.LinuxMinimal(name="min")
-    rt2 = interfaces.LinuxMinimalWAMR(name="wamr")
-    rt3 = interfaces.Benchmarking(name="bench")
-    rt4 = interfaces.OpcodeCount(name="intrp")
+    # rt2 = interfaces.LinuxMinimalWAMR(name="wamr")
+    # rt3 = interfaces.Benchmarking(name="bench")
+    # rt4 = interfaces.OpcodeCount(name="intrp")
 
     mgr = Manager(
-        [rt3], server=MQTTServer.from_config("config.json")
+        [rt1], server=MQTTServer.from_config("config.json")
     ).start().run_until_stop()
