@@ -45,7 +45,7 @@ class Manager(models.Model):
     name = models.CharField(max_length=255, default="manager")
     "Manager short name (len < 255)."
 
-    status = models.CharField(max_length=8, default=State.ALIVE)
+    status = models.CharField(max_length=8, default=State.alive)
     "Manager state (A=Alive, D=Dead)."
 
 
@@ -89,7 +89,7 @@ class Runtime(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     "Last time the runtime was updated/created"
 
-    status = models.CharField(max_length=2, default=State.ALIVE)
+    status = models.CharField(max_length=2, default=State.alive)
     "Runtime state (A=Alive, D=Dead)"
 
     parent = models.ForeignKey(Manager, on_delete=models.CASCADE, null=True)
