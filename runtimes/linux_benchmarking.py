@@ -13,7 +13,7 @@ class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 
     def __init__(self, index):
-        self.socket = SLSocket(index, server=False, timeout=1.)
+        self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
         self.stop = False
         self.done = False

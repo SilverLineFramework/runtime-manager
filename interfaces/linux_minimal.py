@@ -38,7 +38,7 @@ class LinuxMinimal(RuntimeManager):
 
     def start(self) -> dict:
         """Start runtime, and return the registration config."""
-        self.socket = SLSocket(self.index, server=True, timeout=1.)
+        self.socket = SLSocket(self.index, server=True, timeout=5.)
         self.process = subprocess.Popen(
             "{} {}".format(self.command, self.index), shell=True,
             preexec_fn=os.setsid)
