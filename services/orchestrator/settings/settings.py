@@ -30,7 +30,7 @@ def _load(filename):
 # --------------------------------------------------------------------------- #
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = "../../config.json"
+CONFIG_PATH = "config.json"
 _config = _load(CONFIG_PATH)
 
 # LOG_DIR = os.path.join(_config.get("log_dir", "log"), "orchestrator/")

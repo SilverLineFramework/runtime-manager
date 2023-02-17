@@ -23,7 +23,7 @@ from .models import State, Runtime, Module
 def _serialize(model):
     return [
         {k: model_to_dict(obj)[k] for k in model.OUTPUT_SHORT}
-        for obj in model.objects.filter(status=State.ALIVE)]
+        for obj in model.objects.filter(status=State.alive)]
 
 
 def list_runtimes(request):
@@ -115,12 +115,12 @@ def _lookup(model, query):
     # 2) Specify by name
     try:
         return model_to_dict(
-            model.objects.filter(name=query, status=State.ALIVE)[0])
+            model.objects.filter(name=query, status=State.alive)[0])
     except IndexError:
         pass
     # 3) Specify by last N digits of UUID; throw exception if fails
     return model_to_dict(
-        model.objects.filter(uuid__endswith=query, status=State.ALIVE)[0])
+        model.objects.filter(uuid__endswith=query, status=State.alive)[0])
 
 
 def search_runtime(request, query):
@@ -179,7 +179,7 @@ def search_runtime(request, query):
 
     runtime['children'] = [
         model_to_dict(module) for module in
-        Module.objects.filter(parent=runtime['uuid'], status=State.ALIVE)]
+        Module.objects.filter(parent=runtime['uuid'], status=State.alive)]
 
     return JsonResponse(runtime)
 
