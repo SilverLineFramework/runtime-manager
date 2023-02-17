@@ -11,7 +11,7 @@ import numpy as np
 from beartype import beartype
 from beartype.typing import Optional, Union
 
-from common import SilverlineClient, MQTTServer, configure_log
+from libsilverline import SilverlineClient, MQTTServer, configure_log
 
 
 class ProfilerException(Exception):
@@ -35,9 +35,9 @@ class Profiler(SilverlineClient):
 
     def __init__(
         self, name: str = "profiler", base_path: str = "data",
-        api: str = "localhost:8000"
+        api: str = "localhost:8000", server: Optional[MQTTServer] = None
     ) -> None:
-        super().__init__(name=name, api=api)
+        super().__init__(name=name, api=api, server=server)
 
         self.log = logging.getLogger("profile")
         self.name = name
@@ -54,20 +54,20 @@ class Profiler(SilverlineClient):
         api = "http://{}:{}/api".format(
             cfg.get("http", "localhost"), cfg.get("http_port", 8000))
         data = cfg.get("data_dir", "data")
-        client = cls(*args, api=api, base_path=data, **kwargs)
-        client.start(MQTTServer.from_config(cfg))
-        return client
+        return cls(
+            *args, api=api, base_path=data, server=MQTTServer.from_config(cfg),
+            **kwargs)
 
-    def start(self, server: Optional[MQTTServer] = None) -> None:
+    def start(self) -> "Profiler":
         """Start profiling server."""
         print(self._BANNER)
-        self.connect(server)
+        super().start()
         self.subscribe(self.control_topic("profile", "#"))
+        return self
 
-    def stop(self):
+    def stop(self) -> "Profiler":
         """Stop profiling server."""
-        self.loop_stop()
-        self.disconnect()
+        super().stop()
 
         self.log.info(
             "Saving metadata for {} runtimes.".format(len(self._runtimes)))
@@ -79,6 +79,8 @@ class Profiler(SilverlineClient):
         if len(self._modules) > 0:
             with open(os.path.join(self.base_path, "modules.json"), 'w') as f:
                 json.dump(self._modules, f, indent=4)
+
+        return self
 
     def decode(self, payload: bytes, mtype: str):
         """Decode message."""
@@ -165,13 +167,6 @@ if __name__ == '__main__':
     # log_dir = os.path.join(args.log_dir, "profile/")
     configure_log(log=None, level=0)
 
-    profiler = Profiler.from_config(args.config, name="profiler")
-
-    try:
-        input()
-    except KeyboardInterrupt:
-        print(" Exiting due to KeyboardInterrupt.\n")
-        pass
-
-    profiler.stop()
-    exit()
+    profiler = Profiler.from_config(
+        args.config, name="profiler"
+    ).start().run_until_stop()

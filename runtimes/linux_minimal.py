@@ -5,7 +5,7 @@ import json
 import threading
 from subprocess import Popen, PIPE
 
-from manager import Message, SLSocket, Header, Flags
+from libsilverline import Message, SLSocket, Header, Flags
 
 
 class LinuxMinimalRuntime:

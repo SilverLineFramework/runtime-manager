@@ -7,7 +7,8 @@ import subprocess
 from beartype.typing import Optional
 from beartype import beartype
 
-from manager import Message, SLSocket, RuntimeManager
+from libsilverline import Message, SLSocket
+from manager import RuntimeManager
 
 
 @beartype

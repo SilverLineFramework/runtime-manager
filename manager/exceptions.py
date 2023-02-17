@@ -2,7 +2,7 @@
 
 import traceback
 
-from common import format_message
+from libsilverline import format_message
 
 
 class UnhandledSLException(Exception):

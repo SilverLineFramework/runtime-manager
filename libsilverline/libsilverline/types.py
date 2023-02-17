@@ -9,40 +9,6 @@ from beartype import beartype
 class Message(NamedTuple):
     """Runtime-manager messaging.
 
-    Messages have two header bytes (h1, h2).
-    - The first byte indicates the module index `{m}` with the lower 7 bits,
-      and whether the message is an ordinary channels message or a control
-      message with the upper bit.
-    - The second byte indicates an argument, which is the message type for
-      control messages, and the channel index for channel messages.
-
-    | Sender  | Header    | Message          | Data         |
-    | ------- | --------- | -----------------| ------------ |
-    | Manager | 1{m}.x00  | Create Module    | json         |
-    | Manager | 1{m}.x01  | Delete Module    | null         |
-    | Manager | 1{-}.x02  | Stop Runtime     | null         |
-    | Manager | 0{m}.{fd} | Receive Message  | u8[]         |
-    | Runtime | 1{-}.x00  | Keepalive        | json         |
-    | Runtime | 1{-}.x01  | Runtime Logging  | char[]       |
-    | Runtime | 1{m}.x02  | Module Exited    | json         |
-    | Runtime | 1{m}.x03  | Open Channel     | u8,u8,char[] |
-    | Runtime | 1{m}.x04  | Close Channel    | u8           |
-    | Runtime | 1{m}.x05  | Module Logging   | char[]       |
-    | Runtime | 1{m}.x06  | Profiling Data   | char[]       |
-    | Runtime | 0{m}.{fd} | Publish Message  | u8[]         |
-
-    Notes
-    -----
-    - Each runtime is assumed to have its own communication channel, or
-      communicate over a shared channel which can specify the runtime.
-    - Runtimes are limited to 128 modules and 256 channels per module.
-    - The create module mesage forwards orchestrator messages to the runtime
-      communication layer, which is responsible for interpreting it. The only
-      required attribute is ``/data/uuid``.
-    - The keepalive and module exited messages are forwarded to orchestrator
-      as the ``/data`` key; the runtime type (="runtime"), uuid, and name are
-      added by the orchestrator.
-
     Todos
     -----
     Add wasi dirs "dir" (list[str]) attribute to Create Module

@@ -14,14 +14,17 @@ from .mqtt import MQTTClient, MQTTServer
 class SilverlineClient(MQTTClient):
     """Silverline HTTP Client."""
 
-    def __init__(self, name: str = "cli", api: str = "localhost:8000") -> None:
-        super().__init__(client_id="{}:{}".format(name, str(uuid.uuid4())))
-
+    def __init__(
+        self, name: str = "cli", api: str = "localhost:8000",
+        server: Optional[MQTTServer] = None
+    ) -> None:
+        super().__init__(
+            client_id="{}:{}".format(name, str(uuid.uuid4())), server=server)
         self.api = api
 
     @classmethod
     def from_config(
-        cls, cfg: Union[str, dict], *args, connect=False, **kwargs
+        cls, cfg: Union[str, dict], *args, **kwargs
     ) -> "SilverlineClient":
         """Create from configuration."""
         if isinstance(cfg, str):
@@ -29,10 +32,8 @@ class SilverlineClient(MQTTClient):
                 cfg = json.load(f)
         api = "http://{}:{}/api".format(
             cfg.get("http", "localhost"), cfg.get("http_port", 8000))
-        client = cls(*args, api=api, **kwargs)
-        if connect:
-            client.connect(MQTTServer.from_config(cfg))
-        return client
+        return cls(
+            *args, api=api, server=MQTTServer.from_config(cfg), **kwargs)
 
     def create_module(
         self, runtime: str, name: str = "module",

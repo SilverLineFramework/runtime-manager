@@ -4,9 +4,8 @@ import logging
 import paho.mqtt.client as mqtt
 from beartype import beartype
 
-from .types import Message, Flags, Channel
+from libsilverline import format_message, Message, Flags, Channel
 from . import exceptions
-from common import format_message
 
 
 @beartype

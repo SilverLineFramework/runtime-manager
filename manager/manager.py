@@ -3,13 +3,12 @@
 import logging
 import uuid
 from threading import Semaphore
-
 import paho.mqtt.client as mqtt
 
 from beartype import beartype
 from beartype.typing import Optional
 
-from common.mqtt import MQTTClient, MQTTServer
+from libsilverline import MQTTClient, MQTTServer
 from .runtime import RuntimeManager
 from .channels import ChannelManager
 from . import exceptions
@@ -25,6 +24,7 @@ class Manager(MQTTClient):
     Parameters
     ----------
     runtimes: runtimes to manage.
+    server: MQTT broker information.
     name: manager short name.
     mgr_id: manager UUID.
     realm: Silverline realm.
@@ -40,27 +40,31 @@ class Manager(MQTTClient):
     """
 
     def __init__(
-        self, runtimes: list[RuntimeManager], name: str = "manager",
+        self, runtimes: list[RuntimeManager],
+        server: Optional[MQTTServer] = None, name: str = "manager",
         mgr_id: str = None, realm: str = "realm", timeout: float = 5.
     ) -> None:
+        self.uuid = str(uuid.uuid4()) if mgr_id is None else mgr_id
+        self.name = name
+
+        # Append a UUID here since client_id must be unique.
+        # If this is not added, MQTT will disconnect with rc=7
+        # (Connection Refused: unknown reason.)
+        super().__init__(
+            client_id="{}:{}".format(self.name, self.uuid),
+            server=server, bridge=True)
+
         self.log = logging.getLogger('mgr')
 
         self.realm = realm
         self.runtimes = runtimes
         self.timeout = timeout
 
-        self.uuid = str(uuid.uuid4()) if mgr_id is None else mgr_id
-        self.name = name
         self.metadata = {
             "type": "manager", "uuid": self.uuid, "name": self.name}
         self.channels = ChannelManager(self)
 
-        # Append a UUID here since client_id must be unique.
-        # If this is not added, MQTT will disconnect with rc=7
-        # (Connection Refused: unknown reason.)
-        super().__init__(client_id="{}:{}".format(self.name, self.uuid))
-
-    def start(self, server: Optional[MQTTServer] = None) -> None:
+    def start(self, server: Optional[MQTTServer] = None) -> "Manager":
         """Connect manager."""
         print(self._BANNER)
         for rt in self.runtimes:
@@ -70,7 +74,7 @@ class Manager(MQTTClient):
         self.will_set(
             self.control_topic("reg", self.uuid), qos=2,
             payload=self.control_message("delete", self.metadata))
-        self.connect(server, bridge=True)
+        super().start()
 
         self.log.info("Registering manager...")
         self._register(
@@ -85,19 +89,21 @@ class Manager(MQTTClient):
         self.log.info("Initialization complete.")
         print()  # empty line after initialization
 
-    def stop(self):
+        return self
+
+    def stop(self) -> "Manager":
         """Stop manager."""
         self.log.info("Stopping runtimes...")
         for rt in self.runtimes:
-            rt.stop()
-            rt.loop_stop()
+            rt._stop()
 
         self.publish(
             self.control_topic("reg", self.uuid),
             self.control_message("delete", self.metadata), qos=2)
-        self.loop_stop()
-        self.disconnect()
+        super().stop()
         self.log.info("Manager and runtime(s) stopped.")
+
+        return self
 
     def on_disconnect(self, client, userdata, rc):
         """Disconnection callback."""

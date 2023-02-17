@@ -5,7 +5,8 @@ import time
 from beartype.typing import Optional
 from beartype import beartype
 
-from manager import Message, RuntimeManager
+from libsilverline import Message
+from manager import RuntimeManager
 
 
 @beartype

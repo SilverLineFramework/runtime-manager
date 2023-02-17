@@ -2,7 +2,7 @@
 
 import logging
 from argparse import ArgumentParser
-from common import SilverlineClient, configure_log
+from libsilverline import SilverlineClient, configure_log
 
 
 def _parse():
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
-    client = SilverlineClient.from_config(args.cfg, connect=True, name="cli")
+    client = SilverlineClient.from_config(args.cfg, name="cli").start()
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
         if rtid is None:

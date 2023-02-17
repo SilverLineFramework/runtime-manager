@@ -6,7 +6,7 @@ import json
 import threading
 import numpy as np
 
-from manager import Message, SLSocket, Header
+from libsilverline import Message, SLSocket, Header
 
 
 class LinuxBenchmarkingRuntime:

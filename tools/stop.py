@@ -2,7 +2,7 @@
 
 import logging
 from argparse import ArgumentParser
-from common import SilverlineClient, configure_log
+from libsilverline import SilverlineClient, configure_log
 
 
 def _parse():

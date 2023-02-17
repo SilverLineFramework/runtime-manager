@@ -8,9 +8,8 @@ from abc import abstractmethod
 from beartype.typing import Optional
 from beartype import beartype
 
-from common import format_message
+from libsilverline import format_message, Message, Header
 
-from .types import Message, Header
 from . import exceptions
 from .module import ModuleLookup
 from .runtime_mixins import RuntimeManagerMixins

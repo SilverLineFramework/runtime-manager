@@ -55,32 +55,26 @@ class MQTTClient(mqtt.Client):
     Parameters
     ----------
     client_id: client ID.
+    server: MQTT broker information. Uses default (localhost:1883, no security)
+        if None.
+    bridge: whether MQTT client should be in bridge mode (bridge mode: broker
+        doesn't return messages sent by this client even if subscribed)
     """
 
-    def __init__(self, client_id: str = "client") -> None:
+    def __init__(
+        self, client_id: str = "client", server: Optional[MQTTServer] = None,
+        bridge: bool = False
+    ) -> None:
         super().__init__(client_id=client_id)
-
         self.__log = logging.getLogger('mq')
         self.client_id = client_id
+        self.server = MQTTServer.from_config({}) if server is None else server
 
-    def connect(
-        self, server: Optional[MQTTServer] = None, bridge: bool = False
-    ) -> None:
-        """Connect to MQTT server; blocks until connected.
-
-        Parameters
-        ----------
-        server: MQTT broker information. Uses default (localhost:1883, no
-            security) if None.
-        bridge: whether MQTT client should be in bridge mode (i.e. return sent
-            messages if subscribed)
-        """
         if bridge:
             self.enable_bridge_mode()
-        if server is None:
-            server = MQTTServer.from_config({})
 
-        self.realm = server.realm
+    def start(self) -> "MQTTClient":
+        """Connect to MQTT server; blocks until connected."""
         semaphore = Semaphore()
         semaphore.acquire()
 
@@ -91,25 +85,34 @@ class MQTTClient(mqtt.Client):
 
         self.__log.info("Connecting MQTT client: {}".format(self.client_id))
         self.__log.info("Server: {}:{} (ssl={})".format(
-            server.host, server.port, server.ssl))
-        self.__log.debug("Username: {}".format(server.user))
+            self.server.host, self.server.port, self.server.ssl))
+        self.__log.debug("Username: {}".format(self.server.user))
         try:
-            self.__log.debug("Password file: {}".format(server.pwd))
-            with open(server.pwd, 'r') as f:
+            self.__log.debug("Password file: {}".format(self.server.pwd))
+            with open(self.server.pwd, 'r') as f:
                 passwd = f.read().rstrip('\n')
         except FileNotFoundError:
             passwd = ""
             self.__log.warn("No password provided; using an empty password.")
 
-        self.username_pw_set(server.user, passwd)
-        if server.ssl:
+        self.username_pw_set(self.server.user, passwd)
+        if self.server.ssl:
             self.tls_set(cert_reqs=ssl.CERT_NONE)
-        super().connect(server.host, server.port, 60)
+        self.connect(self.server.host, self.server.port, 60)
 
         # Waiting for on_connect to release
         self.loop_start()
         semaphore.acquire()
         self.__log.info("Connected to MQTT server.")
+
+        return self
+
+    def stop(self) -> "MQTTClient":
+        """Disconnect and stop main loop."""
+        self.loop_stop()
+        self.disconnect()
+
+        return self
 
     @staticmethod
     def control_message(action: str, payload: dict) -> str:
@@ -123,4 +126,15 @@ class MQTTClient(mqtt.Client):
 
     def control_topic(self, *topic: str) -> str:
         """Format control topic in the form ``{realm}/proc/{...}``."""
-        return "{}/proc/{}".format(self.realm, "/".join(topic))
+        return "{}/proc/{}".format(self.server.realm, "/".join(topic))
+
+    def run_until_stop(self) -> None:
+        """Wait for KeyboardInterrupt or `q`/`quit` to trigger exit."""
+        try:
+            while True:
+                if input() in {'q', 'quit', 'exit'}:
+                    break
+        except KeyboardInterrupt:
+            print("  Exiting due to KeyboardInterrupt.\n")
+
+        self.stop()

@@ -3,10 +3,9 @@
 import json
 import threading
 
-from common import format_message
+from libsilverline import format_message, Message, Header
 
 from . import exceptions
-from .types import Message, Header
 
 
 class RuntimeManagerMixins:
@@ -15,6 +14,20 @@ class RuntimeManagerMixins:
     These methods should not be overridden by inheriting classes (under normal
     circumstances).
     """
+
+    def __loop_start(self) -> None:
+        """Start main loop."""
+        def _loop():
+            while not self.done:
+                msg = self.receive()
+                if msg is not None:
+                    self.log.debug(format_message(
+                        "Received message.", self.index, msg.h1, msg.h2))
+                    self.on_runtime_message(msg)
+            self.log.debug(format_message("Exiting main loop.", self.index))
+
+        self.thread = threading.Thread(target=_loop)
+        self.thread.start()
 
     def _start(self, mgr, index: int) -> None:
         """Full runtime start procedure."""
@@ -30,9 +43,15 @@ class RuntimeManagerMixins:
         self.mgr._register(
             self.control_topic("reg"),
             self.mgr.control_message("create", metadata))
-        self.loop_start()
+        self.__loop_start()
         self.log.info("Registered: {}:{} (x{:02x})".format(
             self.name, self.rtid, self.index))
+
+    def _stop(self) -> None:
+        """Full runtime stop procedure."""
+        self.stop()
+        self.done = True
+        self.thread.join()
 
     def control_topic(self, topic: str, *ids: list[str]) -> str:
         """Format control topic name."""
@@ -109,26 +128,3 @@ class RuntimeManagerMixins:
             self.__handle_runtime_control_message(msg)
         except Exception as e:
             exceptions.handle_error(e, self.log, self.index, msg.h1, msg.h2)
-
-    def loop(self) -> None:
-        """Run main loop once for this runtime."""
-        msg = self.receive()
-        if msg is not None:
-            self.log.debug(format_message(
-                "Received message.", self.index, msg.h1, msg.h2))
-            self.on_runtime_message(msg)
-
-    def loop_start(self) -> None:
-        """Start main loop."""
-        def _loop():
-            while not self.done:
-                self.loop()
-            self.log.debug(format_message("Exiting main loop.", self.index))
-
-        self.thread = threading.Thread(target=_loop)
-        self.thread.start()
-
-    def loop_stop(self) -> None:
-        """Stop main loop."""
-        self.done = True
-        self.thread.join()

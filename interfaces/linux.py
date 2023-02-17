@@ -3,7 +3,7 @@
 from beartype import beartype
 from beartype.typing import Optional
 
-from manager import Message, Header, SLSocket
+from libsilverline import Message, Header, SLSocket
 from .linux_minimal import LinuxMinimal
 
 
