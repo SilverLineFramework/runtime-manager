@@ -13,12 +13,13 @@ from libsilverline import SilverlineCluster
 class WriteFile(object):
     """Dummy file to make tqdm.write behave like logging."""
 
-    def __init__(self, log: logging.Logger) -> None:
-        self.log = log
+    def __init__(self, name: str) -> None:
+        self.name = name
 
     def write(self, x: str) -> None:
         """Behave like file."""
-        self.log.info(x)
+        if len(x.rstrip()) > 0:
+            print("[{}] ".format(self.name) + x.rstrip())
 
     def flush(self) -> None:
         """Flush does nothing."""
@@ -41,7 +42,6 @@ class Device:
         self.name = self.context["name"]
         self.fullname = self.context["fullname"]
         self.username = cluster.username
-        self.log = logging.getLogger(self.context["name"])
 
     def format(self, command: str) -> str:
         """Format command with context."""
@@ -54,11 +54,11 @@ class Device:
                 func(connection, self)
         except Exception as e:
             if not ignore_err:
-                self.log.error("Failed: {}".format(e))
+                print("[{}] Failed: {}".format(self.name, e))
 
     def stream(self):
         """File output stream."""
-        return WriteFile(self.log)
+        return WriteFile(self.name)
 
 
 @beartype
