@@ -67,7 +67,7 @@ class Manager(MQTTClient):
         """Connect manager."""
         print(self._BANNER)
         for rt in self.runtimes:
-            print("    {}{}".format(rt.name.ljust(8), rt.TYPE))
+            print("    {}{}".format(rt.name.ljust(12), rt.TYPE))
         print()
 
         self.will_set(

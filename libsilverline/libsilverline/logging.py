@@ -50,8 +50,8 @@ def configure_log(log: Optional[str] = None, level: int = 20) -> None:
     logging.addLevelName(logging.CRITICAL, 'CRI')
     logging.addLevelName(logging.ERROR, 'ERR')
     logging.addLevelName(logging.WARNING, 'WRN')
-    for level in range(21, 30):
-        logging.addLevelName(level, 'INF')
+    for i in range(21, 30):
+        logging.addLevelName(i, 'INF')
     logging.addLevelName(logging.INFO, 'INF')
     logging.addLevelName(logging.DEBUG, 'DBG')
 

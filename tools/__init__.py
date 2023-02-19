@@ -13,7 +13,7 @@ from . import run
 from . import runall
 from . import status
 from . import stop
-from .shortcuts import start, shutdown, reboot, update, kill, version, Alias
+from .shortcuts import start, shutdown, reboot, update, kill, version
 
 
 commands = {
