@@ -24,9 +24,9 @@ start = Alias(
     desc="Start runtimes on cluster.", base=command,
     args={
         "command": (
-            "screen -S runtime -dm bash -c cd runtime-manager; "
+            "screen -S runtime -dm bash -c \"cd runtime-manager; "
             "./env/bin/python start.py --name {name} --cfg config.json "
-            "--runtimes linux/min/wasmer"),
+            "--runtimes linux/min/wasmer\""),
         "sudo": True
     })
 
