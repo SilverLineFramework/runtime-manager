@@ -1,7 +1,7 @@
 """Management script dispatcher."""
 
 from argparse import ArgumentParser
-from tools import commands
+from tools import commands, Alias
 
 
 if __name__ == '__main__':
