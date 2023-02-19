@@ -19,7 +19,6 @@ _desc = "List nodes and node status."
 def _get_status(row, suffix):
     row = row[1]
     if row['Type'] in {'linux', 'orchestrator'}:
-        print(["ping", "-c", "1", "-W", "1", row['Device'] + suffix])
         return subprocess.run(
             ["ping", "-c", "1", "-W", "1", row['Device'] + suffix],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -78,12 +77,10 @@ def _main(args):
     cluster = SilverlineCluster.from_config(cfg)
     targets = pd.read_csv(cluster.manifest, sep='\t')
 
-    print("pinging")
     with ThreadPool(processes=len(targets)) as pool:
         status = pool.map(
             lambda x: _get_status(x, cluster.domain), list(targets.iterrows()))
 
-    print("getting runtimes")
     try:
         runtimes = client.get_runtimes()
         rt_dict = {rt["name"]: rt["uuid"] for rt in runtimes}
