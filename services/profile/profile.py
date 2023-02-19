@@ -5,6 +5,7 @@ import os
 import argparse
 import json
 import traceback
+import time
 
 import numpy as np
 
@@ -161,12 +162,16 @@ if __name__ == '__main__':
     p.add_argument(
         "-l", "--log_dir", default="log", help="Directory for log files.")
     p.add_argument(
+        "-p", "--data_dir", default="data",
+        help="Base directory for saving data.")
+    p.add_argument(
         "-c", "--config", default="config.json", help="Configuration file.")
     args = p.parse_args()
 
     # log_dir = os.path.join(args.log_dir, "profile/")
     configure_log(log=None, level=0)
 
+    path = os.path.join(args.data_dir, time.strftime("%Y-%m-%d.%H:%M:%S"))
     profiler = Profiler.from_config(
-        args.config, name="profiler"
+        args.config, name="profiler", base_path=path
     ).start().run_until_stop()

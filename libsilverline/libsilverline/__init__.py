@@ -5,6 +5,7 @@ from .mqtt import MQTTClient, MQTTServer
 from .http import SilverlineClient
 from .types import Message, Header, Channel, Flags, State
 from .socket import SLSocket
+from .cluster import SilverlineCluster
 
 __all__ = [
     "configure_log",
@@ -14,5 +15,6 @@ __all__ = [
     "SilverlineClient",
     "ArgumentParser",
     "Message", "Header", "Channel", "Flags", "State",
-    "SLSocket"
+    "SLSocket",
+    "SilverlineCluster"
 ]

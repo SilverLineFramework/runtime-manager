@@ -5,9 +5,10 @@ from argparse import ArgumentParser
 from libsilverline import SilverlineClient, configure_log
 
 
-def _parse():
-    p = ArgumentParser(
-        description="Stop Silverline module(s).")
+_desc = "Stop Silverline module(s)."
+
+
+def _parse(p):
     p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
     p.add_argument("-v", "--verbose", default=20, help="Logging level.")
     p.add_argument(
@@ -17,9 +18,7 @@ def _parse():
     return p
 
 
-if __name__ == '__main__':
-    args = _parse().parse_args()
-
+def _main(args):
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
     client = SilverlineClient.from_config(args.cfg, name="cli").start()
@@ -32,3 +31,7 @@ if __name__ == '__main__':
             log.info("Deleted: {}".format(mid))
 
     client.stop()
+
+
+if __name__ == '__main__':
+    _main(_parse(ArgumentParser(description=_desc)).parse_args())

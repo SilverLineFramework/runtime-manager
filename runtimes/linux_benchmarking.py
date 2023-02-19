@@ -25,6 +25,12 @@ class LinuxBenchmarkingRuntime:
             if self.process == 0:
                 os.execvp("wasmer", cmd)
             else:
+                try:
+                    with open("/sys/fs/cgroup/cpuset/bench/tasks") as f:
+                        f.write(str(self.process))
+                except FileNotFoundError:
+                    pass
+
                 _, status, rusage = os.wait4(self.process, 0)
                 if status != 0:
                     self.socket.write(Message.from_str(

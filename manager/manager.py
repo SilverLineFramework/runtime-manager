@@ -42,7 +42,7 @@ class Manager(MQTTClient):
     def __init__(
         self, runtimes: list[RuntimeManager],
         server: Optional[MQTTServer] = None, name: str = "manager",
-        mgr_id: str = None, realm: str = "realm", timeout: float = 5.
+        mgr_id: str = None, timeout: float = 5.
     ) -> None:
         self.uuid = str(uuid.uuid4()) if mgr_id is None else mgr_id
         self.name = name
@@ -56,7 +56,6 @@ class Manager(MQTTClient):
 
         self.log = logging.getLogger('mgr')
 
-        self.realm = realm
         self.runtimes = runtimes
         self.timeout = timeout
 

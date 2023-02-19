@@ -4,6 +4,7 @@ data/
 log/
 env/
 config.json
+devices.tsv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

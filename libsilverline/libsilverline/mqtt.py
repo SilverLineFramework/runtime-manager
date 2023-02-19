@@ -4,7 +4,9 @@ import logging
 import ssl
 import json
 import uuid
+import os
 from threading import Semaphore
+import argparse
 
 import paho.mqtt.client as mqtt
 
@@ -35,7 +37,7 @@ class MQTTServer(NamedTuple):
 
     @classmethod
     def from_config(cls, cfg: Union[str, dict]):
-        """Load settings from JSON configuration file."""
+        """Load settings from configuration file or dict."""
         if isinstance(cfg, str):
             with open(cfg) as f:
                 cfg = json.load(f)
@@ -46,6 +48,31 @@ class MQTTServer(NamedTuple):
             pwd=cfg.get("pwd", ""),
             ssl=cfg.get("use_ssl", False),
             realm=cfg.get("realm", "realm"))
+
+    @staticmethod
+    def make_args(p: argparse.ArgumentParser) -> None:
+        """Add MQTTServer to argument parser."""
+        g = p.add_argument_group(title="MQTT")
+        g.add_argument(
+            "--mqtt", default="localhost",
+            help="MQTT server address and port.")
+        g.add_argument(
+            "--mqtt_pwd", default="../mqtt_pwd.txt",
+            help="Path to MQTT password file.")
+        g.add_argument("--mqtt_user", default="cli", help="MQTT username.")
+        g.add_argument("--realm", default="realm", help="Realm topic prefix.")
+
+    @staticmethod
+    def make_config(args: argparse.Namespace) -> dict:
+        """Get config from argparse parsed args."""
+        return {
+            "mqtt": args.mqtt.split(":")[-1],
+            "mqtt_port": 8883 if args.mqtt.startswith("ssl:") else 1883,
+            "use_ssl": args.mqtt.startswith("ssl:"),
+            "mqtt_username": args.mqtt_user,
+            "pwd": os.path.abspath(os.path.expanduser((args.mqtt_pwd))),
+            "realm": args.realm
+        }
 
 
 @beartype

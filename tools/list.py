@@ -8,15 +8,6 @@ from rich.table import Table
 from rich.text import Text
 
 
-def _parse():
-    p = ArgumentParser(
-        description="List runtimes and modules running on each runtime; UUIDs "
-        "are shortened to the last 4 hex characters (2 bytes).")
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
-    p.add_argument("-v", "--verbose", default=40, help="Logging level.")
-    return p
-
-
 def _table(runtimes):
     table = Table()
     table.add_column("uuid:name", justify="left")
@@ -40,10 +31,22 @@ def _table(runtimes):
     Console().print(table)
 
 
-if __name__ == '__main__':
+_desc = "List runtimes and modules running on each runtime."
 
-    args = _parse().parse_args()
+
+def _parse(p):
+    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-v", "--verbose", default=40, type=int, help="Logging level.")
+    return p
+
+
+def _main(args):
     configure_log(log=None, level=args.verbose)
 
     client = SilverlineClient.from_config(args.cfg).start()
     _table(client.get_runtimes())
+
+
+if __name__ == '__main__':
+    _main(_parse(ArgumentParser(description=_desc)).parse_args())

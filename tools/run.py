@@ -1,17 +1,18 @@
-"""Run and module."""
+"""Run module."""
 
 import logging
 from argparse import ArgumentParser
 from libsilverline import SilverlineClient, configure_log
 
 
-def _parse():
-    p = ArgumentParser(
-        description="Launch Silverline module(s).")
+_desc = "Launch Silverline module(s)."
+
+
+def _parse(p):
     p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
     p.add_argument("-v", "--verbose", default=20, help="Logging level.")
     p.add_argument(
-        "-r", "--runtime", nargs='+', default=["test"],
+        "-r", "--runtime", nargs='+', default=None,
         help="Target runtime names, uuids, or last characters of uuid.")
     p.add_argument(
         "-n", "--name", default="module",
@@ -38,9 +39,7 @@ def _parse():
     return p
 
 
-if __name__ == '__main__':
-    args = _parse().parse_args()
-
+def _main(args, default_runtime=[]):
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
     client = SilverlineClient.from_config(args.cfg, name="cli").start()
@@ -58,3 +57,7 @@ if __name__ == '__main__':
                     f, mid[-4:], rt, rtid[-4:]))
 
     client.stop()
+
+
+if __name__ == '__main__':
+    _main(_parse(ArgumentParser(description=_desc)).parse_args())

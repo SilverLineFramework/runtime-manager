@@ -8,7 +8,7 @@ from beartype.typing import Optional
 from beartype import beartype
 
 from libsilverline import Message, SLSocket
-from manager import RuntimeManager
+from manager import RuntimeManager, linux
 
 
 @beartype
@@ -21,23 +21,30 @@ class LinuxMinimal(RuntimeManager):
     name: Runtime shortname.
     command: Command to execute runtime binary.
     cfg: Additional config attributes.
+    cpus: CPUs to add to cgroup. If None, does not assign a cgroup.
     """
 
-    TYPE = "linux/minimal/python"
-    APIS = ["wasm", "wasi", "stdio:in", "stdio:out"]
+    TYPE = "linux/min/wasmer"
+    APIS = ["wasm", "wasm:wasmer", "wasi", "stdio:in", "stdio:out"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-python"
+    DEFAULT_SHORTNAME = "min"
     DEFAULT_COMMAND = "PYTHONPATH=. ./env/bin/python runtimes/linux_minimal.py"
 
     def __init__(
         self, rtid: str = None, name: Optional[str] = None,
-        command: Optional[str] = None, cfg: dict = {}
+        command: Optional[str] = None, cfg: dict = {},
+        cpus: Optional[str] = None
     ) -> None:
+        self.cpus = cpus
         self.command = self.DEFAULT_COMMAND if command is None else command
         super().__init__(rtid, name, cfg=cfg)
 
     def start(self) -> dict:
         """Start runtime, and return the registration config."""
+        if self.cpus is not None:
+            linux.make_cgroup(self.cpus, self.DEFAULT_SHORTNAME)
+
         self.socket = SLSocket(self.index, server=True, timeout=5.)
         self.process = subprocess.Popen(
             "{} {}".format(self.command, self.index), shell=True,
@@ -49,6 +56,7 @@ class LinuxMinimal(RuntimeManager):
         """Stop process."""
         self.socket.close()
         os.killpg(os.getpgid(self.process.pid), signal.SIGTERM)
+        linux.delete_cgroup(self.DEFAULT_SHORTNAME)
 
     def send(self, msg: Message) -> None:
         """Send message."""
@@ -63,8 +71,9 @@ class LinuxMinimal(RuntimeManager):
 class LinuxMinimalWAMR(LinuxMinimal):
     """Minimal linux WAMR runtime."""
 
-    TYPE = "linux/minimal/wamr"
+    TYPE = "linux/min/wamr"
     APIS = ["wasm", "wasi", "stdio:out"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-wamr"
+    DEFAULT_SHORTNAME = "wamr"
     DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/runtime"

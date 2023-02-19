@@ -11,10 +11,10 @@ from .linux_minimal import LinuxMinimal
 class LinuxRuntime(LinuxMinimal):
     """Default Linux Runtime."""
 
-    TYPE = "linux/default"
+    TYPE = "linux"
     APIS = ["wasm", "wasi", "channels", "stdio:out", "profile:deployed"]
     MAX_NMODULES = 128
-    DEFAULT_NAME = "linux-default"
+    DEFAULT_NAME = "linux"
     DEFAULT_COMMAND = "./runtimes/linux-default/runtime"
 
     def __init__(

@@ -15,6 +15,8 @@ class RegistrationOnly(RuntimeManager):
 
     TYPE = "debug/none"
     AIPS = []
+    DEFAULT_NAME = "test"
+    DEFAULT_SHORTNAME = "test"
     MAX_NMODULES = 0
 
     def __init__(self, rtid: str = None, name: str = "debug-none") -> None:

@@ -9,11 +9,13 @@ from .linux_minimal import LinuxMinimal
 class Benchmarking(LinuxMinimal):
     """Execution time / memory usage benchmarking runtime."""
 
-    TYPE = "benchmarking/basic"
+    TYPE = "benchmarking"
     APIS = ["wasm", "wasi", "profile:benchmarking"]
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-basic"
-    DEFAULT_COMMAND = "PYTHONPATH=. ./env/bin/python runtimes/linux_benchmarking.py"
+    DEFAULT_SHORTNAME = "bench"
+    DEFAULT_COMMAND = (
+        "PYTHONPATH=. ./env/bin/python runtimes/linux_benchmarking.py")
     PROFILE_TOPIC = "profile/benchmarking"
 
     def handle_profile(self, module: str, msg: bytes) -> None:
@@ -30,5 +32,6 @@ class OpcodeCount(Benchmarking):
 
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-opcodes"
+    DEFAULT_SHORTNAME = "intrp"
     DEFAULT_COMMAND = "./runtimes/profiling-opcodes/build/runtime"
     PROFILE_TOPIC = "profile/opcodes"

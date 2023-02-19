@@ -34,13 +34,15 @@ class RuntimeManager(RuntimeManagerMixins):
     APIS = []
     MAX_NMODULES = 0
     DEFAULT_NAME = "runtime"
+    DEFAULT_SHORTNAME = "rt"
 
     def __init__(
         self, rtid: Optional[str] = None, name: Optional[str] = None,
         cfg: dict = {}
     ) -> None:
-        self.log = logging.getLogger("if.{}".format(name))
-        self.log_rt = logging.getLogger("rt.{}".format(name))
+        shortname = name.split('.')[-1]
+        self.log = logging.getLogger("if.{}".format(shortname))
+        self.log_rt = logging.getLogger("rt.{}".format(shortname))
         self.rtid = str(uuid.uuid4()) if rtid is None else rtid
         self.name = self.DEFAULT_NAME if name is None else name
         self.index = -1
