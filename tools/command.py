@@ -19,13 +19,13 @@ def _parse(p):
     p.add_argument(
         "-v", "--verbose", default=21, type=int, help="Logging level.")
     p.add_argument(
-        "-i", "--ignore_err", action=BooleanOptionalAction,
+        "-i", "--ignore_err", default=False, action='store_true',
         help="Ignore errors encountered during execution.")
     p.add_argument(
-        "-s", "--sync", action=BooleanOptionalAction,
+        "-s", "--sync", default=False, action='store_true',
         help="Execute command synchronously instead of asynchronously.")
     p.add_argument(
-        "-r", "--sudo", action=BooleanOptionalAction,
+        "-r", "--sudo", default=False, action='store_true',
         help="Execute command as root.")
     p.add_argument(
         "-p", "--password", default="",

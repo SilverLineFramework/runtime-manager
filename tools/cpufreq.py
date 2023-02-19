@@ -41,7 +41,7 @@ def _parse(p):
         help="Clock frequency underclock: underclocks max_freq to max_freq * "
         "clock, with a floor of min_freq.")
     p.add_argument(
-        "-b", "--boost", action=BooleanOptionalAction,
+        "-b", "--boost", default=False, action='store_true',
         help="Enable use of boost clock (clock frequencies that cannot be "
         "sustained indefinitely.")
     return p
