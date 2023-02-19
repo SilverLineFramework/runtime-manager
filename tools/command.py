@@ -2,6 +2,8 @@
 
 import json
 import pandas as pd
+from argparse import BooleanOptionalAction
+
 from libsilverline import SilverlineCluster, configure_log
 
 from ._ssh import run_command, Device
@@ -15,7 +17,19 @@ def _parse(p):
     p.add_argument(
         "-x", "--command", help="Command to run.", default="echo {name}")
     p.add_argument(
-        "-v", "--verbose", default=40, type=int, help="Logging level.")
+        "-v", "--verbose", default=21, type=int, help="Logging level.")
+    p.add_argument(
+        "-i", "--ignore_err", action=BooleanOptionalAction,
+        help="Ignore errors encountered during execution.")
+    p.add_argument(
+        "-s", "--sync", action=BooleanOptionalAction,
+        help="Execute command synchronously instead of asynchronously.")
+    p.add_argument(
+        "-r", "--sudo", action=BooleanOptionalAction,
+        help="Execute command as root.")
+    p.add_argument(
+        "-p", "--password", default="",
+        help="Password if executing as sudo.")
     return p
 
 
@@ -28,9 +42,15 @@ def _main(args):
     cluster = SilverlineCluster.from_config(cfg)
 
     def execute(connection, device):
-        connection.run(device.format(args.command), out_stream=device.stream())
+        cmd = device.format(args.command)
+        stream = device.stream()
+        if args.sudo:
+            connection.sudo(cmd, out_stream=stream, password=args.password)
+        else:
+            connection.run(cmd, out_stream=stream)
 
     targets = pd.read_csv(cluster.manifest, sep='\t')
     devices = set(Device(cluster, dict(row)) for _, row in targets.iterrows())
 
-    run_command(execute, devices, ignore_err=False, sync=True)
+    print("Executing on {} devices: {}".format(len(devices), args.command))
+    run_command(execute, devices, ignore_err=args.ignore_err, sync=args.sync)

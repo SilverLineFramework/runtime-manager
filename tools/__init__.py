@@ -4,7 +4,9 @@ from . import alias
 from . import command
 from . import configure
 from . import cpufreq
+from . import get
 from . import list
+from . import put
 from . import run
 from . import runall
 from . import start
@@ -16,7 +18,9 @@ commands = {
     "cmd": command,
     "configure": configure,
     "cpufreq": cpufreq,
+    "get": get,
     "list": list,
+    "put": put,
     "run": run,
     "runall": runall,
     "start": start,

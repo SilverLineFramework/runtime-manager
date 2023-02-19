@@ -1,7 +1,7 @@
 """Set CPU frequency policy."""
 
 import os
-from argparse import ArgumentParser, BooleanOptionalAction
+from argparse import BooleanOptionalAction
 from manager import linux
 
 

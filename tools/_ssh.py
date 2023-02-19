@@ -19,7 +19,7 @@ class WriteFile(object):
     def write(self, x: str) -> None:
         """Behave like file."""
         if len(x.rstrip()) > 0:
-            self.log.info(x)
+            self.log.info(x.rstrip())
 
     def flush(self) -> None:
         """Flush does nothing."""
@@ -68,9 +68,7 @@ def run_command(
 ) -> None:
     """Run fabric command."""
     with Progress(console=console) as progress:
-        n = len(devices)
-        task = progress.add_task(
-            "Executing on {} devices...".format(n), total=n)
+        task = progress.add_task("Executing...", total=len(devices))
 
         def _execute(device):
             device.execute(func, ignore_err=ignore_err)
