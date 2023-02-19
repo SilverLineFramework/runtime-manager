@@ -6,20 +6,20 @@ from rich.progress import Progress
 from fabric.connection import Connection
 from multiprocessing.pool import ThreadPool
 
-from libsilverline import SilverlineCluster
+from libsilverline import SilverlineCluster, console
 
 
 @beartype
 class WriteFile(object):
     """Dummy file to make tqdm.write behave like logging."""
 
-    def __init__(self, name: str) -> None:
-        self.name = name
+    def __init__(self, log: logging.Logger) -> None:
+        self.log = log
 
     def write(self, x: str) -> None:
         """Behave like file."""
         if len(x.rstrip()) > 0:
-            print("[{}] ".format(self.name) + x.rstrip())
+            self.log.info(x)
 
     def flush(self) -> None:
         """Flush does nothing."""
@@ -42,6 +42,7 @@ class Device:
         self.name = self.context["name"]
         self.fullname = self.context["fullname"]
         self.username = cluster.username
+        self.log = logging.getLogger(self.name)
 
     def format(self, command: str) -> str:
         """Format command with context."""
@@ -54,11 +55,11 @@ class Device:
                 func(connection, self)
         except Exception as e:
             if not ignore_err:
-                print("[{}] Failed: {}".format(self.name, e))
+                self.log.error(e)
 
     def stream(self):
         """File output stream."""
-        return WriteFile(self.name)
+        return WriteFile(self.log)
 
 
 @beartype
@@ -66,7 +67,7 @@ def run_command(
     func, devices: set[Device], ignore_err: bool = False, sync: bool = False
 ) -> None:
     """Run fabric command."""
-    with Progress() as progress:
+    with Progress(console=console) as progress:
         n = len(devices)
         task = progress.add_task(
             "Executing on {} devices...".format(n), total=n)

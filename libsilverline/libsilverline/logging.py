@@ -11,6 +11,15 @@ from datetime import datetime
 from beartype.typing import Optional
 
 
+console = Console(theme=Theme({
+    "logging.level.cri": "bold red",
+    "logging.level.err": "bold bright_red",
+    "logging.level.wrn": "bold bright_yellow",
+    "logging.level.inf": "bold green",
+    "logging.level.dbg": "bold cyan"
+}))
+
+
 class __CustomHandler(RichHandler):
 
     def get_level_text(self, record: logging.LogRecord) -> Text:
@@ -32,14 +41,6 @@ def configure_log(log: Optional[str] = None, level: int = 20) -> None:
     """
     if log is not None:
         os.makedirs(log, exist_ok=True)
-
-    console = Console(theme=Theme({
-        "logging.level.cri": "bold red",
-        "logging.level.err": "bold bright_red",
-        "logging.level.wrn": "bold bright_yellow",
-        "logging.level.inf": "bold green",
-        "logging.level.dbg": "bold cyan"
-    }))
 
     handlers = [__CustomHandler(console=console, rich_tracebacks=True)]
     if log is not None:
