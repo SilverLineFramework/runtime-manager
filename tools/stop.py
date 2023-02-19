@@ -1,7 +1,6 @@
 """Stop module."""
 
 import logging
-from argparse import ArgumentParser
 from libsilverline import SilverlineClient, configure_log
 
 
@@ -31,7 +30,3 @@ def _main(args):
             log.info("Deleted: {}".format(mid))
 
     client.stop()
-
-
-if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())

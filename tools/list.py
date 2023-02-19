@@ -1,6 +1,5 @@
 """List running runtimes and modules."""
 
-from argparse import ArgumentParser
 from libsilverline import SilverlineClient, configure_log
 
 from rich.console import Console
@@ -46,7 +45,3 @@ def _main(args):
 
     client = SilverlineClient.from_config(args.cfg).start()
     _table(client.get_runtimes())
-
-
-if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())

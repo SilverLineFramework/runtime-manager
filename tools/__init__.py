@@ -1,6 +1,7 @@
 """Command line tools."""
 
 from . import alias
+from . import command
 from . import configure
 from . import cpufreq
 from . import list
@@ -12,6 +13,7 @@ from . import stop
 
 commands = {
     "alias": alias,
+    "cmd": command,
     "configure": configure,
     "cpufreq": cpufreq,
     "list": list,
@@ -19,5 +21,5 @@ commands = {
     "runall": runall,
     "start": start,
     "status": status,
-    "stop": stop
+    "stop": stop,
 }

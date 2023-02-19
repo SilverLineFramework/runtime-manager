@@ -1,7 +1,6 @@
 """Write cluster management aliases."""
 
 import os
-from argparse import ArgumentParser
 import json
 import pandas as pd
 
@@ -23,7 +22,3 @@ def _main(args):
         # ssh
         for d in devices:
             f.write("ssh {}@{}{}".format(cfg["username"], d, cfg["domain"]))
-
-
-if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())

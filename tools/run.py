@@ -1,7 +1,6 @@
 """Run module."""
 
 import logging
-from argparse import ArgumentParser
 from libsilverline import SilverlineClient, configure_log
 
 
@@ -57,7 +56,3 @@ def _main(args, default_runtime=[]):
                     f, mid[-4:], rt, rtid[-4:]))
 
     client.stop()
-
-
-if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())

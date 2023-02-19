@@ -1,7 +1,6 @@
 """Get cluster status."""
 
 import json
-from argparse import ArgumentParser
 import subprocess
 import pandas as pd
 from multiprocessing.pool import ThreadPool
@@ -91,7 +90,3 @@ def _main(args):
         uuids = ["-" for _ in targets.iterrows()]
 
     _table(status, runtimes, uuids, targets)
-
-
-if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())
