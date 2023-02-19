@@ -4,10 +4,13 @@ import json
 import subprocess
 import pandas as pd
 from multiprocessing.pool import ThreadPool
+from functools import partial
+import time
 
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
+from rich.live import Live
 
 from libsilverline import SilverlineClient, SilverlineCluster, configure_log
 
@@ -26,7 +29,7 @@ def _get_status(row, suffix):
         return None
 
 
-def _table(status, runtimes, uuids, targets):
+def _table(status, rts, uuids, targets):
     STATUS_TEXT = {
         True: Text("up", style="bold bright_green"),
         False: Text("down", style="bold bright_red"),
@@ -39,43 +42,30 @@ def _table(status, runtimes, uuids, targets):
     }
 
     table = Table()
-    columns = ["Device", "Node", "Runtime", "UUID", "Model", "CPU", "Target", "Arch"]
+    columns = [
+        "Device", "Node", "Runtime", "UUID", "Model", "CPU", "Target", "Arch"]
     for column in columns:
         table.add_column(Text(column, style="bold"), justify="left")
 
-    for s, rt, uuid, (_, row) in zip(status, runtimes, uuids, targets.iterrows()):
+    for s, rt, uuid, (_, row) in zip(status, rts, uuids, targets.iterrows()):
         table.add_row(
-            row["Device"],
-            STATUS_TEXT[s],
-            RUNTIME_TEXT[rt],
-            uuid[-4:],
-            row['Model'],
-            row['CPU'],
-            row['Target'],
-            row['Arch']
-        )
+            row["Device"], STATUS_TEXT[s], RUNTIME_TEXT[rt], uuid[-4:],
+            row['Model'], row['CPU'], row['Target'], row['Arch'])
 
-    Console().print(table)
+    return table
 
 
 def _parse(p):
     p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
     p.add_argument(
         "-v", "--verbose", default=40, type=int, help="Logging level.")
+    p.add_argument(
+        "-w", "--watch", default=0.0, type=float,
+        help="Watch refresh interval, if >0.")
     return p
 
 
-def _main(args):
-    configure_log(log=None, level=args.verbose)
-
-    with open(args.cfg) as f:
-        cfg = json.load(f)
-
-    client = SilverlineClient.from_config(cfg).start()
-
-    cluster = SilverlineCluster.from_config(cfg)
-    targets = pd.read_csv(cluster.manifest, sep='\t')
-
+def _inner(client, cluster, targets):
     with ThreadPool(processes=len(targets)) as pool:
         status = pool.map(
             lambda x: _get_status(x, cluster.domain), list(targets.iterrows()))
@@ -89,4 +79,25 @@ def _main(args):
         runtimes = [None for _ in targets.iterrows()]
         uuids = ["-" for _ in targets.iterrows()]
 
-    _table(status, runtimes, uuids, targets)
+    return _table(status, runtimes, uuids, targets)
+
+
+def _main(args):
+    configure_log(log=None, level=args.verbose)
+
+    with open(args.cfg) as f:
+        cfg = json.load(f)
+
+    client = SilverlineClient.from_config(cfg).start()
+
+    cluster = SilverlineCluster.from_config(cfg)
+    targets = pd.read_csv(cluster.manifest, sep='\t')
+
+    if args.watch > 0.0:
+        func = partial(_inner, client, cluster, targets)
+        with Live(func(), auto_refresh=False) as live:
+            while True:
+                live.update(func())
+                time.sleep(args.watch)
+    else:
+        Console().print(_inner(client, cluster, targets,))

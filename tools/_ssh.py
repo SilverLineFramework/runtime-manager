@@ -19,7 +19,7 @@ class WriteFile(object):
     def write(self, x: str) -> None:
         """Behave like file."""
         if len(x.rstrip()) > 0:
-            self.log.info(x.rstrip())
+            self.log.log(29, x.rstrip())
 
     def flush(self) -> None:
         """Flush does nothing."""

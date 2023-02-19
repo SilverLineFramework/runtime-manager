@@ -2,7 +2,6 @@
 
 import json
 import pandas as pd
-from argparse import BooleanOptionalAction
 
 from libsilverline import SilverlineCluster, configure_log
 
