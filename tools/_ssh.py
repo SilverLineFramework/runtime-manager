@@ -37,7 +37,12 @@ class Device:
             "model": row.get("Model", "-"),
             "cpu": row.get("CPU", "-"),
             "target": row.get("Target", "-"),
-            "arch": row.get("Arch", "-")
+            "arch": row.get("Arch", "-"),
+            "smt": row.get("SMT", "0"),
+            "cgroup": row.get("Cgroup", "0,1"),
+            "memory": row.get("Memory", "0"),
+            "network": row.get("Network", "eth"),
+            "storage": row.get("Storage", "0")
         }
         self.name = self.context["name"]
         self.fullname = self.context["fullname"]

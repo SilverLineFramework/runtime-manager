@@ -24,10 +24,7 @@ def _parse(p):
 def _main(args, put=True):
 
     configure_log(log=None, level=args.verbose)
-
-    with open(args.cfg) as f:
-        cfg = json.load(f)
-    cluster = SilverlineCluster.from_config(cfg)
+    cluster = SilverlineCluster.from_config(args.cfg)
 
     def execute(connection, device):
         connection.get(device.format(args.src), local=device.format(args.dst))

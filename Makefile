@@ -3,6 +3,8 @@ PYTHON_SYS=python3
 PYTHON=$(DIR)/env/bin/python
 PIP=$(DIR)/env/bin/pip
 
+ORCHESTRATOR=./services/orchestrator/manage.py
+
 .PHONY: all env
 
 all: env
@@ -14,3 +16,9 @@ env/bin/activate:
 	$(PIP) install ./libsilverline
 	$(PIP) install -r requirements.txt
 	touch env/bin/activate
+
+.PHONY: orchestrator
+orchestrator:
+	$(PYTHON) $(ORCHESTRATOR) makemigrations
+	$(PYTHON) $(ORCHESTRATOR) migrate
+	$(PYTHON) $(ORCHESTRATOR) runserver

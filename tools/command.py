@@ -1,6 +1,5 @@
 """SSH Utilities."""
 
-import json
 import pandas as pd
 
 from libsilverline import SilverlineCluster, configure_log
@@ -35,10 +34,7 @@ def _parse(p):
 def _main(args):
 
     configure_log(log=None, level=args.verbose)
-
-    with open(args.cfg) as f:
-        cfg = json.load(f)
-    cluster = SilverlineCluster.from_config(cfg)
+    cluster = SilverlineCluster.from_config(args.cfg)
 
     def execute(connection, device):
         cmd = device.format(args.command)
