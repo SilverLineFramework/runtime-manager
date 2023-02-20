@@ -72,7 +72,7 @@ def _inner(client, cluster, targets):
 
     try:
         runtimes = client.get_runtimes()
-        rt_dict = {rt["name"]: rt["uuid"] for rt in runtimes}
+        rt_dict = {rt["name"].split('.')[0]: rt["uuid"] for rt in runtimes}
         runtimes = [row["Device"] in rt_dict for _, row in targets.iterrows()]
         uuids = [rt_dict[row["Device"]] for _, row in targets.iterrows()]
     except Exception as e:
