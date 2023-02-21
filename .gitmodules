@@ -7,3 +7,6 @@
 [submodule "runtimes/common/wasm-micro-runtime-sl"]
 	path = runtimes/common/wasm-micro-runtime-sl
 	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git
+[submodule "benchmarks"]
+	path = benchmarks
+	url = git@github.com:SilverLineFramework/benchmarks.git

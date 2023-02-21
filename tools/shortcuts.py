@@ -42,9 +42,7 @@ update = Alias(
     desc="Update runtimes.", base=command,
     args={"command": (
         "cd runtime-manager; git pull; git submodule update --recursive; "
-        "./env/bin/pip install; ./libsilverline/; make -C runtimes"
-    )}
-)
+        "./env/bin/pip install; ./libsilverline/; make -C runtimes")})
 
 kill = Alias(
     desc="Stop runtimes on cluster.", base=command,

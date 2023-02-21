@@ -1,8 +1,10 @@
 # Silverline files
 .vscode
-data/
-log/
-env/
+/data
+/log
+/env
+/benchmarks/data
+/benchmarks/wasm
 config.json
 devices.tsv
 
