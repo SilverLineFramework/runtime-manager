@@ -23,7 +23,7 @@ class LinuxBenchmarkingRuntime:
         for _ in range(repeat):
             self.process = os.fork()
             if self.process == 0:
-                os.execvp("wasmer", cmd)
+                os.execvp(cmd[0], cmd[1:])
             else:
                 try:
                     with open("/sys/fs/cgroup/cpuset/bench/tasks") as f:
@@ -37,10 +37,12 @@ class LinuxBenchmarkingRuntime:
                         Header.control | 0x00, Header.log_module,
                         "Nonzero exit code: {}".format(status)
                     ))
-                stats.append((
-                    int(rusage.ru_utime * 10**6),
-                    int(rusage.ru_stime * 10**6),
-                    rusage.ru_maxrss))
+                    stats.append((0, 0, 0))
+                else:
+                    stats.append((
+                        int(rusage.ru_utime * 10**6),
+                        int(rusage.ru_stime * 10**6),
+                        rusage.ru_maxrss))
             if self.stop:
                 break
 
@@ -55,9 +57,8 @@ class LinuxBenchmarkingRuntime:
         data = json.loads(msg.payload)
 
         args = data.get("args", {})
-        cmd = ["run", "--singlepass"]
-        if "env" in args and args["env"]:
-            cmd += ["--env"] + args["env"]
+        cmd = data.get("runtime", ["wasmer", "run", "--singlepass"])
+        cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
         cmd += [data.get("file")] + args.get("argv", [])[1:]
 
         stats = self.__run(cmd, args.get("repeat", 1))

@@ -76,4 +76,4 @@ class LinuxMinimalWAMR(LinuxMinimal):
     MAX_NMODULES = 1
     DEFAULT_NAME = "linux-minimal-wamr"
     DEFAULT_SHORTNAME = "wamr"
-    DEFAULT_COMMAND = "./runtimes/linux-minimal-wamr/build/runtime"
+    DEFAULT_COMMAND = "./runtimes/bin/linux-minimal-wamr"

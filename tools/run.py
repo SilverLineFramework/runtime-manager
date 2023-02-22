@@ -34,14 +34,21 @@ def _parse(p):
     p.add_argument(
         "-k", "--repeat", type=int, default=0,
         help="Number of times to run module if benchmarking.")
+    p.add_argument(
+        "-e", "--engine", nargs='+', default=None,
+        help="WASM engine to use for benchmarking.")
 
     return p
 
 
-def _main(args, default_runtime=[]):
+def _main(args, default_runtime=None):
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
     client = SilverlineClient.from_config(args.cfg, name="cli").start()
+
+    if default_runtime is not None:
+        args.runtime = default_runtime
+
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
         if rtid is None:
@@ -50,7 +57,7 @@ def _main(args, default_runtime=[]):
             for f in args.file:
                 mid = client.create_module(
                     runtime=rtid, name=args.name, file=f, argv=args.argv,
-                    env=args.env, period=args.period,
+                    env=args.env, engine=args.engine, period=args.period,
                     utilization=args.utilization, repeat=args.repeat)
                 log.info("Created: {}:{} --> {}:{}".format(
                     f, mid[-4:], rt, rtid[-4:]))

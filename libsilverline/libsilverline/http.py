@@ -38,8 +38,9 @@ class SilverlineClient(MQTTClient):
     def create_module(
         self, runtime: str, name: str = "module",
         file: str = "wasm/apps/helloworld.wasm", argv: list[str] = [],
-        env: list[str] = [], period: int = 10 * 1000 * 1000,
-        utilization: float = 0.0, repeat: Optional[int] = None
+        env: list[str] = [], engine: Optional[list[str]] = None,
+        period: int = 10 * 1000 * 1000, utilization: float = 0.0,
+        repeat: Optional[int] = None
     ) -> str:
         """Create module.
 
@@ -51,6 +52,7 @@ class SilverlineClient(MQTTClient):
             directory used by the runtime.
         argv: Argument passthrough to the module.
         env: Environment variables to set.
+        engine: WASM engine to use for benchmarking.
         period: Period for sched_deadline, in nanoseconds.
         utilization: Utilization for sched_deadline. If 0.0, uses CFS.
         repeat: Number of times to run module if benchmarking.
@@ -66,6 +68,8 @@ class SilverlineClient(MQTTClient):
             args["resources"] = {"period": period, "runtime": c}
         if repeat != 0:
             args["repeat"] = repeat
+        if engine is not None:
+            args["engine"] = engine
 
         payload = self.control_message("create", {
             "type": "module",

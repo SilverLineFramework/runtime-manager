@@ -33,5 +33,5 @@ class OpcodeCount(Benchmarking):
     MAX_NMODULES = 1
     DEFAULT_NAME = "benchmarking-opcodes"
     DEFAULT_SHORTNAME = "intrp"
-    DEFAULT_COMMAND = "./runtimes/profiling-opcodes/build/runtime"
+    DEFAULT_COMMAND = "./runtimes/bin/profiling-opcodes"
     PROFILE_TOPIC = "profile/opcodes"
