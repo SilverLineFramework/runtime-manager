@@ -20,7 +20,8 @@ class Benchmarking(LinuxMinimal):
 
     def handle_profile(self, module: str, msg: bytes) -> None:
         """Handle profiling message."""
-        self.mgr.publish(self.control_topic(self.PROFILE_TOPIC, module), msg)
+        self.mgr.publish(
+            self.control_topic(self.PROFILE_TOPIC, module), msg, qos=2)
 
 
 @beartype

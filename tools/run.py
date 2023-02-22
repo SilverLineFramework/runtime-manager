@@ -35,7 +35,7 @@ def _parse(p):
         "-k", "--repeat", type=int, default=0,
         help="Number of times to run module if benchmarking.")
     p.add_argument(
-        "-e", "--engine", nargs='+', default=None,
+        "--engine", default=None,
         help="WASM engine to use for benchmarking.")
 
     return p

@@ -22,3 +22,7 @@ orchestrator:
 	$(PYTHON) $(ORCHESTRATOR) makemigrations
 	$(PYTHON) $(ORCHESTRATOR) migrate
 	$(PYTHON) $(ORCHESTRATOR) runserver
+
+.PHONY: reset
+reset:
+	rm -f services/orchestrator/db.sqlite3

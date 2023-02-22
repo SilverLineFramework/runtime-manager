@@ -17,19 +17,22 @@ __all__ = [
 ]
 
 tree = {
+    "_": None,
     "benchmarking": {
         "_": Benchmarking,
         "opcodes": OpcodeCount
     },
     "linux": {
+        "_": LinuxRuntime,
         "min": {
+            "_": None,
             "wasmer": LinuxMinimal,
             "wamr": LinuxMinimalWAMR
         },
-        "kernel": None,
-        "_": LinuxRuntime
+        "kernel": None
     },
     "test": {
+        "_": None,
         "reg": RegistrationOnly
     }
 }
@@ -40,4 +43,8 @@ def get_runtime(name: str) -> "RuntimeManager":
     rt_class = tree
     for spec in name.split('/'):
         rt_class = rt_class[spec]
-    return rt_class
+
+    if isinstance(rt_class, dict):
+        return rt_class["_"]
+    else:
+        return rt_class

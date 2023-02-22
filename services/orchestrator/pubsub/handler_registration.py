@@ -73,6 +73,14 @@ class Registration(ControlHandler):
                 "Runtime exited, killing {} modules; may be "
                 "resurrected.".format(len(killed)))
 
+        unqueued = Module.objects.filter(parent=runtime, status=State.queued)
+        for mod in unqueued:
+            mod.status = State.dead
+            mod.save()
+        if len(unqueued) > 0:
+            self.log.warn(
+                "Runtime exited with {} modules queued.".format(len(unqueued)))
+
     def create_manager(self, msg):
         """Create runtime manager."""
         manager = self._object_from_dict(Manager, msg.get('data'))

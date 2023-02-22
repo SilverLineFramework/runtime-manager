@@ -21,7 +21,7 @@ class RuntimeManagerMixins:
             while not self.done:
                 msg = self.receive()
                 if msg is not None:
-                    self.log.debug(format_message(
+                    self.log.log(5, format_message(
                         "Received message.", self.index, msg.h1, msg.h2))
                     self.on_runtime_message(msg)
             self.log.debug(format_message("Exiting main loop.", self.index))
@@ -76,12 +76,8 @@ class RuntimeManagerMixins:
             match action:
                 case ("create", "module"):
                     self.create_module(data["data"])
-                # case ("create", "runtime"):
-                #     pass
                 case ("delete", "module"):
                     self.delete_module(data["data"]["uuid"])
-                # case ("delete", "runtime"):
-                #     pass
                 case _:
                     raise exceptions.InvalidMessage(
                         "Invalid message action: {}".format(action))

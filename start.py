@@ -17,7 +17,8 @@ _desc = "Start Silverline runtime manager and runtime(s)."
 def _parse(p):
     p.add_argument("-n", "--name", help="Node name.", default="node")
     p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
-    p.add_argument("-v", "--verbose", default=20, help="Logging level.")
+    p.add_argument(
+        "-v", "--verbose", type=int, default=20, help="Logging level.")
     p.add_argument(
         "-g", "--cpus", nargs='+', default=None, help="CPUs to assign to "
         "cgroup; if not passed, uses the default cgroup.")

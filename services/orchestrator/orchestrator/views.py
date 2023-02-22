@@ -20,10 +20,10 @@ from django.http import HttpResponseNotFound
 from .models import State, Runtime, Module
 
 
-def _serialize(model):
+def _serialize(model, status=State.alive):
     return [
         {k: model_to_dict(obj)[k] for k in model.OUTPUT_SHORT}
-        for obj in model.objects.filter(status=State.alive)]
+        for obj in model.objects.filter(status=status)]
 
 
 def list_runtimes(request):
@@ -101,6 +101,20 @@ def list_modules(request):
 
     """
     mod_list = _serialize(Module)
+    return JsonResponse(
+        {"count": len(mod_list), "start": 0, "results": mod_list})
+
+
+def queued_modules(request):
+    """List currently queued modules.
+
+    Uses the same format as ```list_modules```.
+
+    URL Pattern::
+
+        <server>/api/queue/
+    """
+    mod_list = _serialize(Module, status=State.queued)
     return JsonResponse(
         {"count": len(mod_list), "start": 0, "results": mod_list})
 

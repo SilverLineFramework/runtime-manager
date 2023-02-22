@@ -16,7 +16,8 @@ console = Console(theme=Theme({
     "logging.level.err": "bold bright_red",
     "logging.level.wrn": "bold bright_yellow",
     "logging.level.inf": "bold green",
-    "logging.level.dbg": "bold cyan"
+    "logging.level.dbg": "bold cyan",
+    "logging.level.tra": "bold bright_black"
 }))
 
 
@@ -50,10 +51,12 @@ def configure_log(log: Optional[str] = None, level: int = 20) -> None:
     logging.addLevelName(logging.CRITICAL, 'CRI')
     logging.addLevelName(logging.ERROR, 'ERR')
     logging.addLevelName(logging.WARNING, 'WRN')
-    for i in range(21, 30):
+    for i in range(20, 30):
         logging.addLevelName(i, 'INF')
-    logging.addLevelName(logging.INFO, 'INF')
-    logging.addLevelName(logging.DEBUG, 'DBG')
+    for i in range(10, 20):
+        logging.addLevelName(i, 'DBG')
+    for i in range(0, 10):
+        logging.addLevelName(i, 'TRA')
 
     logging.basicConfig(
         level=level,

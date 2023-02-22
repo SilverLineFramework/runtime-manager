@@ -38,7 +38,7 @@ class SilverlineClient(MQTTClient):
     def create_module(
         self, runtime: str, name: str = "module",
         file: str = "wasm/apps/helloworld.wasm", argv: list[str] = [],
-        env: list[str] = [], engine: Optional[list[str]] = None,
+        env: list[str] = [], engine: Optional[str] = None,
         period: int = 10 * 1000 * 1000, utilization: float = 0.0,
         repeat: Optional[int] = None
     ) -> str:
