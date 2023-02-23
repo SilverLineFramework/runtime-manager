@@ -38,7 +38,7 @@ class LinuxBenchmarkingRuntime:
                     pass
 
                 _, status, rusage = os.wait4(self.process, 0)
-                if os.waitstatus_to_exitcode(status) < 0:
+                if os.waitstatus_to_exitcode(status) != 0:
                     self.socket.write(Message.from_str(
                         Header.control | 0x00, Header.log_module,
                         "Nonzero exit code: {}".format(status)
