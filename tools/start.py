@@ -9,7 +9,7 @@ _desc = "Start runtimes on cluster."
 def _parse(p):
     command._parse(p)
     p.add_argument(
-        "t", "--runtimes", default="linux/min/wasmer",
+        "-t", "--runtimes", default="linux/min/wasmer",
         help="Runtime(s) to start on managers.")
     return p
 
