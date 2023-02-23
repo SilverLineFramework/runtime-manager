@@ -4,7 +4,7 @@ import os
 import sys
 import json
 import threading
-import numpy as np
+import struct
 import signal
 
 from libsilverline import Message, SLSocket, Header
@@ -43,20 +43,21 @@ class LinuxBenchmarkingRuntime:
                         Header.control | 0x00, Header.log_module,
                         "Nonzero exit code: {}".format(status)
                     ))
-                    stats.append((0, 0, 0))
+                    stats.append(struct.pack("III", 0, 0, 0))
                     break
                 else:
-                    stats.append((
+                    stats.append(struct.pack(
+                        "III",
                         int(rusage.ru_utime * 10**6),
                         int(rusage.ru_stime * 10**6),
                         rusage.ru_maxrss))
 
         self.socket.write(Message.from_str(
-            Header.control | 0x00, Header.log_module,
+            Header.control | 0x00, Header.log_module, b''.join(stats),
             "Exited with {} samples.".format(len(stats))))
 
         watchdog.cancel()
-        return np.array(stats, dtype=np.uint32)
+        return stats
 
     def _make_cmd(self, file, args):
         engine = args.get("engine", "wasmer run --singlepass")
