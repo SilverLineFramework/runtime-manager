@@ -8,6 +8,7 @@
 config.json
 devices.tsv
 /runtimes/bin
+/wamrc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

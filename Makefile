@@ -30,3 +30,7 @@ start:
 
 stop:
 	make -C services stop
+
+WAMRC_PATH=runtimes/common/wasm-micro-runtime/wamr-compiler
+wamrc: 
+	ln -s $(WAMRC_PATH)/build/wamrc .

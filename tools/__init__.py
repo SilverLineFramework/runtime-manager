@@ -3,6 +3,7 @@
 from collections import namedtuple
 
 from . import make_alias
+from . import aot
 from . import command
 from . import configure
 from . import cpufreq
@@ -17,6 +18,7 @@ from .shortcuts import start, shutdown, reboot, update, kill, version
 
 
 commands = {
+    "aot": aot,
     "alias": make_alias,
     "cmd": command,
     "configure": configure,
