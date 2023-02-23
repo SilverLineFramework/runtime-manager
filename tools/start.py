@@ -18,7 +18,7 @@ def _main(args):
     args.command = (
         "screen -S runtime -dm bash -c \"cd runtime-manager; "
         "./env/bin/python start.py --name {{name}} --cfg config.json "
-        "--runtimes {} --verbose {} --cpus {{smt}}\"".format(
+        "--runtimes {} --verbose {} --cpus {{cgroup}}\"".format(
             args.runtimes, args.verbose))
     args.sudo = True
     args.verbose = 21

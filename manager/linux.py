@@ -19,7 +19,7 @@ class SysFS:
 
     def write(self, val: Any, *path: str, optional: bool = False) -> None:
         """Write value to sysfs."""
-        path = os.path.join(self.base, path)
+        path = os.path.join(self.base, *path)
         if not optional or os.path.exists(path):
             with open(path, 'w') as f:
                 f.write(str(val))
