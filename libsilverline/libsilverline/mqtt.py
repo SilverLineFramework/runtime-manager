@@ -66,7 +66,7 @@ class MQTTServer(NamedTuple):
     def make_config(args: argparse.Namespace) -> dict:
         """Get config from argparse parsed args."""
         return {
-            "mqtt": args.mqtt.split(":")[0],
+            "mqtt": args.mqtt.split(":")[-1],
             "mqtt_port": 8883 if args.mqtt.startswith("ssl:") else 1883,
             "use_ssl": args.mqtt.startswith("ssl:"),
             "mqtt_username": args.mqtt_user,
