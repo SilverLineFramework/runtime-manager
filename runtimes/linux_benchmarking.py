@@ -29,7 +29,10 @@ class LinuxBenchmarkingRuntime:
         for _ in range(repeat):
             self.process = os.fork()
             if self.process == 0:
-                os.execvp(cmd[0], cmd[1:])
+                try:
+                    os.execvp(cmd[0], cmd[1:])
+                except Exception as e:
+                    exit(-1)
             else:
                 try:
                     with open("/sys/fs/cgroup/cpuset/bench/tasks") as f:

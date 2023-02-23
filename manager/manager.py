@@ -27,7 +27,6 @@ class Manager(MQTTClient):
     server: MQTT broker information.
     name: manager short name.
     mgr_id: manager UUID.
-    realm: Silverline realm.
     timeout: Timeout duration (seconds).
     """
 
@@ -63,7 +62,7 @@ class Manager(MQTTClient):
             "type": "manager", "uuid": self.uuid, "name": self.name}
         self.channels = ChannelManager(self)
 
-    def start(self, server: Optional[MQTTServer] = None) -> "Manager":
+    def start(self) -> "Manager":
         """Connect manager."""
         print(self._BANNER)
         for rt in self.runtimes:

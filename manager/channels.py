@@ -45,7 +45,8 @@ class ChannelManager:
         topic = topic.rstrip(b'\0').decode('utf-8')
         if topic.startswith("$SL/"):
             _uuid = self.mgr.runtimes[runtime].modules.uuid(module)
-            topic = "/".join([self.mgr.realm, topic.lstrip("$SL/"), _uuid])
+            topic = "/".join(
+                [self.mgr.server.realm, topic.lstrip("$SL/"), _uuid])
 
         # Check for wildcards
         if (flags | Flags.write) != 0:
