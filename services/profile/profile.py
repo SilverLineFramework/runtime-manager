@@ -167,11 +167,12 @@ if __name__ == '__main__':
     p.add_argument(
         "-c", "--cfg", help="Config file.",
         default=os.environ.get('SL_CONFIG', 'config.json'))
+    p.add_argument("-v", "--verbose", help="Logging level", default=20)
     args = p.parse_args()
 
     if args.log_dir is not None:
         args.log_dir = os.path.join(args.log_dir, "profile/")
-    configure_log(log=args.log_dir, level=0)
+    configure_log(log=args.log_dir, level=args.verbose)
 
     path = os.path.join(args.data_dir, time.strftime("%Y-%m-%d.%H:%M:%S"))
     profiler = Profiler.from_config(

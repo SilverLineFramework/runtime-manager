@@ -32,7 +32,7 @@ class LinuxBenchmarkingRuntime:
                 try:
                     os.execvp(cmd[0], cmd[1:])
                 except Exception as e:
-                    exit(-1)
+                    os._exit(1)
             else:
                 try:
                     with open("/sys/fs/cgroup/cpuset/bench/tasks") as f:
