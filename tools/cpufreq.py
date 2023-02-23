@@ -26,7 +26,7 @@ def _init_cpufreq(clock=0.0, boost=False):
         # Underclock
         cpufreq_min = sysfs.read("cpufreq", p, "cpuinfo_min_freq")
         cpufreq_max = sysfs.read("cpufreq", p, "cpuinfo_max_freq")
-        max_freq = int(max(cpufreq_max * clock, cpufreq_min))
+        max_freq = int(max(cpufreq_max * (1 - clock), cpufreq_min))
         sysfs.write(max_freq, "cpufreq", p, "scaling_max_freq")
         sysfs.write(max_freq, "cpufreq", p, "scaling_min_freq")
 
