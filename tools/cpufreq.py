@@ -21,14 +21,14 @@ def _init_cpufreq(clock=0.0, boost=False):
         p for p in os.listdir(sysfs.path("cpufreq")) if p.startswith("policy")]
     for p in policies:
         # Set performance mode (always use max freq)
-        sysfs.write("performance", p, "scaling_governor")
+        sysfs.write("performance", "cpufreq", p, "scaling_governor")
 
         # Underclock
-        cpufreq_min = sysfs.read(p, "cpuinfo_min_freq")
-        cpufreq_max = sysfs.read(p, "cpuinfo_max_freq")
+        cpufreq_min = sysfs.read("cpufreq", p, "cpuinfo_min_freq")
+        cpufreq_max = sysfs.read("cpufreq", p, "cpuinfo_max_freq")
         max_freq = int(max(cpufreq_max * clock, cpufreq_min))
-        sysfs.write(max_freq, p, "scaling_max_freq")
-        sysfs.write(max_freq, p, "scaling_min_freq")
+        sysfs.write(max_freq, "cpufreq", p, "scaling_max_freq")
+        sysfs.write(max_freq, "cpufreq", p, "scaling_min_freq")
 
     return cpufreq_max, max_freq
 
