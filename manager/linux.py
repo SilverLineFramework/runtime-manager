@@ -12,7 +12,7 @@ class SysFS:
     def __init__(self, base: str) -> None:
         self.base = base
 
-    def read(self, *path: str, type: Any) -> Any:
+    def read(self, *path: str, type: Any = int) -> Any:
         """Read value from sysfs."""
         with open(os.path.join(self.base, *path)) as f:
             return type(f.read())
