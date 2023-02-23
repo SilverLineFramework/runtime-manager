@@ -34,7 +34,7 @@ shortcuts = {
             "./env/bin/pip install; ./libsilverline/; make -C runtimes")}),
     "kill": Alias(
         desc="Stop runtimes on cluster.", base=command,
-        args={"command": "screen -S runtime -X quit", "sudo": True}),
+        args={"command": "screen -S runtime -p 0 -X stuff \"^C\""}),
     "version": Alias(
         desc="Get runtime version via commit hash.", base=command,
         args={"command": (

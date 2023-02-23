@@ -12,5 +12,5 @@ _parse = run._parse
 
 def _main(args):
     devices = list(pd.read_csv(
-        SilverlineCluster.from_config(args.config)['manifest'])["Devices"])
+        SilverlineCluster.from_config(args.cfg).manifest, sep='\t')["Device"])
     run._main(args, default_runtime=devices)

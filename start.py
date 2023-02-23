@@ -45,9 +45,12 @@ def _main(args):
 
     def _make_runtime(rt, cpu):
         rt_class = interfaces.get_runtime(rt)
+        if len(args.runtimes) == 1:
+            name = args.name
+        else:
+            name = "{}.{}".format(args.name, rt_class.DEFAULT_SHORTNAME)
         return rt_class(
-            name="{}.{}".format(args.name, rt_class.DEFAULT_SHORTNAME),
-            rtid=str(uuid.uuid4()), cfg=runtime_cfg, cpus=cpu)
+            name=name, rtid=str(uuid.uuid4()), cfg=runtime_cfg, cpus=cpu)
 
     if args.cpus is None:
         args.cpus = [None] * len(args.runtimes)
