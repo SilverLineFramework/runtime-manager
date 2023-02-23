@@ -1,6 +1,8 @@
 """Set CPU frequency policy."""
 
 import os
+from argparse import ArgumentParser
+
 from manager import linux
 
 
@@ -52,3 +54,8 @@ def _main(args):
         print("max_freq: {} -> {}".format(max_freq, set_freq))
     except PermissionError:
         print("Warning: could not set cpufreq policy: root is required.")
+
+
+if __name__ == '__main__':
+    args = _parse(ArgumentParser()).parse_args()
+    _main(args)
