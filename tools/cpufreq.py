@@ -10,7 +10,7 @@ def _init_cpufreq(clock=0.0, boost=False):
     sysfs = linux.SysFS("/sys/devices/system/cpu")
 
     # AMD systems: disable boost
-    sysfs.write(1 if boost else 0, "cpufreq/boost")
+    sysfs.write(1 if boost else 0, "cpufreq/boost", optional=True)
     # Intel systems: enable no_turbo in intel_pstate
     sysfs.write(0 if boost else 1, "intel_pstate/no_turbo", optional=True)
 
