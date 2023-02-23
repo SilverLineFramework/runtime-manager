@@ -10,7 +10,7 @@ def _get_platform_data() -> dict:
     try:
         from cpuinfo import get_cpu_info
     except ImportError:
-        return {}
+        return {"cpu": {}}
 
     info = get_cpu_info()
 

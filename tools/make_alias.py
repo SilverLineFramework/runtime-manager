@@ -9,7 +9,9 @@ _desc = "Write cluster management aliases."
 
 
 def _parse(p):
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
 
 
 def _main(args):

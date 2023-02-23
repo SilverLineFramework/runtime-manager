@@ -61,12 +61,19 @@ def list_runtimes(request):
     runtimes = {rt["uuid"]: rt for rt in _serialize(Runtime)}
     for _, rt in runtimes.items():
         rt["children"] = []
+        rt["queued"] = []
 
     modules = _serialize(Module)
     for mod in modules:
         try:
             runtimes[mod["parent"]]["children"].append(mod)
-            del mod["parent"]
+        except KeyError:
+            pass
+
+    queued = _serialize(Module, status=State.queued)
+    for mod in queued:
+        try:
+            runtimes[mod["parent"]]["queued"].append(mod)
         except KeyError:
             pass
 

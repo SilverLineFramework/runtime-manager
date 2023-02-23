@@ -4,7 +4,7 @@ import json
 import argparse
 import os
 
-from beartype.typing import NamedTuple, Union
+from beartype.typing import NamedTuple, Union, Optional
 from beartype import beartype
 
 
@@ -23,7 +23,7 @@ class SilverlineCluster(NamedTuple):
     file_store_port: File store port.
     """
 
-    manifest: str
+    manifest: Optional[str]
     domain: str
     username: str
     http: str

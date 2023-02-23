@@ -5,7 +5,6 @@ import sys
 import json
 import threading
 import numpy as np
-import time
 import signal
 
 from libsilverline import Message, SLSocket, Header
@@ -59,16 +58,23 @@ class LinuxBenchmarkingRuntime:
         watchdog.cancel()
         return np.array(stats, dtype=np.uint32)
 
+    def _make_cmd(self, file, args):
+        engine = args.get("engine", "wasmer run --singlepass")
+        if engine == "native":
+            cmd = [file] + args.get("argv", [])[1:]
+        else:
+            cmd = engine.split(" ")
+            cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
+            cmd += [file] + args.get("argv", [])[1:]
+        return cmd
+
     def run(self, msg):
         """Run program."""
         self.stop = False
         data = json.loads(msg.payload)
 
         args = data.get("args", {})
-        cmd = args.get("engine", "wasmer run --singlepass").split(" ")
-        cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
-        cmd += [data.get("file")] + args.get("argv", [])[1:]
-
+        cmd = self._make_cmd(data.get("file"), args)
         stats = self.__run(cmd, args.get("repeat", 1), args.get("limit", 60.0))
 
         self.socket.write(Message(

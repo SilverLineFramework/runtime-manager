@@ -123,3 +123,7 @@ class SilverlineClient(MQTTClient):
     def get_module(self, mod) -> dict:
         """Get module full metadata from REST API."""
         return self._get_json("modules/{}".format(mod))
+
+    def get_queued(self) -> list[dict]:
+        """Get queued modules."""
+        return self._get_json("queued/").get('results', [])

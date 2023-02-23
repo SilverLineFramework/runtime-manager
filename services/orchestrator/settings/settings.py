@@ -30,7 +30,7 @@ def _load(filename):
 # --------------------------------------------------------------------------- #
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_PATH = "config.json"
+CONFIG_PATH = os.environ.get('SL_CONFIG', 'config.json')
 _config = _load(CONFIG_PATH)
 
 # LOG_DIR = os.path.join(_config.get("log_dir", "log"), "orchestrator/")
@@ -39,6 +39,7 @@ if os.environ.get('RUN_MAIN', None) == 'true':
     configure_log(LOG_DIR, level=0)
 
 _conf = logging.getLogger("conf")
+_conf.info("Using config: {}".format(CONFIG_PATH))
 
 runserver.default_port = _config.get("http_port", 8000)
 runserver.default_addr = _config.get("http", "localhost")

@@ -1,5 +1,6 @@
 """Get cluster status."""
 
+import os
 import json
 import subprocess
 import pandas as pd
@@ -56,7 +57,9 @@ def _table(status, rts, uuids, targets):
 
 
 def _parse(p):
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
     p.add_argument(
         "-v", "--verbose", default=40, type=int, help="Logging level.")
     p.add_argument(
@@ -96,9 +99,9 @@ def _main(args):
 
     if args.watch > 0.0:
         func = partial(_inner, client, cluster, targets)
-        with Live(func(), auto_refresh=False) as live:
+        with Live(func()) as live:
             while True:
                 live.update(func())
                 time.sleep(args.watch)
     else:
-        Console().print(_inner(client, cluster, targets,))
+        Console().print(_inner(client, cluster, targets))

@@ -1,6 +1,6 @@
 """Copy file to node."""
 
-import json
+import os
 import pandas as pd
 
 from libsilverline import SilverlineCluster, configure_log
@@ -12,7 +12,9 @@ _desc = "Copy file to cluster."
 
 
 def _parse(p):
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
     p.add_argument(
         "-s", "--src", help="Source filepath.")
     p.add_argument("-d", "--dst", help="Destination filepath.")

@@ -1,5 +1,6 @@
 """SSH Utilities."""
 
+import os
 import pandas as pd
 
 from libsilverline import SilverlineCluster, configure_log
@@ -11,7 +12,9 @@ _desc = "Execute command on cluster using SSH."
 
 
 def _parse(p):
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
     p.add_argument(
         "-x", "--command", help="Command to run.", default="echo {name}")
     p.add_argument(

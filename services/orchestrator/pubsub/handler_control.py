@@ -90,7 +90,8 @@ class Control(ControlHandler):
             parent=module.parent, status=State.queued)
         if queue.count() > 0:
             head = queue.order_by('index')[0]
-            head.state = State.alive
+            head.status = State.alive
+            head.save()
             return messages.Request(
                 "/".join([settings.REALM, "proc/control", head.parent.uuid]),
                 "create", {"type": "module", **model_to_dict(head)})

@@ -54,10 +54,8 @@ class Profiler(SilverlineClient):
                 cfg = json.load(f)
         api = "http://{}:{}/api".format(
             cfg.get("http", "localhost"), cfg.get("http_port", 8000))
-        data = cfg.get("data_dir", "data")
         return cls(
-            *args, api=api, base_path=data, server=MQTTServer.from_config(cfg),
-            **kwargs)
+            *args, api=api, server=MQTTServer.from_config(cfg), **kwargs)
 
     def start(self) -> "Profiler":
         """Start profiling server."""
@@ -69,7 +67,11 @@ class Profiler(SilverlineClient):
     def stop(self) -> "Profiler":
         """Stop profiling server."""
         super().stop()
+        self.save_metadata()
+        return self
 
+    def save_metadata(self):
+        """Save metadata."""
         self.log.info(
             "Saving metadata for {} runtimes.".format(len(self._runtimes)))
         if len(self._runtimes) > 0:
@@ -80,8 +82,6 @@ class Profiler(SilverlineClient):
         if len(self._modules) > 0:
             with open(os.path.join(self.base_path, "modules.json"), 'w') as f:
                 json.dump(self._modules, f, indent=4)
-
-        return self
 
     def decode(self, payload: bytes, mtype: str):
         """Decode message."""
@@ -165,13 +165,15 @@ if __name__ == '__main__':
         "-p", "--data_dir", default="data",
         help="Base directory for saving data.")
     p.add_argument(
-        "-c", "--config", default="config.json", help="Configuration file.")
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
     args = p.parse_args()
 
-    # log_dir = os.path.join(args.log_dir, "profile/")
-    configure_log(log=None, level=0)
+    if args.log_dir is not None:
+        args.log_dir = os.path.join(args.log_dir, "profile/")
+    configure_log(log=args.log_dir, level=0)
 
     path = os.path.join(args.data_dir, time.strftime("%Y-%m-%d.%H:%M:%S"))
     profiler = Profiler.from_config(
-        args.config, name="profiler", base_path=path
+        args.cfg, name="profiler", base_path=path
     ).start().run_until_stop()

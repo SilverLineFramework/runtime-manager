@@ -1,6 +1,8 @@
 """Run module."""
 
+import os
 import logging
+
 from libsilverline import SilverlineClient, configure_log
 
 
@@ -8,7 +10,9 @@ _desc = "Launch Silverline module(s)."
 
 
 def _parse(p):
-    p.add_argument("-c", "--cfg", help="Config file.", default="config.json")
+    p.add_argument(
+        "-c", "--cfg", help="Config file.",
+        default=os.environ.get('SL_CONFIG', 'config.json'))
     p.add_argument("-v", "--verbose", default=20, help="Logging level.")
     p.add_argument(
         "-r", "--runtime", nargs='+', default=None,

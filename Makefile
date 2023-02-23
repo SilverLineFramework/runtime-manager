@@ -1,9 +1,10 @@
 DIR=$(shell pwd)
-PYTHON_SYS=python3
-PYTHON=$(DIR)/env/bin/python
-PIP=$(DIR)/env/bin/pip
+SYS_PYTHON=python3
 
-ORCHESTRATOR=./services/orchestrator/manage.py
+export SL_CONFIG=$(realpath config.json)
+export SL_PIP=$(DIR)/env/bin/pip
+export SL_PYTHON=$(DIR)/env/bin/python
+export SL_DATA=$(DIR)/data
 
 .PHONY: all env
 
@@ -12,17 +13,20 @@ all: env
 env: env/bin/activate
 
 env/bin/activate:
-	test -d env || $(PYTHON_SYS) -m venv env
-	$(PIP) install ./libsilverline
-	$(PIP) install -r requirements.txt
+	test -d env || $(SYS_PYTHON) -m venv env
+	$(SL_PIP) install ./libsilverline
+	$(SL_PIP) install -r requirements.txt
+	make -C services deps
 	touch env/bin/activate
 
-.PHONY: orchestrator
 orchestrator:
-	$(PYTHON) $(ORCHESTRATOR) makemigrations
-	$(PYTHON) $(ORCHESTRATOR) migrate
-	$(PYTHON) $(ORCHESTRATOR) runserver
+	make -C services/orchestrator
 
-.PHONY: reset
-reset:
-	rm -f services/orchestrator/db.sqlite3
+profile:
+	make -C services/profile
+
+start:
+	make -C services start
+
+stop:
+	make -C services stop
