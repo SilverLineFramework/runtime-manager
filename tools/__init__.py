@@ -15,7 +15,6 @@ from . import status
 from . import stop
 from .shortcuts import shortcuts
 
-
 commands = {
     "aot": aot,
     "alias": alias,

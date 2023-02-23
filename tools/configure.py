@@ -2,6 +2,7 @@
 
 import os
 import json
+from argparse import ArgumentParser
 
 from libsilverline import MQTTServer, SilverlineCluster
 
@@ -68,3 +69,8 @@ def _main(args):
         os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, 'w') as f:
         json.dump(cfg, f, indent=4)
+
+
+if __name__ == '__main__':
+    args = _parse(ArgumentParser()).parse_args()
+    _main(args)
