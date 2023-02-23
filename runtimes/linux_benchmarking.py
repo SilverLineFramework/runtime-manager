@@ -56,11 +56,11 @@ class LinuxBenchmarkingRuntime:
                         rusage.ru_maxrss))
 
         self.socket.write(Message.from_str(
-            Header.control | 0x00, Header.log_module, b''.join(stats),
+            Header.control | 0x00, Header.log_module,
             "Exited with {} samples.".format(len(stats))))
 
         watchdog.cancel()
-        return stats
+        return b''.join(stats)
 
     def _make_cmd(self, file, args):
         engine = args.get("engine", "wasmer run --singlepass")
@@ -82,7 +82,7 @@ class LinuxBenchmarkingRuntime:
         stats = self.__run(cmd, args.get("repeat", 1), args.get("limit", 60.0))
 
         self.socket.write(Message(
-            Header.control | 0x00, Header.profile, stats.tobytes()))
+            Header.control | 0x00, Header.profile, stats))
         self.socket.write(Message.from_dict(
             Header.control | 0x00, Header.exited, {"status": "exited"}))
 
