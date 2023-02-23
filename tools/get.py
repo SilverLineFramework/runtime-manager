@@ -20,6 +20,9 @@ def _parse(p):
     p.add_argument("-d", "--dst", help="Destination filepath.")
     p.add_argument(
         "-v", "--verbose", default=21, type=int, help="Logging level.")
+    p.add_argument(
+        "-i", "--ignore_err", default=False, action='store_true',
+        help="Ignore errors encountered during execution.")
     return p
 
 

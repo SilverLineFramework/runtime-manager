@@ -26,6 +26,7 @@ commands = {
     "list": list,
     "put": put,
     "run": run,
+    "runall": runall,
     "start": start,
     "status": status,
     "stop": stop,
