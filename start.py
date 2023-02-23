@@ -50,8 +50,9 @@ def _main(args):
             rtid=str(uuid.uuid4()), cfg=runtime_cfg, cpus=cpu)
 
     if args.cpus is None:
-        cpus = [None] * len(args.runtimes)
-    runtimes = [_make_runtime(rt, cpu) for rt, cpu in zip(args.runtimes, cpus)]
+        args.cpus = [None] * len(args.runtimes)
+    runtimes = [
+        _make_runtime(rt, cpu) for rt, cpu in zip(args.runtimes, args.cpus)]
 
     mqtt = MQTTServer.from_config(cfg)
     Manager(runtimes, server=mqtt, name=args.name).start().run_until_stop()
