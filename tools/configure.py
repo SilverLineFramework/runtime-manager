@@ -17,16 +17,16 @@ def _get_platform_data() -> dict:
 
     return {
         "cpu": {
-            "cores": info["count"],
-            "cpufreq": info["hz_actual"][0]
+            "cores": info.get("count", 0),
+            "cpufreq": info.get("hz_actual", (0, 0))[0]
         },
         "mem": {
-            "l1i_size": info["l1_instruction_cache_size"],
-            "l1d_size": info["l1_data_cache_size"],
-            "l2_size": info["l2_cache_size"],
-            "l2_line": info["l2_cache_line_size"],
-            "l2_assoc": info["l2_cache_associativity"],
-            "l3_size": info["l3_cache_size"],
+            "l1i_size": info.get("l1_instruction_cache_size", 0),
+            "l1d_size": info.get("l1_data_cache_size", 0),
+            "l2_size": info.get("l2_cache_size", 0),
+            "l2_line": info.get("l2_cache_line_size", 0),
+            "l2_assoc": info.get("l2_cache_associativity", 0),
+            "l3_size": info.get("l3_cache_size", 0),
             "total": os.sysconf('SC_PHYS_PAGES') * os.sysconf('SC_PAGE_SIZE')
         }
     }
