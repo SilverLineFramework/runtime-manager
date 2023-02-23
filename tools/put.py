@@ -23,6 +23,9 @@ def _parse(p):
     p.add_argument(
         "-i", "--ignore_err", default=False, action='store_true',
         help="Ignore errors encountered during execution.")
+    p.add_argument(
+        "-s", "--sync", default=False, action='store_true',
+        help="Execute command synchronously instead of asynchronously.")
     return p
 
 
