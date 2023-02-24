@@ -1,16 +1,18 @@
 """Runtime registration."""
 
+from beartype.typing import Union
+
 from django.conf import settings
 from django.forms.models import model_to_dict
 
 from orchestrator.models import Runtime, Module, Manager
 from libsilverline import State
 
-from . import messages
-from .handler_base import ControlHandler
+from orchestrator import messages
+from .base import BaseHandler
 
 
-class Registration(ControlHandler):
+class Registration(BaseHandler):
     """Runtime registration."""
 
     NAME = "reg"
@@ -20,15 +22,11 @@ class Registration(ControlHandler):
         """Create or resurrect runtime."""
         # Runtime UUID already exists -> resurrect
         try:
-            rt_uuid = msg.get('data', 'uuid')
-            runtime = Runtime.objects.get(uuid=rt_uuid)
-            runtime.status = State.alive
-            runtime.save()
-
+            runtime = self._set_status(
+                msg, State.alive, action="Runtime resurrected", model=Runtime)
             modules = list(
                 Module.objects.filter(parent=runtime, status=State.killed))
-            self._log.warn("Dead runtime resurrected: {}".format(rt_uuid))
-            self._log.warn("Respawning {} modules.".format(len(modules)))
+            self.log.warn("Respawning {} modules.".format(len(modules)))
 
             # Respawn dead modules
             for mod in modules:
@@ -45,7 +43,7 @@ class Registration(ControlHandler):
                 for mod in modules]
 
         # Doesn't exist -> create new
-        except Runtime.DoesNotExist:
+        except messages.UUIDNotFound:
             runtime = self._object_from_dict(Runtime, msg.get('data'))
             try:
                 mgr_uuid = msg.get('data', 'parent')
@@ -53,15 +51,15 @@ class Registration(ControlHandler):
             except Manager.DoesNotExist:
                 pass
             runtime.save()
+            self.log.info("Created runtime: {}".format(runtime.uuid))
 
             return messages.Response(
                 msg.topic, msg.get('object_id'), model_to_dict(runtime))
 
-    def delete_runtime(self, rtid):
+    def delete_runtime(self, rt: Union[str, messages.Message]):
         """Delete runtime."""
-        runtime = self._get_object(rtid, model=Runtime)
-        runtime.status = State.dead
-        runtime.save()
+        runtime = self._set_status(
+            rt, State.dead, action="Runtime exited", model=Runtime)
 
         # Also mark all related modules as dead, but with respawn enabled
         killed = Module.objects.filter(parent=runtime, status=State.alive)
@@ -85,14 +83,14 @@ class Registration(ControlHandler):
         """Create runtime manager."""
         manager = self._object_from_dict(Manager, msg.get('data'))
         manager.save()
+        self.log.info("Registered runtime manager: {}".format(manager.uuid))
         return messages.Response(
             msg.topic, msg.get('object_id'), model_to_dict(manager))
 
     def delete_manager(self, msg):
         """Delete runtime manager."""
-        manager = self._get_object(msg.get('data', 'uuid'), model=Manager)
-        manager.status = State.dead
-        manager.save()
+        manager = self._set_status(
+            msg, State.dead, action="Manager exited", model=Manager)
 
         # Also kill the runtimes
         killed = Runtime.objects.filter(parent=manager, status=State.alive)
@@ -107,7 +105,7 @@ class Registration(ControlHandler):
         if msg.get('type') == 'arts_resp':
             return None
 
-        self.log.info(msg.payload)
+        self.log.debug(msg.payload)
         match (msg.get('action'), msg.get('data', 'type')):
             case ("create", "runtime"):
                 return self.create_runtime(msg)

@@ -3,6 +3,7 @@
 import json
 import uuid
 import requests
+import logging
 
 from beartype.typing import Optional, Union
 from beartype import beartype
@@ -21,6 +22,7 @@ class SilverlineClient(MQTTClient):
         super().__init__(
             client_id="{}:{}".format(name, str(uuid.uuid4())), server=server)
         self.api = api
+        self.__log = logging.getLogger("cli")
 
     @classmethod
     def from_config(
@@ -36,52 +38,67 @@ class SilverlineClient(MQTTClient):
             *args, api=api, server=MQTTServer.from_config(cfg), **kwargs)
 
     def create_module(
-        self, runtime: str, name: str = "module",
-        file: str = "wasm/apps/helloworld.wasm", argv: list[str] = [],
-        env: list[str] = [], engine: Optional[str] = None,
-        period: int = 10 * 1000 * 1000, utilization: float = 0.0,
-        repeat: Optional[int] = None
+        self, runtime: str, file: str, name: str = "module", args: dict = {}
     ) -> str:
         """Create module.
 
         Parameters
         ----------
         runtime: Runtime ID.
-        name: Module short (human-readable) name.
         file: Filepath to module binary/script, relative to the WASM/WASI base
             directory used by the runtime.
-        argv: Argument passthrough to the module.
-        env: Environment variables to set.
-        engine: WASM engine to use for benchmarking.
-        period: Period for sched_deadline, in nanoseconds.
-        utilization: Utilization for sched_deadline. If 0.0, uses CFS.
-        repeat: Number of times to run module if benchmarking.
+        name: Module short (human-readable) name.
+        args: Additional execution args.
 
         Returns
         -------
         UUID of created module.
         """
-        module_uuid = str(uuid.uuid4())
-        args = {"argv": [file] + argv, "env": env}
-        if utilization > 0:
-            c = int(utilization * period)
-            args["resources"] = {"period": period, "runtime": c}
-        if repeat != 0:
-            args["repeat"] = repeat
-        if engine is not None:
-            args["engine"] = engine
-
+        module = str(uuid.uuid4())
         payload = self.control_message("create", {
             "type": "module",
             "parent": runtime,
-            "uuid": module_uuid,
+            "uuid": module,
             "name": name,
             "file": file,
             "args": args
         })
         self.publish(self.control_topic("control"), payload, qos=2)
+        self.__log.info("Created module: {}:{} --> {}".format(
+            module[-4:], file, runtime))
+        return module
 
-        return module_uuid
+    def create_module_batch(
+        self, runtime: str, file: list[str], name: list[str] = "module",
+        args: Optional[list[dict]] = None
+    ) -> list[str]:
+        """Create many modules in a single API call, all on a single runtime.
+
+        Parameters
+        ----------
+        runtime: Runtime ID.
+        file: Filepaths to module binary/script.
+        name: Module short (human-readable) names.
+        args: Additional execution args; leave None to pass `{}` to each.
+
+        Returns
+        -------
+        UUID of each created module.
+        """
+        if args is None:
+            args = [{} for _ in file]
+        uuids = [str(uuid.uuid4()) for _ in file]
+        payload = self.control_message("create_batch", {
+            "modules": [{
+                "type": "module", "uuid": u,
+                "name": n, "file": f, "args": a
+            } for u, n, f, a in zip(uuids, name, file, args)],
+            "parent": runtime
+        })
+        self.publish(self.control_topic("control"), payload, qos=2)
+        self.__log.info("Batch-created {} modules -> {}".format(
+            len(file), runtime))
+        return uuids
 
     def delete_module(self, module: str) -> None:
         """Delete module."""

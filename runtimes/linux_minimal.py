@@ -25,7 +25,7 @@ class LinuxMinimalRuntime:
         args = data.get("args", {})
         if "env" in args and args["env"]:
             cmd += ["--env"] + args["env"]
-        cmd += [data.get("file")] + args.get("argv", [])[1:]
+        cmd += [data.get("file")] + args.get("argv", [])
 
         self.process = Popen(
             " ".join(cmd), stdin=PIPE, stdout=PIPE, shell=True)

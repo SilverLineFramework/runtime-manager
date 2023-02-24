@@ -8,12 +8,12 @@ from paho.mqtt import client
 from beartype.typing import Optional, Union
 from beartype import beartype
 
-from .messages import Message, SLException, UUIDNotFound, Error
 from orchestrator.models import Runtime
+from orchestrator.messages import Message, SLException, UUIDNotFound
 
 
 @beartype
-class ControlHandler:
+class BaseHandler:
     """Base class for message handlers, including some common utilities."""
 
     NAME = "abstract"
@@ -22,22 +22,11 @@ class ControlHandler:
     def __init__(self):
         self.log = logging.getLogger(self.NAME)
 
-    @staticmethod
-    def decode(msg: client.MQTTMessage) -> Message:
-        """Decode MQTT message as JSON."""
-        try:
-            payload = str(msg.payload.decode("utf-8", "ignore"))
-            if (payload[0] == "'"):
-                payload = payload[1:len(payload) - 1]
-            return Message(msg.topic, json.loads(payload))
-        except json.JSONDecodeError:
-            raise SLException({"desc": "Invalid JSON", "data": msg.payload})
-
     def handle_message(self, msg: client.MQTTMessage) -> list[Message]:
         """Message handler wrapper with error handling."""
         decoded = None
         try:
-            decoded = self.decode(msg)
+            decoded = self._decode(msg)
             res = self.handle(decoded)
             if res is None:
                 return []
@@ -51,12 +40,12 @@ class ControlHandler:
         except SLException as e:
             return [e.message]
         # Uncaught exceptions here must be caused by some programmer error
-        # or unchecked edge case, so are always returned.
+        # or unchecked edge case, so are always hidden.
         except Exception as e:
             self.log.error(traceback.format_exc())
             cause = decoded.payload if decoded else msg.payload
             self.log.error("Caused by: {}".format(str(cause)))
-            return [Error({"desc": "Uncaught exception", "data": str(e)})]
+            return []
 
     def handle(self, msg: Message) -> Optional[Union[Message, list[Message]]]:
         """Handle message.
@@ -80,18 +69,42 @@ class ControlHandler:
         raise NotImplementedError()
 
     @staticmethod
-    def _get_object(rt: str, model=Runtime):
+    def _decode(msg: client.MQTTMessage) -> Message:
+        """Decode MQTT message as JSON."""
+        try:
+            payload = str(msg.payload.decode("utf-8", "ignore"))
+            if (payload[0] == "'"):
+                payload = payload[1:len(payload) - 1]
+            return Message(msg.topic, json.loads(payload))
+        except json.JSONDecodeError:
+            raise SLException({"desc": "Invalid JSON", "data": msg.payload})
+
+    @staticmethod
+    def _get_object(uuid: str, model=Runtime):
         """Fetch runtime/module by name or UUID or generate error."""
         try:
-            return model.objects.get(name=rt)
+            return model.objects.get(name=uuid)
         except model.DoesNotExist:
             try:
-                return model.objects.get(uuid=rt)
+                return model.objects.get(uuid=uuid)
             except model.DoesNotExist:
-                raise UUIDNotFound(rt, obj_type=str(model.TYPE))
+                raise UUIDNotFound(uuid, obj_type=str(model.TYPE))
 
     @staticmethod
     def _object_from_dict(model, attrs: dict):
         """Convert attrs to model."""
         filtered = {k: v for k, v in attrs.items() if k in model.INPUT_ATTRS}
         return model(**filtered)
+
+    def _set_status(
+        self, obj: Union[str, Message], status: str, action: str = "",
+        model=Runtime
+    ):
+        """Set new status of object by UUID or message, and return model."""
+        uuid = obj if isinstance(obj, str) else obj.get("data", "uuid")
+
+        obj = self._get_object(uuid, model=model)
+        obj.status = status
+        obj.save()
+        self.log.info("{}: {} ({})".format(action, obj.name, uuid))
+        return obj

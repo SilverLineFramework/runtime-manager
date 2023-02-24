@@ -12,3 +12,6 @@ stop:
 
 deps:
 	$(SL_PIP) install -r requirements.txt
+
+reset:
+	rm -f db.sqlite3

@@ -36,7 +36,7 @@ _config = _load(CONFIG_PATH)
 # LOG_DIR = os.path.join(_config.get("log_dir", "log"), "orchestrator/")
 LOG_DIR = None
 if os.environ.get('RUN_MAIN', None) == 'true':
-    configure_log(LOG_DIR, level=0)
+    configure_log(LOG_DIR, level=20)
 
 _conf = logging.getLogger("conf")
 _conf.info("Using config: {}".format(CONFIG_PATH))

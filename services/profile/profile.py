@@ -43,7 +43,7 @@ class Profiler(SilverlineClient):
         self.log = logging.getLogger("profile")
         self.name = name
         self.base_path = base_path
-        self._modules = {}
+        self.log.info("Saving to directory: {}".format(self.base_path))
         self._runtimes = {}
 
     @classmethod
@@ -77,11 +77,6 @@ class Profiler(SilverlineClient):
         if len(self._runtimes) > 0:
             with open(os.path.join(self.base_path, "runtimes.json"), 'w') as f:
                 json.dump(self._runtimes, f, indent=4)
-        self.log.info(
-            "Saving metadata for {} modules.".format(len(self._modules)))
-        if len(self._modules) > 0:
-            with open(os.path.join(self.base_path, "modules.json"), 'w') as f:
-                json.dump(self._modules, f, indent=4)
 
     def decode(self, payload: bytes, mtype: str):
         """Decode message."""
@@ -116,18 +111,6 @@ class Profiler(SilverlineClient):
             case _:
                 raise ProfilerException("Invalid type: {}".format(mtype))
 
-    def metadata(self, rtid, mid):
-        """Get runtime/module metadata."""
-        if rtid not in self._runtimes:
-            self._runtimes[rtid] = self.get_runtime(rtid)
-        if mid not in self._modules:
-            self._modules[mid] = self.get_module(mid)
-        return {
-            "runtime": self._runtimes[rtid].get("name", ""),
-            "module": self._modules[mid].get("name", ""),
-            "filename": self._modules[mid].get("file", "")
-        }
-
     def __on_message(self, msg) -> None:
         try:
             mtype, rtid, mid = msg.topic.replace(
@@ -136,12 +119,23 @@ class Profiler(SilverlineClient):
             raise ProfilerException("Invalid topic: {}".format(msg.topic))
 
         decoded = self.decode(msg.payload, mtype)
-        meta = self.metadata(rtid, mid)
 
+        if rtid not in self._runtimes:
+            meta = self.get_runtime(rtid)
+            del meta["children"]
+            del meta["queued"]
+            self._runtimes[rtid] = meta
+
+        module = self.get_module(mid)
         path = os.path.join(
-            self.base_path, rtid, "{}.{}.npz".format(mid, mtype))
+            self.base_path, self._runtimes[rtid].get("name", "unknown"),
+            "{}.{}.json".format(module.get("name", "unknown"), mid))
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        np.savez(path, **meta, **decoded)
+
+        out = {k: v.tolist() for k, v in decoded.items()}
+        out["module"] = module
+        with open(path, 'w') as f:
+            json.dump(out, f)
         self.log.info("Saved profiling data: {}".format(path))
 
     def on_message(self, client, userdata, msg):
@@ -160,21 +154,20 @@ if __name__ == '__main__':
 
     p = argparse.ArgumentParser("Balloon: Silverline profile collector.")
     p.add_argument(
-        "-l", "--log_dir", default="log", help="Directory for log files.")
+        "-l", "--log", default=None, help="Directory for log files.")
     p.add_argument(
-        "-p", "--data_dir", default="data",
-        help="Base directory for saving data.")
+        "-p", "--data", default="data", help="Base directory for saving data.")
     p.add_argument(
         "-c", "--cfg", help="Config file.",
         default=os.environ.get('SL_CONFIG', 'config.json'))
     p.add_argument("-v", "--verbose", help="Logging level", default=20)
     args = p.parse_args()
 
-    if args.log_dir is not None:
-        args.log_dir = os.path.join(args.log_dir, "profile/")
-    configure_log(log=args.log_dir, level=args.verbose)
+    if args.log is not None:
+        args.log = os.path.join(args.log, "profile/")
+    configure_log(log=args.log, level=args.verbose)
 
-    path = os.path.join(args.data_dir, time.strftime("%Y-%m-%d.%H:%M:%S"))
+    path = os.path.join(args.data, time.strftime("%Y-%m-%d.%H-%M-%S"))
     profiler = Profiler.from_config(
         args.cfg, name="profiler", base_path=path
     ).start().run_until_stop()

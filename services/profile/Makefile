@@ -1,6 +1,6 @@
 .PHONY: run start stop deps
 run:
-	$(SL_PYTHON) profile.py --data_dir $(SL_DATA)
+	$(SL_PYTHON) profile.py --data $(SL_DATA)
 
 start:
 	screen -S profile -dm bash -c "make run"

@@ -9,10 +9,7 @@ from beartype.typing import Optional
 from beartype import beartype
 
 from libsilverline import MQTTClient, MQTTServer
-from .handler_base import ControlHandler
-from .handler_registration import Registration
-from .handler_control import Control
-from .handler_keepalive import Keepalive
+from . import pubsub
 
 
 @beartype
@@ -41,10 +38,10 @@ class Orchestrator(MQTTClient):
         """Start orchestrator pubsub interface."""
         print(self._HEADER)
         super().start()
-        for handler in [Registration, Control, Keepalive]:
+        for handler in [pubsub.Registration, pubsub.Control, pubsub.Keepalive]:
             self.__add_handler(handler())
 
-    def __add_handler(self, handler: ControlHandler) -> None:
+    def __add_handler(self, handler: pubsub.BaseHandler) -> None:
         """Message handler registration."""
         topic = "{}/{}".format(settings.REALM, handler.TOPIC)
 
@@ -56,7 +53,7 @@ class Orchestrator(MQTTClient):
                 if res.topic == settings.MQTT_LOG:
                     self.__log.warning(log_msg)
                 else:
-                    self.__log.info(log_msg)
+                    self.__log.debug(log_msg)
                 self.publish(res.topic, payload, qos=2)
 
         self.subscribe(topic)

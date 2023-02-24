@@ -13,14 +13,17 @@ priority:
 """
 
 import uuid
-from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from django.http import HttpResponseNotFound
+from django.forms.models import model_to_dict
 
-from .models import State, Runtime, Module
+from libsilverline import State
+
+from .models import Runtime, Module
 
 
-def _serialize(model, status=State.alive):
+def serialize(model, status=State.alive):
+    """Serialize model items, filtered by status."""
     return [
         {k: model_to_dict(obj)[k] for k in model.OUTPUT_SHORT}
         for obj in model.objects.filter(status=status)]
@@ -58,19 +61,19 @@ def list_runtimes(request):
         }
 
     """
-    runtimes = {rt["uuid"]: rt for rt in _serialize(Runtime)}
+    runtimes = {rt["uuid"]: rt for rt in serialize(Runtime)}
     for _, rt in runtimes.items():
         rt["children"] = []
         rt["queued"] = []
 
-    modules = _serialize(Module)
+    modules = serialize(Module)
     for mod in modules:
         try:
             runtimes[mod["parent"]]["children"].append(mod)
         except KeyError:
             pass
 
-    queued = _serialize(Module, status=State.queued)
+    queued = serialize(Module, status=State.queued)
     for mod in queued:
         try:
             runtimes[mod["parent"]]["queued"].append(mod)
@@ -107,7 +110,7 @@ def list_modules(request):
         }
 
     """
-    mod_list = _serialize(Module)
+    mod_list = serialize(Module)
     return JsonResponse(
         {"count": len(mod_list), "start": 0, "results": mod_list})
 
@@ -121,7 +124,7 @@ def queued_modules(request):
 
         <server>/api/queue/
     """
-    mod_list = _serialize(Module, status=State.queued)
+    mod_list = serialize(Module, status=State.queued)
     return JsonResponse(
         {"count": len(mod_list), "start": 0, "results": mod_list})
 
@@ -201,6 +204,9 @@ def search_runtime(request, query):
     runtime['children'] = [
         model_to_dict(module) for module in
         Module.objects.filter(parent=runtime['uuid'], status=State.alive)]
+    runtime['queued'] = [
+        model_to_dict(module) for module in
+        Module.objects.filter(parent=runtime['uuid'], status=State.queued)]
 
     return JsonResponse(runtime)
 

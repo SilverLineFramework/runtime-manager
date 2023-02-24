@@ -9,7 +9,8 @@ if __name__ == '__main__':
 
     subparsers = parser.add_subparsers()
     for name, command in commands.items():
-        p = subparsers.add_parser(name, help=command._desc)
+        p = subparsers.add_parser(
+            name, help=command._desc, description=command._desc)
         command._parse(p)
         p.set_defaults(_func=command._main)
 

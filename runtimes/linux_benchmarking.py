@@ -30,7 +30,7 @@ class LinuxBenchmarkingRuntime:
             self.process = os.fork()
             if self.process == 0:
                 try:
-                    os.execvp(cmd[0], cmd[1:])
+                    os.execvp(cmd[0], cmd)
                 except Exception as e:
                     os._exit(1)
             else:
@@ -65,11 +65,11 @@ class LinuxBenchmarkingRuntime:
     def _make_cmd(self, file, args):
         engine = args.get("engine", "wasmer run --singlepass")
         if engine == "native":
-            cmd = [file] + args.get("argv", [])[1:]
+            cmd = [file] + args.get("argv", [])
         else:
             cmd = engine.split(" ")
             cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
-            cmd += [file] + args.get("argv", [])[1:]
+            cmd += [file] + args.get("argv", [])
         return cmd
 
     def run(self, msg):

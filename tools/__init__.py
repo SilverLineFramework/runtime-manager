@@ -2,6 +2,7 @@
 
 from . import alias
 from . import aot
+from . import benchmark
 from . import command
 from . import configure
 from . import cpufreq
@@ -17,6 +18,7 @@ from .shortcuts import shortcuts
 
 commands = {
     "aot": aot,
+    "benchmark": benchmark,
     "alias": alias,
     "cmd": command,
     "configure": configure,

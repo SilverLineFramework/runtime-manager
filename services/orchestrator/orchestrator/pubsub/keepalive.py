@@ -1,9 +1,9 @@
 """Keepalive handler."""
 
-from .handler_base import ControlHandler
+from .base import BaseHandler
 
 
-class Keepalive(ControlHandler):
+class Keepalive(BaseHandler):
     """Keepalive message."""
 
     NAME = "ka"

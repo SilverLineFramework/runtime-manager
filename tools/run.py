@@ -30,19 +30,34 @@ def _parse(p):
         "-e", "--env", nargs='+', default=[],
         help="Environment variables to set.")
     p.add_argument(
-        "-t", "--period", type=int, default=10 * 1000 * 1000,
+        "--period", type=int, default=10 * 1000 * 1000,
         help="Period for sched_deadline, in nano seconds.")
     p.add_argument(
-        "-u", "--utilization", type=float, default=0.0,
+        "--utilization", type=float, default=None,
         help="Utilization for sched_deadline. If 0.0, uses CFS.")
     p.add_argument(
-        "-k", "--repeat", type=int, default=0,
+        "--repeat", type=int, default=None,
         help="Number of times to run module if benchmarking.")
     p.add_argument(
-        "--engine", default=None,
+        "--limit", type=float, default=60.0, help="Benchmarking time limit.")
+    p.add_argument(
+        "--engine", nargs="+", default=None,
         help="WASM engine to use for benchmarking.")
-
     return p
+
+
+def _module_args(file, args):
+    data = {"argv": args.argv, "env": args.env}
+    if args.utilization is not None:
+        c = int(args.utilization * args.period)
+        data["resources"] = {"period": args.period, "runtime": c}
+    if args.repeat is not None:
+        data["repeat"] = args.repeat
+    if args.engine is not None:
+        data["engine"] = args.engine
+    if args.limit is not None:
+        data["limit"] = args.limit
+    return data
 
 
 def _main(args, default_runtime=None):
@@ -58,12 +73,13 @@ def _main(args, default_runtime=None):
         if rtid is None:
             log.error("Could not find runtime: {}".format(rt))
         else:
-            for f in args.file:
-                mid = client.create_module(
-                    runtime=rtid, name=args.name, file=f, argv=args.argv,
-                    env=args.env, engine=args.engine, period=args.period,
-                    utilization=args.utilization, repeat=args.repeat)
-                log.info("Created: {}:{} --> {}:{}".format(
-                    f, mid[-4:], rt, rtid[-4:]))
+            if len(args.file) <= 1:
+                client.create_module(
+                    rtid, args.file[0], name=args.name,
+                    args=_module_args(args.file[0], args))
+            else:
+                client.create_module_batch(
+                    rtid, args.file, name=[args.name for _ in args.file],
+                    args=[_module_args(f, args) for f in args.file])
 
     client.stop()

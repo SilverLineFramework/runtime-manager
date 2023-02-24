@@ -16,7 +16,8 @@ env/bin/activate:
 	test -d env || $(SYS_PYTHON) -m venv env
 	$(SL_PIP) install ./libsilverline
 	$(SL_PIP) install -r requirements.txt
-	make -C services deps
+	make -C services/orchestrator deps
+	make -C services/profile deps
 	touch env/bin/activate
 
 orchestrator:
@@ -26,10 +27,16 @@ profile:
 	make -C services/profile
 
 start:
-	make -C services start
+	make -C services/orchestrator start
+	make -C services/profile start
 
 stop:
-	make -C services stop
+	make -C services/orchestrator stop
+	make -C services/profile stop
+
+reset:
+	make -C services/orchestrator reset
+
 
 WAMRC_PATH=runtimes/common/wasm-micro-runtime/wamr-compiler
 wamrc: 
