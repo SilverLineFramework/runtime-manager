@@ -3,7 +3,7 @@
 import os
 
 
-_desc = "Index benchmark files."
+_desc = "Index executable benchmark files, excluding common files."
 
 
 def _index(base):

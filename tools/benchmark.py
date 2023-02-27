@@ -1,8 +1,9 @@
 """Run benchmarking.
 
-Use with `index.py` to run benchmark suites::
+Use with `index.py` to run benchmark suites. For example::
 
     hc benchmark -f `hc index -p benchmarks -d wasm/polybench/small`
+    hc benchmark -f `hc index -p benchmarks -d wasm/mibench -r wasm=aot`
 """
 
 import os
