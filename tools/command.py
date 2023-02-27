@@ -31,6 +31,9 @@ def _parse(p):
     p.add_argument(
         "-p", "--password", default="",
         help="Password if executing as sudo.")
+    p.add_argument(
+        "-d", "--devices", nargs='+', default=None,
+        help="Run command on only a subset of devices.")
     return p
 
 
@@ -48,6 +51,10 @@ def _main(args):
             connection.run(cmd, out_stream=stream)
 
     targets = pd.read_csv(cluster.manifest, sep='\t')
+
+    if args.devices is not None:
+        targets = targets[targets['Device'].isin(args.devices)]
+
     devices = set(Device(cluster, dict(row)) for _, row in targets.iterrows())
 
     print("Executing on {} devices: {}".format(len(devices), args.command))
