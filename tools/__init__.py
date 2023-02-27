@@ -7,6 +7,7 @@ from . import command
 from . import configure
 from . import cpufreq
 from . import get
+from . import index
 from . import list
 from . import put
 from . import run
@@ -24,6 +25,7 @@ commands = {
     "configure": configure,
     "cpufreq": cpufreq,
     "get": get,
+    "index": index,
     "list": list,
     "put": put,
     "run": run,

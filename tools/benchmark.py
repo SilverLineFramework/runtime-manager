@@ -1,8 +1,14 @@
-"""Run benchmarking."""
+"""Run benchmarking.
+
+Use with `index.py` to run benchmark suites::
+
+    hc benchmark -f `hc index -p benchmarks -d wasm/polybench/small`
+"""
 
 import os
 import logging
 import pandas as pd
+import random
 
 from libsilverline import SilverlineClient, SilverlineCluster, configure_log
 
@@ -12,13 +18,13 @@ _desc = "Run (runtimes x files x engines) benchmarking."
 
 ENGINES = {
     "native": "native",
-    "wasmer-cranelift": "wasmer run --cranelift",
-    "wasmer-llvm": "wasmer run --llvm",
-    "wasmer-singlepass": "wasmer run --singlepass",
-    "wasmtime": "wasmtime run --wasm-features all",
-    "iwasm": "./runtimes/bin/iwasm",
     "iwasm-aot": "./runtimes/bin/iwasm",
-    "wasmedge": "wasmedge"
+    "wasmer-cranelift": "./runtimes/bin/wasmer run --cranelift",
+    "wasmer-llvm": "./runtimes/bin/wasmer run --llvm",
+    "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass",
+    "iwasm": "./runtimes/bin/iwasm",
+    "wasmedge": "./runtimes/bin/wasmedge",
+    "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all",
 }
 
 
@@ -32,7 +38,7 @@ def _parse(p):
         help="Target runtime names, uuids, or last characters of uuid.")
     p.add_argument(
         "-f", "--file", nargs="+", default=["wasm/apps/helloworld.wasm"],
-        help="Target file paths, relative to WASM/WASI base directory")
+        help="Target file paths, relative to WASM/WASI base directory.")
     p.add_argument(
         "--repeat", type=int, default=100,
         help="Number of times to run module if benchmarking.")
@@ -41,6 +47,9 @@ def _parse(p):
     p.add_argument(
         "--engine", nargs="+", default=None,
         help="WASM engine to use for benchmarking.")
+    p.add_argument(
+        "--shuffle", default=False, action='store_true',
+        help="Shuffle modules on each runtime before running.")
     return p
 
 
@@ -54,7 +63,9 @@ def _main(args):
             SilverlineCluster.from_config(args.cfg).manifest, sep='\t'
         )["Device"])
     if args.engine is None:
-        args.engine = list(ENGINES.keys())
+        args.engine = [
+            "wasmer-llvm", "wasmer-cranelift", "wasmer-singlepass", "iwasm",
+            "wasmedge", "wasmtime"]
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
@@ -65,11 +76,17 @@ def _main(args):
             names = [
                 file.split("/")[-1].split('.')[0] + "." + engine
                 for file in args.file for engine in args.engine]
-            args = [
+            module_args = [
                 {
                     "engine": ENGINES[engine],
                     "repeat": args.repeat, "limit": args.limit
                 } for _ in args.file for engine in args.engine]
-            client.create_module_batch(rtid, files, names, args)
+    
+            if args.shuffle:
+                tmp = list(zip(files, names, module_args))
+                random.shuffle(tmp)
+                files, names, module_args = zip(*tmp)
+
+            client.create_module_batch(rtid, files, names, module_args)
 
     client.stop()

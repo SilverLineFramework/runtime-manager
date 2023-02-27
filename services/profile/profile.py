@@ -6,6 +6,7 @@ import argparse
 import json
 import traceback
 import time
+import threading
 
 import numpy as np
 
@@ -62,19 +63,27 @@ class Profiler(SilverlineClient):
         print(self._BANNER)
         super().start()
         self.subscribe(self.control_topic("profile", "#"))
+
+        def _save():
+            self.save_metadata()
+            self.timer = threading.Timer(30.0, _save)
+            self.timer.start()
+
+        _save()
         return self
 
     def stop(self) -> "Profiler":
         """Stop profiling server."""
         super().stop()
         self.save_metadata()
+        self.timer.cancel()
         return self
 
     def save_metadata(self):
         """Save metadata."""
-        self.log.info(
-            "Saving metadata for {} runtimes.".format(len(self._runtimes)))
         if len(self._runtimes) > 0:
+            self.log.info(
+                "Saving metadata for {} runtimes.".format(len(self._runtimes)))
             with open(os.path.join(self.base_path, "runtimes.json"), 'w') as f:
                 json.dump(self._runtimes, f, indent=4)
 

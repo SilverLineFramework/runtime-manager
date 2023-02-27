@@ -5,7 +5,7 @@ run:
 	$(SL_PYTHON) manage.py runserver
 
 start:
-	screen -S orchestrator -dm bash -c "make run"
+	-screen -S orchestrator -dm bash -c "make run"
 
 stop:
 	-screen -S orchestrator -p 0 -X stuff "^C"

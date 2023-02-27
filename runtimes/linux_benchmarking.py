@@ -68,6 +68,7 @@ class LinuxBenchmarkingRuntime:
             cmd = [file] + args.get("argv", [])
         else:
             cmd = engine.split(" ")
+            cmd += ["--dir=."]
             cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
             cmd += [file] + args.get("argv", [])
         return cmd

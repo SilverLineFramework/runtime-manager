@@ -13,13 +13,26 @@ from libsilverline import SilverlineClient, configure_log
 
 
 def _inner(client):
-    runtimes = client.get_runtimes()
+    try:
+        runtimes = client.get_runtimes()
+    except Exception as e:
+        table = Table()
+        table.add_column("Exception:")
+        table.add_row(str(e))
+        return table
+
     table = Table()
+    table.add_column("", justify="left")
     table.add_column("uuid:name", justify="left")
     table.add_column("type", justify="left")
     table.add_column("modules", justify="left")
     table.add_column("queue", justify="left")
-    for rt in runtimes:
+    table.add_column("", justify="right")
+
+    runtimes.sort(key=lambda rt: rt["name"])
+    for idx, rt in enumerate(runtimes):
+        _idx = Text("{:02}".format(idx), style="bold black")
+
         _rt = Text(rt["uuid"][-4:], style="bold blue")
         _rt.append(':')
         _rt.append(rt["name"], style="bold white")
@@ -33,16 +46,20 @@ def _inner(client):
                 _mod.append("  ")
 
         _queue = Text()
-        for i, mod in enumerate(rt["queued"][:3]):
+        for i, mod in enumerate(rt["queued"][:1]):
             _queue.append(mod["uuid"][-4:], style="bold green")
             _queue.append(":")
             _queue.append(mod["name"])
             if i != len(rt["queued"]) - 1:
-                _queue.append("  ")
-        if len(rt["queued"]) > 3:
-            _queue.append(" ... (+{})".format(len(rt["queue"] - 3)))
+                _queue.append(" ")
 
-        table.add_row(_rt, rt["runtime_type"], _mod, _queue)
+        if len(rt["queued"]) > 1:
+            _queue.append("...")
+            _rem = "(+{})".format(len(rt["queued"]) - 1)
+        else:
+            _rem = ""
+
+        table.add_row(_idx, _rt, rt["runtime_type"], _mod, _queue, _rem)
 
     return table
 

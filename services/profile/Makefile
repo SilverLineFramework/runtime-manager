@@ -3,7 +3,7 @@ run:
 	$(SL_PYTHON) profile.py --data $(SL_DATA)
 
 start:
-	screen -S profile -dm bash -c "make run"
+	-screen -S profile -dm bash -c "make run"
 
 stop:
 	-screen -S profile -p 0 -X stuff "^C"

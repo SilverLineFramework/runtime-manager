@@ -30,7 +30,6 @@ $(WAMR_IWASM)/build/iwasm:
 	cd $(WAMR_IWASM)/build; cmake ..
 	make -C $(WAMR_IWASM)/build
 
-
 clean:
 	make -C linux-minimal-wamr clean
 	make -C profiling-opcodes clean

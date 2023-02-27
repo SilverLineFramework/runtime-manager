@@ -69,8 +69,9 @@ class SilverlineClient(MQTTClient):
         return module
 
     def create_module_batch(
-        self, runtime: str, file: list[str], name: list[str] = "module",
-        args: Optional[list[dict]] = None
+        self, runtime: str, file: Union[tuple[str], list[str]],
+        name: Optional[Union[tuple[str], list[str]]] = None,
+        args: Optional[Union[tuple[dict], list[dict]]] = None
     ) -> list[str]:
         """Create many modules in a single API call, all on a single runtime.
 
@@ -87,6 +88,8 @@ class SilverlineClient(MQTTClient):
         """
         if args is None:
             args = [{} for _ in file]
+        if name is None:
+            name = file
         uuids = [str(uuid.uuid4()) for _ in file]
         payload = self.control_message("create_batch", {
             "modules": [{

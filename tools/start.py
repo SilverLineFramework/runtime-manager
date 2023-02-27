@@ -23,7 +23,8 @@ def _main(args):
     # args.sudo = True
     # args.verbose = 21
     args.command = (
-        "screen -S runtime -dm bash -c \"cd runtime-manager; "
+        "screen -S runtime -dm bash -c "
+        "\". /home/hc/.wasmedge/env; cd runtime-manager; "
         "./env/bin/python start.py --name {{name}} --cfg config.json "
         "--runtimes {} --verbose {}\"".format(
             args.runtimes, args.verbose))

@@ -41,8 +41,7 @@ def _parse(p):
     p.add_argument(
         "--limit", type=float, default=60.0, help="Benchmarking time limit.")
     p.add_argument(
-        "--engine", nargs="+", default=None,
-        help="WASM engine to use for benchmarking.")
+        "--engine", default=None, help="WASM engine to use for benchmarking.")
     return p
 
 
