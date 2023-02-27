@@ -2,8 +2,9 @@
 
 import os
 import logging
+import pandas as pd
 
-from libsilverline import SilverlineClient, configure_log
+from libsilverline import SilverlineClient, SilverlineCluster, configure_log
 
 
 _desc = "Run (runtimes x files x engines) benchmarking."
@@ -38,18 +39,22 @@ def _parse(p):
     p.add_argument(
         "--limit", type=float, default=60.0, help="Benchmarking time limit.")
     p.add_argument(
-        "--engine", nargs="+", default=["wasmer.cranelift"],
+        "--engine", nargs="+", default=None,
         help="WASM engine to use for benchmarking.")
     return p
 
 
-def _main(args, default_runtime=None):
+def _main(args):
     configure_log(log=None, level=args.verbose)
     log = logging.getLogger("cli")
     client = SilverlineClient.from_config(args.cfg, name="cli").start()
 
-    if default_runtime is not None:
-        args.runtime = default_runtime
+    if args.runtime is None:
+        args.runtime = list(pd.read_csv(
+            SilverlineCluster.from_config(args.cfg).manifest, sep='\t'
+        )["Device"])
+    if args.engine is None:
+        args.engine = list(ENGINES.keys())
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
