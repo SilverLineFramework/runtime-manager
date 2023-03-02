@@ -27,7 +27,6 @@ def _inner(client):
     table.add_column("type", justify="left")
     table.add_column("modules", justify="left")
     table.add_column("queue", justify="left")
-    table.add_column("", justify="right")
 
     runtimes.sort(key=lambda rt: rt["name"])
     for idx, rt in enumerate(runtimes):
@@ -46,20 +45,18 @@ def _inner(client):
                 _mod.append("  ")
 
         _queue = Text()
+        if len(rt["queued"]) > 1:
+            _queue.append("({}) ".format(len(rt["queued"])))
         for i, mod in enumerate(rt["queued"][:1]):
             _queue.append(mod["uuid"][-4:], style="bold green")
             _queue.append(":")
             _queue.append(mod["name"])
             if i != len(rt["queued"]) - 1:
                 _queue.append(" ")
-
         if len(rt["queued"]) > 1:
-            _queue.append("...")
-            _rem = "(+{})".format(len(rt["queued"]) - 1)
-        else:
-            _rem = ""
+            _queue += "..."
 
-        table.add_row(_idx, _rt, rt["runtime_type"], _mod, _queue, _rem)
+        table.add_row(_idx, _rt, rt["runtime_type"], _mod, _queue)
 
     return table
 

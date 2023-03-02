@@ -76,11 +76,12 @@ class Control(BaseHandler):
         start = parent.max_nmodules - active.count()
         for module in modules[:start]:
             module.status = State.alive
+            module.parent = parent
         for module in modules[start:]:
             module.status = State.queued
-        for module in modules:
             module.parent = parent
-            module.save()
+
+        Module.objects.bulk_create(modules)
         self.log.info("Batch-created {} modules -> {} ({} queued).".format(
             len(modules), parent.uuid, len(modules[start:])))
 

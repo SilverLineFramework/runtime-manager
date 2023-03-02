@@ -25,6 +25,7 @@ ENGINES = {
     "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass",
     "iwasm": "./runtimes/bin/iwasm",
     "wasmedge": "./runtimes/bin/wasmedge",
+    "wasmedge-aot": "./runtimes/bin/wasmedge",
     "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all",
 }
 
@@ -82,7 +83,7 @@ def _main(args):
                     "engine": ENGINES[engine],
                     "repeat": args.repeat, "limit": args.limit
                 } for _ in args.file for engine in args.engine]
-    
+
             if args.shuffle:
                 tmp = list(zip(files, names, module_args))
                 random.shuffle(tmp)
