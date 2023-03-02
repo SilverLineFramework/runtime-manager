@@ -3,16 +3,17 @@
 import os
 import numpy as np
 
-from jaxtyping import Float32
-from beartype.typing import Callable, Optional, Sequence, Union, NamedTuple
+from jaxtyping import Shaped
+from beartype.typing import (
+    Callable, Optional, Sequence, Union, NamedTuple, Any)
 from beartype import beartype
 
 
 @beartype
 def apply_recursive(
-    path: str, func: Callable[[str], Optional[dict]],
+    path: str, func: Callable[[str], Optional[Any]],
     exclude: set[str] = {"runtimes.json"}
-) -> list[dict]:
+) -> list:
     """Apply function recursively in file system."""
     res = []
     for p in os.listdir(path):
@@ -39,7 +40,8 @@ class Index:
 
     def __init__(
         self, items: Union[Sequence, np.ndarray],
-        display: Optional[Union[Sequence, np.ndarray]] = None
+        display: Optional[Union[Sequence, np.ndarray]] = None,
+        name: str = "index"
     ) -> None:
         self.key = np.array(items)
         self.display = np.array(
@@ -81,7 +83,7 @@ class Index:
         if isinstance(key, np.ndarray) or isinstance(key, slice):
             return Index(self.key[key], display=self.display[key])
         elif isinstance(key, int):
-            return self.items[key]
+            return self.key[key]
         else:
             return self.index[key]
 
@@ -110,15 +112,17 @@ class Matrix(NamedTuple):
     cols: column labels
     """
 
-    data: Float32[np.ndarray, "n m"]
+    data: Shaped[np.ndarray, "n m"]
     rows: Index
     cols: Index
 
-    def plot(self, ax):
+    def plot(self, ax, xlabel=True, ylabel=True):
         """Draw plot."""
         ax.imshow(self.data)
-        self.rows.set_yticks(ax)
-        self.cols.set_xticks(ax)
+        if ylabel:
+            self.rows.set_yticks(ax)
+        if xlabel:
+            self.cols.set_xticks(ax)
 
     def __getitem__(
         self, val: Union[MatrixSlice, tuple[MatrixSlice, MatrixSlice]]
@@ -131,3 +135,28 @@ class Matrix(NamedTuple):
         return Matrix(
             data=self.data[rows][:, cols],
             rows=self.rows[rows], cols=self.cols[cols])
+
+    def __matmul__(
+        self, transform: Callable[
+            [Shaped[np.ndarray, "n m"]], Shaped[np.ndarray, "n m"]]
+    ) -> "Matrix":
+        """Matrix multiplication operator denotes function composition."""
+        return Matrix(
+            data=transform(self.data), rows=self.rows, cols=self.cols)
+
+    def save(
+        self, path: str, data: str = "data",
+        rows: str = "rows", cols: str = "cols"
+    ) -> None:
+        """Save matrix, naming keys according to parameters given."""
+        np.savez(path, **{data: self.data, rows: self.rows, cols: self.cols})
+
+    @classmethod
+    def from_npz(
+        cls, path: str, data: str = "data",
+        rows: str = "rows", cols: str = "cols"
+    ) -> "Matrix":
+        """Load from npz file with specified keys."""
+        npz = np.load(path)
+        return cls(
+            data=npz[data], rows=Index(npz[rows]), cols=Index(npz[cols]))

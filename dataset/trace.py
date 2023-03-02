@@ -109,9 +109,9 @@ class Dataset(NamedTuple):
         indices = {k: np.array(getattr(self, k).key) for k in Dataset.INDICES}
         np.savez(path, **indices, **data)
 
-    def to_matrix(self, transform=np.log) -> Matrix:
+    def to_matrix(self) -> Matrix:
         """Convert to data matrix."""
         return Matrix(
-            data=transform(self.t_mean.reshape(-1, self.t_mean.shape[-1])),
+            data=self.t_mean.reshape(-1, self.t_mean.shape[-1]),
             rows=self.runtimes @ self.devices,
             cols=self.modules)
