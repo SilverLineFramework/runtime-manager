@@ -29,6 +29,7 @@ def _parse(p):
     p.add_argument(
         "-e", "--env", nargs='+', default=[],
         help="Environment variables to set.")
+    p.add_argument("-d", "--dirs", nargs='+', default=None, help="WASI dirs.")
     p.add_argument(
         "--period", type=int, default=10 * 1000 * 1000,
         help="Period for sched_deadline, in nano seconds.")
@@ -56,6 +57,8 @@ def _module_args(file, args):
         data["engine"] = args.engine
     if args.limit is not None:
         data["limit"] = args.limit
+    if args.dirs is not None:
+        data["dirs"] = args.dirs
     return data
 
 

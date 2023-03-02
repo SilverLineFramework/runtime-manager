@@ -6,9 +6,24 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include "cJSON/cJSON.h"
 #include "module.h"
 #include "json_utils.h"
+
+
+static bool parse_argv(cJSON *args, module_args_t *dst) {
+    array_string_t tmp;
+    if(!get_string_array(args, "argv", &tmp)) { return false; };
+    dst->argv.len = 1;
+    dst->argv.data = malloc(sizeof(char *) * 1);
+    dst->argv.data[0] = malloc(strlen(dst->path) + 1);
+    strcpy(dst->argv.data[0], dst->path);
+
+    string_array_concat(&dst->argv, &tmp);
+    return true;
+}
+
 
 /**
  * @brief Parse module arguments (path, env, argv, dirs, etc).
@@ -18,9 +33,9 @@ bool parse_module_args(cJSON *data, module_args_t *dst) {
     return (
         (args != NULL) &&
         get_string_value(data, "file", &dst->path) &&
-        get_string_array(data, "dirs", &dst->dirs) &&
+        get_string_array(args, "dirs", &dst->dirs) &&
         get_string_array(args, "env", &dst->env) &&
-        get_string_array(args, "argv", &dst->argv));
+        parse_argv(args, dst));
 }
 
 /**

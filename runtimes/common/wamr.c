@@ -72,12 +72,11 @@ static bool wamr_load_module(module_wamr_t *mod) {
  */
 static bool wamr_set_wasi_args(module_wamr_t *mod, module_args_t *args) {
 #if WASM_ENABLE_LIBC_WASI != 0
-    log_msg(L_DBG, "Set WASI args...");
     wasm_runtime_set_wasi_args(
         mod->module,
         (const char **) args->dirs.data, args->dirs.len,
         NULL, 0,
-        (const char **) args->env.data, args->dirs.len,
+        (const char **) args->env.data, args->env.len,
         args->argv.data, args->argv.len);
 #endif
     return true;
@@ -156,6 +155,7 @@ void wamr_destroy_module(module_wamr_t *mod) {
  */
 bool wamr_run_once(module_args_t *args, void *context) {
     module_wamr_t mod;
+    memset(&mod, 0, sizeof(mod));
     bool res = (
         wamr_create_module(&mod, args) &&
         wamr_inst_module(&mod, context) &&

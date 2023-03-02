@@ -27,6 +27,8 @@ runtime_t runtime;
 
 
 bool run_module(module_t *mod) {
+    memset(&mod->wamr, 0, sizeof(module_wamr_t));
+
     char openmsg[256];
     openmsg[0] = 0x00;
     openmsg[1] = CH_WRONLY;
