@@ -1,7 +1,8 @@
 """Generate list of benchmarks."""
 
 import os
-
+import random
+import copy
 
 _desc = "Index executable benchmark files, excluding common files."
 
@@ -25,6 +26,12 @@ def _parse(p):
     p.add_argument(
         "-r", "--replace", nargs='+', default=[],
         help="Substitutions to perform.")
+    p.add_argument(
+        "-s", "--shuffle", default=False, action='store_true',
+        help="Shuffle files.")
+    p.add_argument(
+        "-t", "--set", default=None, type=int,
+        help="Generate sets of t items, separated by `:`.")
     return p
 
 
@@ -37,4 +44,15 @@ def _main(args):
             s = s.replace(src, dst)
         return s
 
-    print(" ".join(_subst(s) for s in _index(args.dir)))
+    out = [_subst(s) for s in _index(args.dir)]
+
+    if args.set:
+        outs = [copy.copy(out) for _ in range(args.set)]
+        for x in outs:
+            random.shuffle(x)
+        out = [":".join(x) for x in zip(*outs)]
+    else:
+        if args.shuffle:
+            random.shuffle(out)
+
+    print(" ".join(out))

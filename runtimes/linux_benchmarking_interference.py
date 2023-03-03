@@ -40,7 +40,10 @@ class LinuxBenchmarkingRuntime:
                     stats.append(
                         int(rusage.ru_utime * 10**6)
                         + int(rusage.ru_stime * 10**6))
-        return stats
+        if len(stats) > 2:
+            return sum(stats[1:-1]) / len(stats - 2)
+        else:
+            return 0
 
     def __run(self, files, cmds, limit):
 
