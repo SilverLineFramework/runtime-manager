@@ -2,13 +2,14 @@
 
 from manager import RuntimeManager
 
-from .benchmarking import Benchmarking, OpcodeCount
+from .benchmarking import Benchmarking, BenchmarkingInterference, OpcodeCount
 from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
 
 __all__ = [
     "Benchmarking",
+    "BenchmarkingInterference"
     "OpcodeCount",
     "LinuxMinimal",
     "LinuxMinimalWAMR",
@@ -20,6 +21,9 @@ tree = {
     "_": None,
     "benchmarking": {
         "_": Benchmarking,
+        "if": BenchmarkingInterference,
+        "interference": BenchmarkingInterference,
+        "op": OpcodeCount,
         "opcodes": OpcodeCount
     },
     "linux": {

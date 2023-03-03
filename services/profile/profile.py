@@ -23,6 +23,13 @@ class ProfilerException(Exception):
         self.msg = msg
 
 
+def _tolist(x):
+    if isinstance(x, np.ndarray):
+        return x.tolist()
+    else:
+        return x
+
+
 @beartype
 class Profiler(SilverlineClient):
     """Profiling server."""
@@ -117,6 +124,8 @@ class Profiler(SilverlineClient):
                     "ch_in": data[:, 6],
                     "ch_out": data[:, 7]
                 }
+            case "interference":
+                return json.loads(payload)
             case _:
                 raise ProfilerException("Invalid type: {}".format(mtype))
 
@@ -141,7 +150,7 @@ class Profiler(SilverlineClient):
             "{}.{}.json".format(module.get("name", "unknown"), mid))
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        out = {k: v.tolist() for k, v in decoded.items()}
+        out = {k: _tolist(v) for k, v in decoded.items()}
         out["module"] = module
         with open(path, 'w') as f:
             json.dump(out, f)

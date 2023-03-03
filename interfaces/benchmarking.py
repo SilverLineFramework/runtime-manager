@@ -25,6 +25,21 @@ class Benchmarking(LinuxMinimal):
 
 
 @beartype
+class BenchmarkingInterference(Benchmarking):
+    """Execution time for 2-way interference."""
+
+    TYPE = "benchmarking/interference"
+    APIS = ["wasm", "wasi", "profile:interference"]
+    MAX_NMODULES = 1
+    DEFAULT_NAME = "benchmarking-interference"
+    DEFAULT_SHORTNAME = "if"
+    DEFAULT_COMMAND = (
+        "PYTHONPATH=. ./env/bin/python "
+        "runtimes/linux_benchmarking_interference.py")
+    PROFILE_TOPIC = "profile/interference"
+
+
+@beartype
 class OpcodeCount(Benchmarking):
     """Opcode counting runtime."""
 
