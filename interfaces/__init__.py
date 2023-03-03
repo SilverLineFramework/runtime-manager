@@ -17,15 +17,19 @@ __all__ = [
     "RegistrationOnly"
 ]
 
+__benchmarking = {
+    "_": Benchmarking,
+    "if": BenchmarkingInterference,
+    "interference": BenchmarkingInterference,
+    "op": OpcodeCount,
+    "opcodes": OpcodeCount
+}
+
+
 tree = {
     "_": None,
-    "benchmarking": {
-        "_": Benchmarking,
-        "if": BenchmarkingInterference,
-        "interference": BenchmarkingInterference,
-        "op": OpcodeCount,
-        "opcodes": OpcodeCount
-    },
+    "bench": __benchmarking,
+    "benchmarking": __benchmarking,
     "linux": {
         "_": LinuxRuntime,
         "min": {

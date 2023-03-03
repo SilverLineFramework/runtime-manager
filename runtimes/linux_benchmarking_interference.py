@@ -35,7 +35,7 @@ class LinuxBenchmarkingRuntime:
                 _, status, rusage = os.wait4(self.process[i], 0)
                 if os.waitstatus_to_exitcode(status) != 0:
                     stats.append(0)
-                    return stats
+                    break
                 else:
                     stats.append(
                         int(rusage.ru_utime * 10**6)
