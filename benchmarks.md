@@ -8,5 +8,5 @@ hc benchmark -f `hc index -d wasm -p benchmarks -r wasm/=aot-wasmedge/` --engine
 
 Interference:
 ```sh
-hc benchmark -f `hc index -d wasm -p benchmarks -s -t 2` --engine iwasm wasmedge wasmtime wasmer-cranelift wasmer-singlepass wasmer-llvm
+hc benchmark -f `hc index -d wasm -p benchmarks -s -t 2` --limit 30 --engine iwasm wasmedge wasmtime wasmer-cranelift wasmer-singlepass wasmer-llvm
 ```

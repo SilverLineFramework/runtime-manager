@@ -41,7 +41,7 @@ class LinuxBenchmarkingRuntime:
                         int(rusage.ru_utime * 10**6)
                         + int(rusage.ru_stime * 10**6))
         if len(stats) > 2:
-            return sum(stats[1:-1]) / len(stats - 2)
+            return sum(stats[1:-1]) / (len(stats) - 2)
         else:
             return 0
 
