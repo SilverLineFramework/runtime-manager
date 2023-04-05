@@ -2,6 +2,58 @@
 
 ![Manager Architecture](manager_architecture.PNG)
 
+## Usage
+
+### Quick Setup
+Ensure mosquitto is running. Then:
+```sh
+make env
+make orchestrator
+```
+
+### Start Runtime
+Start the runtime with
+```sh
+python start.py -n <name> -r <runtime ...>
+```
+where `<runtime>` is a list of runtimes you would like to start.
+
+### Command Line Tools
+Access tools (i.e. `run`) with
+```sh
+python manage.py <script> <args ...>
+```
+For example, to run a program:
+```sh
+python manage.py run -n test -f helloworld.wasm
+```
+Use `python manage.py -h` to list available scripts, and `python manage.py <script> -h` to get help for each script.
+
+```
+Available scripts:
+    aot                 AOT compile WebAssembly sources for cluster devices.
+    benchmark           Run (runtimes x files x engines) benchmarking.
+    alias               Write cluster management aliases.
+    cmd                 Execute command on cluster using SSH.
+    configure           Create node/cluster configuration file.
+    cpufreq             Set CPU frequency policy.
+    get                 Copy file from cluster.
+    index               Index executable benchmark files, excluding common files.
+    list                List runtimes and modules running on each runtime.
+    put                 Copy file to cluster.
+    run                 Launch Silverline module(s).
+    runall              Launch Silverline module(s) across cluster nodes.
+    start               Start runtimes on cluster.
+    status              List nodes and node status.
+    stop                Stop Silverline module(s).
+    shutdown            Shut down nodes.
+    reboot              Reboot nodes.
+    update              Update runtimes.
+    kill                Stop runtimes on cluster.
+    version             Get runtime version on each cluster node via commit hash.
+```
+
+
 ## Logging & Naming Conventions
 
 Messages are logged with the header `[time] [{module}:{LEVEL}] {message}`.

@@ -36,7 +36,8 @@ shortcuts = {
         desc="Stop runtimes on cluster.", base=command,
         args={"command": "screen -S runtime -p 0 -X stuff \"^C\""}),
     "version": Alias(
-        desc="Get runtime version via commit hash.", base=command,
+        desc="Get runtime version on each cluster node via commit hash.",
+        base=command,
         args={"command": (
             "cd runtime-linux; git log -n 1 --pretty=format:\"%H\"")})
 }
