@@ -13,7 +13,8 @@ import numpy as np
 from beartype import beartype
 from beartype.typing import Optional, Union
 
-from libsilverline import SilverlineClient, MQTTServer, configure_log
+from libsilverline import (
+    SilverlineClient, MQTTServer, configure_log, dict_or_load)
 
 
 class ProfilerException(Exception):
@@ -52,18 +53,16 @@ class Profiler(SilverlineClient):
         self.name = name
         self.base_path = base_path
         self.log.info("Saving to directory: {}".format(self.base_path))
-        self._runtimes = {}
+        self._runtimes: dict = {}
 
     @classmethod
-    def from_config(cls, cfg: Union[str, dict], *args, **kwargs) -> "Profiler":
+    def from_config(
+            cls, path_or_cfg: Union[str, dict], **kwargs) -> "Profiler":
         """Create from configuration."""
-        if isinstance(cfg, str):
-            with open(cfg) as f:
-                cfg = json.load(f)
+        cfg = dict_or_load(path_or_cfg)
         api = "http://{}:{}/api".format(
             cfg.get("http", "localhost"), cfg.get("http_port", 8000))
-        return cls(
-            *args, api=api, server=MQTTServer.from_config(cfg), **kwargs)
+        return cls(api=api, server=MQTTServer.from_config(cfg), **kwargs)
 
     def start(self) -> "Profiler":
         """Start profiling server."""
@@ -113,8 +112,8 @@ class Profiler(SilverlineClient):
             case "deployed":
                 data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 8)
                 start = (
-                    payload[:, 0].astype(np.uint64)
-                    | (payload[:, 1].astype(np.uint64) << np.uint64(32)))
+                    data[:, 0].astype(np.uint64)
+                    | (data[:, 1].astype(np.uint64) << np.uint64(32)))
                 return {
                     "start": start,
                     "wall": data[:, 2],
@@ -186,6 +185,6 @@ if __name__ == '__main__':
     configure_log(log=args.log, level=args.verbose)
 
     path = os.path.join(args.data, time.strftime("%Y-%m-%d.%H-%M-%S"))
-    profiler = Profiler.from_config(
+    Profiler.from_config(
         args.cfg, name="profiler", base_path=path
     ).start().run_until_stop()

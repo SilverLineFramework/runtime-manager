@@ -6,6 +6,7 @@ from .http import SilverlineClient
 from .types import Message, Header, Channel, Flags, State
 from .socket import SLSocket
 from .cluster import SilverlineCluster
+from .util import dict_or_load
 
 __all__ = [
     "configure_log",
@@ -17,5 +18,6 @@ __all__ = [
     "ArgumentParser",
     "Message", "Header", "Channel", "Flags", "State",
     "SLSocket",
-    "SilverlineCluster"
+    "SilverlineCluster",
+    "dict_or_load"
 ]

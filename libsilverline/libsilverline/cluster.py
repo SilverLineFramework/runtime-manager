@@ -7,7 +7,7 @@ import os
 from beartype.typing import NamedTuple, Union, Optional, cast
 from beartype import beartype
 
-from .util import _dict_or_load
+from .util import dict_or_load
 
 
 @beartype
@@ -36,7 +36,7 @@ class SilverlineCluster(NamedTuple):
     @classmethod
     def from_config(cls, path_or_cfg: Union[str, dict]):
         """Load settings from configuration file or dict."""
-        cfg: dict = _dict_or_load(path_or_cfg)
+        cfg: dict = dict_or_load(path_or_cfg)
         return cls(
             manifest=cfg.get("manifest", None),
             domain=cfg.get("domain", ""),

@@ -17,6 +17,6 @@ class orchestratorConfig(AppConfig):
         if os.environ.get('RUN_MAIN', None) == 'true':
             from .orchestrator import Orchestrator
 
-            self.orch = Orchestrator(
+            self.orchestrator = Orchestrator(
                 name="orchestrator",
                 server=MQTTServer.from_config(settings.CONFIG_PATH)).start()

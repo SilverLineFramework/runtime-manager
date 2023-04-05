@@ -5,7 +5,7 @@ import logging
 import traceback
 from paho.mqtt import client
 
-from beartype.typing import Optional, Union
+from beartype.typing import Optional, Union, cast
 from beartype import beartype
 
 from orchestrator.models import Runtime
@@ -16,8 +16,8 @@ from orchestrator.messages import Message, SLException, UUIDNotFound
 class BaseHandler:
     """Base class for message handlers, including some common utilities."""
 
-    NAME = "abstract"
-    TOPIC = None
+    NAME: str = "abstract"
+    TOPIC: Optional[str] = None
 
     def __init__(self):
         self.log = logging.getLogger(self.NAME)
@@ -97,11 +97,14 @@ class BaseHandler:
         return model(**filtered)
 
     def _set_status(
-        self, obj: Union[str, Message], status: str, action: str = "",
+        self, tgt: Union[str, Message], status: str, action: str = "",
         model=Runtime
     ):
         """Set new status of object by UUID or message, and return model."""
-        uuid = obj if isinstance(obj, str) else obj.get("data", "uuid")
+        if isinstance(tgt, str):
+            uuid = tgt
+        else:
+            uuid = cast(str, tgt.get("data", "uuid"))
 
         obj = self._get_object(uuid, model=model)
         obj.status = status

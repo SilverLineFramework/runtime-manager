@@ -5,7 +5,7 @@ import json
 
 from django.conf import settings
 
-from beartype.typing import Union
+from beartype.typing import Union, cast
 
 
 # Valid JSON entry
@@ -33,7 +33,7 @@ class Message:
         self.topic = topic
         self.payload = payload
 
-    def get(self, *args: list) -> any:
+    def get(self, *args: Union[int, str]) -> JsonData:
         """Get attribute, or raise appropriate error.
 
         Raises
@@ -44,10 +44,10 @@ class Message:
         try:
             d = self.payload
             for p in args:
-                d = d[p]
+                d = d[p]  # type: ignore
             return d
         except (KeyError, TypeError):
-            raise MissingField(args)
+            raise MissingField(*args)
 
 
 def Error(data: JsonData) -> Message:
@@ -78,7 +78,7 @@ def Response(
     convert: bool = True
 ) -> Message:
     """Orchestrator Response."""
-    if convert:
+    if isinstance(details, dict) and convert:
         __convert_str_attrs(details)
     return Message(topic, {
         "object_id": str(src_uuid), "type": "resp",
@@ -90,7 +90,7 @@ def Request(
     topic: str, action: str, data: JsonData, convert: bool = True
 ) -> Message:
     """Orchestrator Request."""
-    if convert:
+    if isinstance(data, dict) and convert:
         __convert_str_attrs(data)
     return Message(topic, {
         "object_id": str(uuid.uuid4()), "action": action, "type": "req",
@@ -137,8 +137,10 @@ class InvalidArgument(SLException):
 class MissingField(SLException):
     """Required field is missing."""
 
-    def __init__(self, path: str) -> None:
-        super().__init__({"desc": "missing field", "data": "/".join(path)})
+    def __init__(self, *path: Union[int, str]) -> None:
+        super().__init__(
+            {"desc": "missing field",
+             "data": "/".join([str(k) for k in path])})
 
 
 class FileNotFound(SLException):

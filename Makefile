@@ -46,3 +46,5 @@ wamrc:
 typecheck:
 	mypy start.py
 	mypy manage.py
+	mypy services/profile/profile.py
+	cd services/orchestrator; mypy .

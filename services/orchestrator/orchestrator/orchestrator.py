@@ -34,12 +34,13 @@ class Orchestrator(MQTTClient):
         self.__log = logging.getLogger(name="resp")
         self.name = name
 
-    def start(self, ) -> None:
+    def start(self) -> "Orchestrator":
         """Start orchestrator pubsub interface."""
         print(self._HEADER)
         super().start()
         for handler in [pubsub.Registration, pubsub.Control, pubsub.Keepalive]:
             self.__add_handler(handler())
+        return self
 
     def __add_handler(self, handler: pubsub.BaseHandler) -> None:
         """Message handler registration."""
