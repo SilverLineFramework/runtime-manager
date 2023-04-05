@@ -11,8 +11,8 @@ class ModuleLookup:
     """Module lookup by index and by UUID."""
 
     def __init__(self, max: int = 128):
-        self.modules_idx = {}
-        self.modules_uuid = {}
+        self.modules_idx: dict = {}
+        self.modules_uuid: dict = {}
         self.max_nmodules = max
 
     def add(self, data: dict) -> None:

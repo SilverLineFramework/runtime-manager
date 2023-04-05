@@ -76,9 +76,9 @@ class SLSocket:
                 payloadlen, h1, h2 = struct.unpack(self.HEADER_FMT, recv)
                 payload = []
                 while payloadlen > 0:
-                    recv = min(payloadlen, self.chunk_size)
-                    payload.append(self.connection.recv(recv))
-                    payloadlen -= recv
+                    size = min(payloadlen, self.chunk_size)
+                    payload.append(self.connection.recv(size))
+                    payloadlen -= size
                 return Message(h1, h2, b"".join(payload))
             return None
         except TimeoutError:

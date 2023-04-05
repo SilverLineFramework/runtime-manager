@@ -32,8 +32,8 @@ class Device:
 
     def __init__(self, cluster: SilverlineCluster, row: dict) -> None:
         self.context = {
-            "name": row.get("Device"),
-            "fullname": row.get("Device") + cluster.domain,
+            "name": row.get("Device", "device"),
+            "fullname": row.get("Device", "device") + cluster.domain,
             "model": row.get("Model", "-"),
             "cpu": row.get("CPU", "-"),
             "target": row.get("Target", "-"),

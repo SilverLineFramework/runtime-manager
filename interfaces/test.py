@@ -14,12 +14,14 @@ class RegistrationOnly(RuntimeManager):
     """Dummy runtime for basic debugging."""
 
     TYPE = "debug/none"
-    AIPS = []
+    APIS = []
     DEFAULT_NAME = "test"
     DEFAULT_SHORTNAME = "test"
     MAX_NMODULES = 0
 
-    def __init__(self, rtid: str = None, name: str = "debug-none") -> None:
+    def __init__(
+        self, rtid: Optional[str] = None, name: str = "debug-none"
+    ) -> None:
         super().__init__(rtid, name)
 
     def start(self) -> dict:
@@ -34,4 +36,4 @@ class RegistrationOnly(RuntimeManager):
     def receive(self) -> Optional[Message]:
         """Not implemented."""
         time.sleep(1.)
-        pass
+        return None

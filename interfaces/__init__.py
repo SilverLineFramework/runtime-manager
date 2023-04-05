@@ -26,7 +26,7 @@ __benchmarking = {
 }
 
 
-tree = {
+tree: dict = {
     "_": None,
     "bench": __benchmarking,
     "benchmarking": __benchmarking,

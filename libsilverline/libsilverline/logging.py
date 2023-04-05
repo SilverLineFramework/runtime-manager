@@ -8,7 +8,7 @@ from rich.console import Console
 from rich.theme import Theme
 from datetime import datetime
 
-from beartype.typing import Optional
+from beartype.typing import Optional, Any
 
 
 console = Console(theme=Theme({
@@ -43,7 +43,8 @@ def configure_log(log: Optional[str] = None, level: int = 20) -> None:
     if log is not None:
         os.makedirs(log, exist_ok=True)
 
-    handlers = [__CustomHandler(console=console, rich_tracebacks=True)]
+    handlers: list[Any] = [
+        __CustomHandler(console=console, rich_tracebacks=True)]
     if log is not None:
         date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         handlers.append(logging.FileHandler("{}{}.log".format(log, date)))

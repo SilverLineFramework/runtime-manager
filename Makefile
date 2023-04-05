@@ -3,10 +3,11 @@ SYS_PYTHON=python3
 
 export SL_CONFIG=$(realpath config.json)
 export SL_PIP=$(DIR)/env/bin/pip
+export DEV_PIP=pip
 export SL_PYTHON=$(DIR)/env/bin/python
 export SL_DATA=$(DIR)/data
 
-.PHONY: all env
+.PHONY: all env env-dev
 
 all: env
 
@@ -41,3 +42,7 @@ reset:
 WAMRC_PATH=runtimes/common/wasm-micro-runtime/wamr-compiler
 wamrc: 
 	ln -s $(WAMRC_PATH)/build/wamrc .
+
+typecheck:
+	mypy start.py
+	mypy manage.py

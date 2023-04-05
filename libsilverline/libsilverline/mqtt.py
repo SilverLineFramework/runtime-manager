@@ -11,7 +11,9 @@ import argparse
 import paho.mqtt.client as mqtt
 
 from beartype import beartype
-from beartype.typing import NamedTuple, Optional, Union
+from beartype.typing import NamedTuple, Optional, Union, cast
+
+from .util import _dict_or_load
 
 
 @beartype
@@ -36,11 +38,9 @@ class MQTTServer(NamedTuple):
     realm: str
 
     @classmethod
-    def from_config(cls, cfg: Union[str, dict]):
+    def from_config(cls, path_or_cfg: Union[str, dict]):
         """Load settings from configuration file or dict."""
-        if isinstance(cfg, str):
-            with open(cfg) as f:
-                cfg = json.load(f)
+        cfg: dict = _dict_or_load(path_or_cfg)
         return cls(
             host=cfg.get("mqtt", "localhost"),
             port=cfg.get("mqtt_port", 1883),

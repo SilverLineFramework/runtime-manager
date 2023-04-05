@@ -17,7 +17,7 @@ from . import status
 from . import stop
 from .shortcuts import shortcuts
 
-commands = {
+commands: dict = {
     "aot": aot,
     "benchmark": benchmark,
     "alias": alias,

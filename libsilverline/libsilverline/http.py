@@ -9,6 +9,7 @@ from beartype.typing import Optional, Union
 from beartype import beartype
 
 from .mqtt import MQTTClient, MQTTServer
+from .util import _dict_or_load
 
 
 @beartype
@@ -26,16 +27,13 @@ class SilverlineClient(MQTTClient):
 
     @classmethod
     def from_config(
-        cls, cfg: Union[str, dict], *args, **kwargs
+        cls, path_or_cfg: Union[str, dict], **kwargs
     ) -> "SilverlineClient":
         """Create from configuration."""
-        if isinstance(cfg, str):
-            with open(cfg) as f:
-                cfg = json.load(f)
+        cfg: dict = _dict_or_load(path_or_cfg)
         api = "http://{}:{}/api".format(
             cfg.get("http", "localhost"), cfg.get("http_port", 8000))
-        return cls(
-            *args, api=api, server=MQTTServer.from_config(cfg), **kwargs)
+        return cls(api=api, server=MQTTServer.from_config(cfg), **kwargs)
 
     def create_module(
         self, runtime: str, file: str, name: str = "module", args: dict = {}

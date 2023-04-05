@@ -32,7 +32,7 @@ class LinuxMinimal(RuntimeManager):
     DEFAULT_COMMAND = "PYTHONPATH=. ./env/bin/python runtimes/linux_minimal.py"
 
     def __init__(
-        self, rtid: str = None, name: Optional[str] = None,
+        self, rtid: Optional[str] = None, name: Optional[str] = None,
         command: Optional[str] = None, cfg: dict = {},
         cpus: Optional[str] = None
     ) -> None:

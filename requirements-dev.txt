@@ -1,0 +1,4 @@
+mypy==1.1.1
+types-requests
+pandas-stubs
+types-paho-mqtt

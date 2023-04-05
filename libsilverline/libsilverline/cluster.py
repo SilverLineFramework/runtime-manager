@@ -4,8 +4,10 @@ import json
 import argparse
 import os
 
-from beartype.typing import NamedTuple, Union, Optional
+from beartype.typing import NamedTuple, Union, Optional, cast
 from beartype import beartype
+
+from .util import _dict_or_load
 
 
 @beartype
@@ -32,12 +34,9 @@ class SilverlineCluster(NamedTuple):
     file_store_port: int
 
     @classmethod
-    def from_config(cls, cfg: Union[str, dict]):
+    def from_config(cls, path_or_cfg: Union[str, dict]):
         """Load settings from configuration file or dict."""
-        if isinstance(cfg, str):
-            with open(cfg) as f:
-                cfg = json.load(f)
-
+        cfg: dict = _dict_or_load(path_or_cfg)
         return cls(
             manifest=cfg.get("manifest", None),
             domain=cfg.get("domain", ""),

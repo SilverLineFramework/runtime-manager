@@ -42,32 +42,33 @@ class ChannelManager:
                 "Tried to open already-existing channel")
 
         # Handle standard translation
-        topic = topic.rstrip(b'\0').decode('utf-8')
-        if topic.startswith("$SL/"):
+        topic_str = topic.rstrip(b'\0').decode('utf-8')
+        if topic_str.startswith("$SL/"):
             _uuid = self.mgr.runtimes[runtime].modules.uuid(module)
-            topic = "/".join(
-                [self.mgr.server.realm, topic.lstrip("$SL/"), _uuid])
+            topic_str = "/".join(
+                [self.mgr.server.realm, topic_str.lstrip("$SL/"), _uuid])
 
         # Check for wildcards
         if (flags | Flags.write) != 0:
-            if '+' in topic or '#' in topic:
+            if '+' in topic_str or '#' in topic_str:
                 raise exceptions.ChannelException(
                     "Channel topic name cannot contain a wildcard ('+', '#') "
-                    "in write or read-write mode: {}".format(topic))
+                    "in write or read-write mode: {}".format(topic_str))
 
         ch = Channel(
-            runtime=runtime, module=module, fd=fd, topic=topic, flags=flags)
+            runtime=runtime, module=module, fd=fd, topic=topic_str,
+            flags=flags)
 
         # Requires subscribing
         if (flags | Flags.read) != 0:
             try:
-                self.matcher[topic].add(ch)
+                self.matcher[topic_str].add(ch)
             except KeyError:
-                self.mgr.subscribe(topic)
-                self.matcher[topic] = {ch}
+                self.mgr.subscribe(topic_str)
+                self.matcher[topic_str] = {ch}
 
-        self.log.debug(
-            "Opened channel: {} (flags=x{:02x})".format(topic, flags))
+        self.log.debug("Opened channel: {} (flags=x{:02x})".format(
+            topic.decode('utf-8'), flags))
         self.channels[runtime][module][fd] = ch
 
     def close(self, runtime: int, module: int, fd: int) -> None:
