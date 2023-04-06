@@ -13,7 +13,7 @@ from libsilverline import Message, SLSocket, Header
 class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 
-    def __init__(self, index):
+    def __init__(self, index: int) -> None:
         self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
 

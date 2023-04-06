@@ -36,3 +36,10 @@ clean:
 	rm -r $(WAMR_IWASM)/build
 
 	rm -r bin
+
+
+.PHONY: typecheck
+typecheck:
+	mypy linux_minimal.py
+	mypy linux_benchmarking.py
+	mypy linux_benchmarking_interference.py

@@ -4,6 +4,7 @@ import sys
 import json
 import threading
 from subprocess import Popen, PIPE
+from beartype.typing import Optional, IO
 
 from libsilverline import Message, SLSocket, Header, Flags
 
@@ -14,9 +15,10 @@ class LinuxMinimalRuntime:
     Only supports one-shot stdin/stdout for a single module.
     """
 
-    def __init__(self, index: int, cmd: str = "wasmer run"):
+    def __init__(self, index: int, cmd: str = "wasmer run") -> None:
         self.cmd = cmd
         self.socket = SLSocket(index, server=False, timeout=5.)
+        self.pipe: Optional[IO[bytes]] = None
 
     def run(self, msg: Message) -> None:
         """Run program."""
@@ -27,14 +29,14 @@ class LinuxMinimalRuntime:
             cmd += ["--env"] + args["env"]
         cmd += [data.get("file")] + args.get("argv", [])
 
-        self.process = Popen(
-            " ".join(cmd), stdin=PIPE, stdout=PIPE, shell=True)
+        process = Popen(" ".join(cmd), stdin=PIPE, stdout=PIPE, shell=True)
+        self.pipe = process.stdin
         self.socket.write(Message(
             Header.control | 0x00, Header.ch_open,
             bytes([0x00, Flags.readwrite])
             + bytes("$SL/proc/stdio", encoding='utf-8')))
 
-        stdout, _ = (self.process.communicate())
+        stdout, _ = process.communicate()
         self.socket.write(Message(0x00, 0x00, stdout))
         self.socket.write(Message.from_dict(
             Header.control | 0x00, Header.exited, {"status": "exited"}))
@@ -42,7 +44,8 @@ class LinuxMinimalRuntime:
     def handle_message(self, msg: Message) -> None:
         """Handle message from manager."""
         if msg.h1 & Header.control == 0:
-            self.process.stdin.write(msg.payload)
+            if self.pipe is not None:
+                self.pipe.write(msg.payload)
         elif msg.h2 == Header.create:
             threading.Thread(target=self.run, args=[msg]).start()
 

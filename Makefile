@@ -48,3 +48,4 @@ typecheck:
 	mypy manage.py
 	mypy services/profile/profile.py
 	cd services/orchestrator; mypy .
+	make -C runtimes typecheck
