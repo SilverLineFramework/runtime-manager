@@ -117,10 +117,10 @@ class Profiler(SilverlineClient):
                 return {
                     "start": start,
                     "wall": data[:, 2],
-                    "utime": data[:, 3],
-                    "stime": data[:, 4],
-                    "maxrss": data[:, 5],
-                    "ch_in": data[:, 6],
+                    "cpu_time": data[:, 3],
+                    "memory": data[:, 4],
+                    "ch_mqtt": data[:, 5],
+                    "ch_local": data[:, 6],
                     "ch_out": data[:, 7]
                 }
             case "interference":

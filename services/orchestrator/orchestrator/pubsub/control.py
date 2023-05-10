@@ -73,7 +73,11 @@ class Control(BaseHandler):
         parent = self._get_object(msg.get('data', 'parent'), model=Runtime)
         active = Module.objects.filter(parent=parent, status=State.alive)
 
-        start = parent.max_nmodules - active.count()
+        if parent.max_nmodules > 0:
+            start = parent.max_nmodules - active.count()
+        else:
+            start = len(modules)
+
         for module in modules[:start]:
             module.status = State.alive
             module.parent = parent
