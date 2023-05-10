@@ -6,4 +6,5 @@ rich==13.3.1
 requests==2.28.2
 pandas==1.5.3
 fabric==3.0.0
-silverline>=2.0.0
+decorator
+libsilverline>=2.0.0
