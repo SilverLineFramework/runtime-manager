@@ -6,25 +6,29 @@ When runtimes are communicating with the Orchestrator, they do so by sending JSO
 
 The types of messages are defined in the following table:
 
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Message                   | Topic                                    |Direction                                        |
-+===========================+==========================================+=================================================+
-| Register / Create Runtime |  {realm}/proc/reg/{runtime-uuid}         | Runtime → Orchestrator                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Register Ack              |  {realm}/proc/reg/{runtime-uuid}         | Orchestrator → Runtime                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Keep Alive                |  {realm}/proc/keepalive/{runtime-uuid}   | Runtime → Orchestrator                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Delete Runtime            |  {realm}/proc/reg/{runtime-uuid}         | Runtime → Orchestrator                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Create Module (user req.) |  {realm}/proc/control                    | Program or User → Orchestrator                  |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Create Module (orch. req.)|  {realm}/proc/control/{runtime-uuid}     | Orchestrator → Runtime                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Delete Module             |  {realm}/proc/control/{runtime-uuid}     | Program, User or Orchestrator → Runtime         |
-+---------------------------+------------------------------------------+-------------------------------------------------+
-| Module Exit               |  {realm}/proc/control                    | Runtime → Orchestrator                          |
-+---------------------------+------------------------------------------+-------------------------------------------------+
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Message                             | Topic                                 |                                          |
++=====================================+=======================================+==========================================+
+| Register / Create Runtime           | {realm}/proc/reg/{runtime-uuid}       | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Register / Create Manager           | {realm}/proc/reg/{manager-uuid}       | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Register Ack                        | {realm}/proc/reg/{runtime-uuid}       | Orchestrator → Runtime                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Keep Alive                          | {realm}/proc/keepalive/{runtime-uuid} | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Delete Runtime                      | {realm}/proc/reg/{runtime-uuid}       | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Delete Manager                      | {realm}/proc/reg/{runtime-uuid}       | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Create Module (user req.)           | {realm}/proc/control                  | Program or User → Orchestrator          |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| {realm}/proc/control/{runtime-uuid} | Orchestrator → Runtime               |                                          |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Delete Module                       | {realm}/proc/control/{runtime-uuid}   | Program, User or Orchestrator → Runtime |
++-------------------------------------+---------------------------------------+------------------------------------------+
+| Module Exit                         | {realm}/proc/control                  | Runtime → Orchestrator                  |
++-------------------------------------+---------------------------------------+------------------------------------------+
 
 The basic message format (derived from the generic ARENA message) is as follows:
 
@@ -165,19 +169,55 @@ Runtime → Orchestrator: Runtime sends message to ``{realm}/proc/reg/{runtime-u
         }
     }
 
-:data[uuid]: is the runtime's UUID
+:data[uuid]: the runtime's UUID.
+:data[name]: a display name for the runtime (not necessarily unique).
 
-**This message should be set as a runtime's MQTT last will**
+**This message should be set as a runtime's MQTT last will for non-managed runtimes.**
 
 Manager Registration
 ^^^^^^^^^^^^^^^^^^^^
 
-**TODO**
+Register a runtime manager with the orchestrator.
+
+.. code-block:: json
+
+    {
+        "object_id": "50c2f088-a5b6-48c5-bbc7-4a693b0117a2",
+        "action": "create",
+        "type": "req",
+        "data": {
+            "type": "manager",
+            "uuid": "5f937916-d29d-4f66-801e-3d69f57728e2",
+            "name": "mgr1",
+        }
+    }
+
+:data[uuid]: the manager's UUID.
+:data[name]: a display name for the manager (not necessarily unique).
+
+Runtime → Orchestrator: Runtime sends message to ``{realm}/proc/reg/{runtime-uuid}``. 
 
 Delete Manager
 ^^^^^^^^^^^^^^
 
-**TODO**
+Used as an indication that the runtime manager exited (i.e. the entire node is down).
+
+Runtime → Orchestrator: Runtime sends message to ``{realm}/proc/reg/{runtime-uuid}``. 
+
+.. code-block:: json
+
+    {
+        "object_id": "50c2f088-a5b6-48c5-bbc7-4a693b0117a2",
+        "action": "delete",
+        "type": "req",
+        "data": {
+            "type": "manager",
+            "uuid": "5f937916-d29d-4f66-801e-3d69f57728e2",
+            "name": "mgr1",
+        }
+    }
+
+**This message should be set as a runtime's MQTT last will for the runtime manager on behalf of all child runtimes.**
 
 Create Module
 ^^^^^^^^^^^^^
