@@ -25,13 +25,12 @@ __benchmarking = {
     "opcodes": OpcodeCount
 }
 
-
 tree: dict = {
     "_": None,
     "bench": __benchmarking,
     "benchmarking": __benchmarking,
     "linux": {
-        "_": LinuxRuntime,
+        "_": None,
         "min": {
             "_": None,
             "wasmer": LinuxMinimal,
@@ -49,10 +48,16 @@ tree: dict = {
 def get_runtime(name: str) -> "RuntimeManager":
     """Get runtime by name."""
     rt_class = tree
-    for spec in name.split('/'):
-        rt_class = rt_class[spec]
+    try:
+        for spec in name.split('/'):
+            rt_class = rt_class[spec]
+    except KeyError:
+        raise KeyError("No runtime matching \"{}\".".format(name))
 
     if isinstance(rt_class, dict):
-        return rt_class["_"]
+        rt_class = rt_class["_"]
+
+    if rt_class is None:
+        raise NotImplemented("Runtime {} is not yet implemented.".format(name))
     else:
         return rt_class

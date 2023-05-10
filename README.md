@@ -15,6 +15,7 @@ Ensure mosquitto is running. Then:
 ```sh
 make env
 make orchestrator
+python start.py -n test -r linux/min/wasmer
 ```
 
 ### Build Runtimes
@@ -71,6 +72,16 @@ Available scripts:
     version             Get runtime version on each cluster node via commit hash.
 ```
 
+## Runtimes
+
+Currently available runtimes:
+- `linux`:
+    - `linux/min/wasmer`: wasmer-based minimal runtime (stdout only).
+    - `linux/min/wamr`: wamr-based minimal runtime (stdout only).
+- `benchmarking`:
+    - `benchmarking`: generic benchmarking runtime.
+    - `benchmarking/opcodes`: opcode counting interpreted runtime.
+    - `benchmarking/if`: simultaneous interference runtime.
 
 ## Logging & Naming Conventions
 
