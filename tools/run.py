@@ -43,6 +43,9 @@ def _parse(p):
         "--limit", type=float, default=60.0, help="Benchmarking time limit.")
     p.add_argument(
         "--engine", default=None, help="WASM engine to use for benchmarking.")
+    p.add_argument(
+        "--fault_crash", default=None,
+        help="Action to perform if the module crashes (ignore, restart).")
     return p
 
 
@@ -51,14 +54,10 @@ def _module_args(file, args):
     if args.utilization is not None:
         c = int(args.utilization * args.period)
         data["resources"] = {"period": args.period, "runtime": c}
-    if args.repeat is not None:
-        data["repeat"] = args.repeat
-    if args.engine is not None:
-        data["engine"] = args.engine
-    if args.limit is not None:
-        data["limit"] = args.limit
-    if args.dirs is not None:
-        data["dirs"] = args.dirs
+    for kw in ["repeat", "engine", "limit", "dirs", "fault_crash"]:
+        val = getattr(args, kw)
+        if val is not None:
+            data[kw] = val
     return data
 
 

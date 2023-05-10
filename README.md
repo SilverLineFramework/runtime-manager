@@ -108,3 +108,13 @@ Modules include `mq` (MQTT/Channels), `mgr` (Node manager), `if` (Runtime interf
 - Add wasi dirs "dir" (list[str]) attribute to Create Module
 - Add "status" (object) attribute to Module Exited
 
+## Feature Matrix
+
+| Runtime                   | argv | env | dirs | wasi | resources | fault_crash | repeat | limit | engine | benchmarking | opcodes | instrumented | deployed | channels | stdin | stdout | loopback | get_uuid |
+| ------------------------- | ---- | --- | ---- | ---- | --------- | ----------- | ------ | ----- | ------ | ------------ | ------- | ------------ | -------- | -------- | ----- | ------ | -------- | -------- |
+| runtime-linux             | x    | x   | x    | x    | x         | x           |        |       |        |              |         |              | x        | x        |       |        | x        | x        |
+| linux/min/wasmer          | x    | x   |      |      |           |             |        |       |        |              |         |              |          |          |       | x      | x        |          |
+| linux/min/wamr            | x    | x   | x    | x    |           |             |        |       |        |              |         |              |          |          |       | x      | x        |          |
+| benchmarking              | x    | x   |      | x    |           |             | x      | x     | x      | x            |         |              |          |          |       |        | x        |          |
+| benchmarking/interference | x    | x   |      | x    |           |             | x      | x     | x      | x            |         |              |          |          |       |        | x        |          |
+| benchmarking/opcodes      | x    | x   |      | x    |           |             |        |       |        |              | x       |              |          |          |       |        | x        |          |
