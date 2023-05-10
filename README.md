@@ -44,7 +44,7 @@ python manage.py <script> <args ...>
 ```
 For example, to run a program:
 ```sh
-python manage.py run -n test -f helloworld.wasm
+python manage.py run -r runtime -n test -f helloworld.wasm
 ```
 Use `python manage.py -h` to list available scripts, and `python manage.py <script> -h` to get help for each script.
 

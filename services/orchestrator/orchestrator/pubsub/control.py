@@ -52,7 +52,7 @@ class Control(BaseHandler):
         module.parent = parent
 
         active = Module.objects.filter(parent=parent, status=State.alive)
-        if active.count() >= parent.max_nmodules:
+        if parent.max_nmodules > 0 and active.count() >= parent.max_nmodules:
             module.status = State.queued
             module.save()
             self.log.info("Module queued: {}".format(module.uuid))

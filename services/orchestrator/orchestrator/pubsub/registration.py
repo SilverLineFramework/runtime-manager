@@ -48,7 +48,7 @@ class Registration(BaseHandler):
             try:
                 mgr_uuid = msg.get('data', 'parent')
                 runtime.parent = Manager.objects.get(uuid=mgr_uuid)
-            except Manager.DoesNotExist:
+            except (Manager.DoesNotExist, messages.MissingField):
                 pass
             runtime.save()
             self.log.info("Created runtime: {}".format(runtime.uuid))

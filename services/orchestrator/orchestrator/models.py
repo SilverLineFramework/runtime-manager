@@ -68,7 +68,7 @@ class Runtime(models.Model):
     runtime_type = models.CharField(max_length=16, default="linux")
     "Runtime type"
 
-    max_nmodules = models.IntegerField(default=1)
+    max_nmodules = models.IntegerField(default=0)
     "Maximum number of modules supported by the runtime"
 
     apis = models.JSONField(blank=True, default=_default_runtime_apis)
@@ -92,7 +92,8 @@ class Runtime(models.Model):
     status = models.CharField(max_length=2, default=State.alive)
     "Runtime state (A=Alive, D=Dead)"
 
-    parent = models.ForeignKey(Manager, on_delete=models.CASCADE, null=True)
+    parent = models.ForeignKey(
+        Manager, on_delete=models.CASCADE, null=True, blank=True)
     "Runtime manager, if applicable."
 
     def natural_key(self):
