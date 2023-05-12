@@ -40,6 +40,6 @@ clean:
 
 .PHONY: typecheck
 typecheck:
-	mypy linux_minimal.py
-	mypy linux_benchmarking.py
-	mypy linux_benchmarking_interference.py
+	python -m mypy linux_minimal.py
+	python -m mypy linux_benchmarking.py
+	python -m mypy linux_benchmarking_interference.py

@@ -7,6 +7,9 @@ from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
 
+from beartype.typing import cast
+
+
 __all__ = [
     "Benchmarking",
     "BenchmarkingInterference"
@@ -45,7 +48,7 @@ tree: dict = {
 }
 
 
-def get_runtime(name: str) -> "RuntimeManager":
+def get_runtime(name: str) -> RuntimeManager:
     """Get runtime by name."""
     rt_class = tree
     try:
@@ -60,4 +63,4 @@ def get_runtime(name: str) -> "RuntimeManager":
     if rt_class is None:
         raise NotImplemented("Runtime {} is not yet implemented.".format(name))
     else:
-        return rt_class
+        return cast(RuntimeManager, rt_class)

@@ -44,8 +44,8 @@ wamrc:
 	ln -s $(WAMRC_PATH)/build/wamrc .
 
 typecheck:
-	mypy start.py
-	mypy manage.py
-	mypy services/profile/profile.py
-	cd services/orchestrator; mypy .
+	python -m mypy start.py
+	python -m mypy manage.py
+	python -m mypy services/profile/profile.py
+	cd services/orchestrator; python -m mypy .
 	make -C runtimes typecheck
