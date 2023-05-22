@@ -125,6 +125,12 @@ class Profiler(SilverlineClient):
                 }
             case "interference":
                 return json.loads(payload)
+            case "raw32":
+                data = np.frombuffer(payload, dtype=np.uint32)
+                return {"data": data}
+            case "raw64":
+                data = np.frombuffer(payload, dtype=np.uint64)
+                return {"data": data}
             case _:
                 raise ProfilerException("Invalid type: {}".format(mtype))
 
@@ -146,7 +152,7 @@ class Profiler(SilverlineClient):
         module = self.get_module(mid)
         path = os.path.join(
             self.base_path, self._runtimes[rtid].get("name", "unknown"),
-            "{}.{}.json".format(module.get("name", "unknown"), mid))
+            "{}.{}.{}.json".format(module.get("name", "unknown"), mid, mtype))
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
         out = {k: _tolist(v) for k, v in decoded.items()}

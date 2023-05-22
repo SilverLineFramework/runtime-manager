@@ -24,6 +24,9 @@ def _parse(p):
         "-f", "--file", nargs="+", default=["wasm/apps/helloworld.wasm"],
         help="Target file paths, relative to WASM/WASI base directory")
     p.add_argument(
+        "--copy", type=int, default=0,
+        help="Make multiple copies of each provided module.")
+    p.add_argument(
         "-a", "--argv", nargs='+', default=[],
         help="Argument passthrough to the module.")
     p.add_argument(
@@ -68,6 +71,8 @@ def _main(args, default_runtime=None):
 
     if default_runtime is not None:
         args.runtime = default_runtime
+    if args.copy > 0:
+        args.file = args.file * args.copy
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
