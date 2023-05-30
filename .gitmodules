@@ -10,9 +10,6 @@
 [submodule "benchmarks"]
 	path = benchmarks
 	url = git@github.com:SilverLineFramework/benchmarks.git
-[submodule "wasm-instrument"]
-	path = wasm-instrument
-	url = git@github.com:arjunr2/wasm-instrument.git
 [submodule "tests"]
 	path = tests
 	url = git@github.com:SilverLineFramework/tests.git
