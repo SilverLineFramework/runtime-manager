@@ -4,7 +4,9 @@ SYS_PYTHON=python3
 ifdef MINIMAL
 REQUIREMENTS=requirements-runtime.txt
 else
-REQUIREMENTS=requirements.txt
+REQUIREMENTS=requirements.txt; \
+make -C services/orchestrator deps; \
+make -C services/profile deps
 endif
 
 export SL_CONFIG=$(realpath config.json)
@@ -23,8 +25,6 @@ env/bin/activate:
 	test -d env || $(SYS_PYTHON) -m venv env
 	$(SL_PIP) install ./libsilverline
 	$(SL_PIP) install -r $(REQUIREMENTS)
-	make -C services/orchestrator deps
-	make -C services/profile deps
 	touch env/bin/activate
 
 orchestrator:
