@@ -39,5 +39,5 @@ shortcuts = {
         desc="Get runtime version on each cluster node via commit hash.",
         base=command,
         args={"command": (
-            "cd runtime-linux; git log -n 1 --pretty=format:\"%H\"")})
+            "cd runtime-manager; git log -n 1 --pretty=format:\"%H\"")})
 }

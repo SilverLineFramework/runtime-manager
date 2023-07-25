@@ -18,9 +18,10 @@ def _main(args):
     with open(args.cfg) as f:
         cfg = json.load(f)
 
-    with open(os.path.expanduser('~/.alias'), 'a') as f:
+    with open(os.path.expanduser('~/.alias'), 'w') as f:
         devices = pd.read_csv(cfg["manifest"], sep='\t')["Device"]
 
         # ssh
         for d in devices:
-            f.write("ssh {}@{}{}".format(cfg["username"], d, cfg["domain"]))
+            f.write("alias {device}=\"ssh {user}@{device}{domain}\"\n".format(
+                user=cfg["username"], device=d, domain=cfg["domain"]))
