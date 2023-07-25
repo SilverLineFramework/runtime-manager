@@ -1,9 +1,6 @@
 paho-mqtt
 beartype
-numpy
 rich
 requests
-pandas
-fabric
 decorator
 libsilverline>=2.0.0
