@@ -30,8 +30,7 @@ shortcuts = {
     "update": Alias(
         desc="Update runtimes.", base=command,
         args={"command": (
-            "cd runtime-manager; git pull; git submodule update --recursive; "
-            "./env/bin/pip install ./libsilverline/; make -C runtimes")}),
+            "cd runtime-manager; git pull; git submodule update --recursive")}),
     "kill": Alias(
         desc="Stop runtimes on cluster.", base=command,
         args={"command": "screen -S runtime -p 0 -X stuff \"^C\""}),
