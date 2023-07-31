@@ -7,6 +7,7 @@ Use with `index.py` to run benchmark suites. For example::
 """
 
 import os
+import json
 import logging
 import pandas as pd
 import random
@@ -27,6 +28,7 @@ ENGINES = {
     "wasmedge": "./runtimes/bin/wasmedge",
     "wasmedge-aot": "./runtimes/bin/wasmedge",
     "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all",
+    "iwasm-wali": "./runtimes-bin/iwasm-wali --stack-size=262144"
 }
 
 
@@ -52,6 +54,9 @@ def _parse(p):
     p.add_argument(
         "--shuffle", default=False, action='store_true',
         help="Shuffle modules on each runtime before running.")
+    p.add_argument(
+        "--argfile", default=None, help="Json file containing list of "
+        "arguments (list of list) to pass to each module.")
     return p
 
 
@@ -69,20 +74,29 @@ def _main(args):
             "wasmer-llvm", "wasmer-cranelift", "wasmer-singlepass", "iwasm",
             "wasmedge", "wasmtime"]
 
+    if args.argfile:
+        with open(args.argfile) as f:
+            argv = json.load(f)
+    else:
+        argv = [[]]
+
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
         if rtid is None:
             log.error("Could not find runtime: {}".format(rt))
         else:
-            files = [file for file in args.file for _ in args.engine]
+            files = [
+                file
+                for file in args.file for _ in args.engine for _ in argv]
             names = [
                 file.split("/")[-1].split('.')[0] + "." + engine
-                for file in args.file for engine in args.engine]
+                for file in args.file for engine in args.engine for _ in argv]
             module_args = [
                 {
-                    "engine": ENGINES[engine],
+                    "engine": ENGINES[engine], "argv": arg,
                     "repeat": args.repeat, "limit": args.limit
-                } for _ in args.file for engine in args.engine]
+                }
+                for _ in args.file for engine in args.engine for arg in argv]
 
             if args.shuffle:
                 tmp = list(zip(files, names, module_args))

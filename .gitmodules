@@ -13,3 +13,6 @@
 [submodule "tests"]
 	path = tests
 	url = git@github.com:SilverLineFramework/tests.git
+[submodule "wasm-micro-runtime-wali"]
+	path = runtimes/common/wasm-micro-runtime-wali
+	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git

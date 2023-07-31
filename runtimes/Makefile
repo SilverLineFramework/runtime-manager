@@ -30,6 +30,21 @@ $(WAMR_IWASM)/build/iwasm:
 	cd $(WAMR_IWASM)/build; cmake ..
 	make -C $(WAMR_IWASM)/build
 
+
+WAMR_WALI=common/wasm-micro-runtime-wali/product-mini/platforms/linux
+bin/iwasm-wali: $(WAMR_WALI)/build/iwasm
+	ln -s ../$(WAMR_WALI)/build/iwasm bin/iwasm-wali
+
+$(WAMR_WALI)/build/iwasm:
+	mkdir -p $(WAMR_WALI)/build
+	cd $(WAMR_WALI)/build; cmake .. -DWAMR_BUILD_PLATFORM=linux \
+		-DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_MULTI_MODULE=1 \
+		-DWAMR_BUILD_FAST_INTERP=1 -DWAMR_BUILD_LIB_PTHREAD=1 \
+		-DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 \
+		-DWAMR_BUILD_MEMORY_PROFILING=1
+	make -C $(WAMR_WALI)/build
+
+
 clean:
 	make -C linux-minimal-wamr clean
 	make -C profiling-opcodes clean
