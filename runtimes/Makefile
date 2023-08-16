@@ -1,64 +1,67 @@
 .PHONY: all clean
 
-all: bin bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3 bin/iwasm-wali
+all: bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3
 
 
 bin:
 	mkdir -p bin
 
 
-bin/linux-minimal-wamr: linux-minimal-wamr/build/runtime
+bin/linux-minimal-wamr: bin linux-minimal-wamr/build/runtime
 	ln -s ../linux-minimal-wamr/build/runtime bin/linux-minimal-wamr
 
 linux-minimal-wamr/build/runtime:
 	make -C linux-minimal-wamr
 
 
-bin/profiling-opcodes: profiling-opcodes/build/runtime
+bin/profiling-opcodes: bin profiling-opcodes/build/runtime
 	ln -s ../profiling-opcodes/build/runtime bin/profiling-opcodes
 
 profiling-opcodes/build/runtime:
 	make -C profiling-opcodes
 
 
-bin/wasm3: common/wasm3/build/wasm3
-	ln -s ../common/wasm3/build/wasm3 bin/wasm3
+bin/wasm3: bin wasm3/build/wasm3
+	ln -s ../wasm3/build/wasm3 bin/wasm3
 
-common/wasm3/build/wasm3:
-	mkdir -p common/wasm3/build
-	cd common/wasm3/build; cmake ..
-	make -C common/wasm3/build
-
-
-WAMR_IWASM=common/wasm-micro-runtime/product-mini/platforms/linux
-bin/iwasm: $(WAMR_IWASM)/build/iwasm
-	ln -s ../$(WAMR_IWASM)/build/iwasm bin/iwasm
-
-$(WAMR_IWASM)/build/iwasm:
-	mkdir -p $(WAMR_IWASM)/build
-	cd $(WAMR_IWASM)/build; cmake ..
-	make -C $(WAMR_IWASM)/build
+wasm3/build/wasm3:
+	mkdir -p wasm3/build
+	cd wasm3/build; cmake ..
+	make -C wasm3/build
 
 
-WAMR_WALI=common/wasm-micro-runtime-wali/product-mini/platforms/linux
-bin/iwasm-wali: $(WAMR_WALI)/build/iwasm
-	ln -s ../$(WAMR_WALI)/build/iwasm bin/iwasm-wali
+WAMR=wasm-micro-runtime/product-mini/platforms/linux
+bin/iwasm: bin $(WAMR)/build/iwasm
+	ln -s ../$(WAMR)/build/iwasm bin/iwasm
 
-$(WAMR_WALI)/build/iwasm:
-	mkdir -p $(WAMR_WALI)/build
-	cd $(WAMR_WALI)/build; cmake .. -DWAMR_BUILD_PLATFORM=linux \
+$(WAMR)/build/iwasm:
+	mkdir -p $(WAMR)/build
+	cd $(WAMR)/build; cmake .. -DWAMR_BUILD_PLATFORM=linux \
 		-DWAMR_BUILD_CUSTOM_NAME_SECTION=1 \
 		-DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 \
 		-DWAMR_BUILD_MEMORY_PROFILING=1 -DWAMR_BUILD_LIBC_WALI=1
-	make -C $(WAMR_WALI)/build
+	make -C $(WAMR)/build
+
+WAMRC=wasm-micro-runtime/wamr-compiler
+bin/wamrc: bin $(WAMRC)
+	ln -s ../$(WAMRC)/build/wamrc bin/wamrc
+
+# This step is super not automated. You might have to manually delete the
+# build files and retry if it fails the first time. It also may be necessary
+# to change -DLLVM_CCACHE_BUILD:BOOL=OFF in
+# wasm-micro-runtime/build-scripts/build_llvm.py.
+$(WAMRC)/build/wamrc:
+	cd $(WAMRC); ./build_llvm.sh
+	mkdir -p $(WAMRC)/build
+	cd $(WAMRC)/build; cmake ..
 
 
 clean:
 	make -C linux-minimal-wamr clean
 	make -C profiling-opcodes clean
-	rm -r $(WAMR_IWASM)/build
-
-	rm -r bin
+	rm -rf $(WAMR)/build
+	rm -rf wasm3/build
+	rm -rf bin
 
 
 .PHONY: typecheck

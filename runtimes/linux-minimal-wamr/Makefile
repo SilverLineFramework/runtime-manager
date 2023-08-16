@@ -9,4 +9,4 @@ build:
 	cmake -S . -B build
 
 clean:
-	rm -r build
+	rm -rf build

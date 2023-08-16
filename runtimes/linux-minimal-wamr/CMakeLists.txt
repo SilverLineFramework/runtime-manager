@@ -3,7 +3,7 @@ project (linux-minimal-wamr)
 
 get_filename_component(RUNTIMES_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set (COMMON_DIR ${RUNTIMES_DIR}/common)
-set (WAMR_ROOT_DIR ${COMMON_DIR}/wasm-micro-runtime)
+set (WAMR_ROOT_DIR ../wasm-micro-runtime)
 
 # --------------------------------------------------------------------------- #
 #                              WAMR Configuration                             #

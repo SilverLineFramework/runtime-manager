@@ -11,4 +11,4 @@ build:
 		-DWAMR_BUILD_MEMORY_PROFILING=1 -DWAMR_BUILD_LIBC_WALI=1
 
 clean:
-	rm -r build
+	rm -rf build

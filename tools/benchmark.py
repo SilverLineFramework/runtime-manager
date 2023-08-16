@@ -21,16 +21,15 @@ _desc = "Run (runtimes x files x engines) benchmarking."
 
 ENGINES = {
     "native": "native",
+    "iwasm": "./runtimes/bin/iwasm --",
     "iwasm-aot": "./runtimes/bin/iwasm --",
     "wasmer-cranelift": "./runtimes/bin/wasmer run --cranelift --",
     "wasmer-llvm": "./runtimes/bin/wasmer run --llvm --",
     "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass --",
-    "iwasm": "./runtimes/bin/iwasm --",
     "wasmedge": "./runtimes/bin/wasmedge",
     "wasmedge-aot": "./runtimes/bin/wasmedge",
     "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all --",
     "wasm3": "./runtimes/bin/wasm3",
-    "iwasm-wali": "./runtimes/bin/iwasm-wali --stack-size=262144 --"
 }
 
 # Defaults can all operate on normal wasm files without AOT preprocessing.
