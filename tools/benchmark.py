@@ -113,12 +113,12 @@ def _main(args):
         if rtid is None:
             log.error("Could not find runtime: {}".format(rt))
         else:
-            if args.argrepeat:
-                iters = {"file": args.file, "engine": args.engine, "arg": argv}
-                module_args = cross(_moduleargs, **iters)
-            else:
+            if args.norepeat:
                 iters = {"file": args.file, "engine": args.engine}
                 module_args = cross(partial(_moduleargs, arg=argv), iters)
+            else:
+                iters = {"file": args.file, "engine": args.engine, "arg": argv}
+                module_args = cross(_moduleargs, **iters)
 
             files = cross(_file, **iters)
             names = cross(_modulename, **iters)
