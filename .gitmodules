@@ -1,12 +1,6 @@
 [submodule "runtimes/common/cJSON"]
 	path = runtimes/common/cJSON
 	url = https://github.com/DaveGamble/cJSON
-[submodule "runtimes/common/wasm-micro-runtime"]
-	path = runtimes/common/wasm-micro-runtime
-	url = git@github.com:bytecodealliance/wasm-micro-runtime.git
-[submodule "runtimes/common/wasm-micro-runtime-sl"]
-	path = runtimes/common/wasm-micro-runtime-sl
-	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git
 [submodule "benchmarks"]
 	path = benchmarks
 	url = git@github.com:SilverLineFramework/benchmarks.git
@@ -16,3 +10,6 @@
 [submodule "wasm-micro-runtime-wali"]
 	path = runtimes/common/wasm-micro-runtime-wali
 	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git
+[submodule "runtimes/common/wasm3"]
+	path = runtimes/common/wasm3
+	url = git@github.com:wasm3/wasm3.git

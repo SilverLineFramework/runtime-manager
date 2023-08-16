@@ -3,7 +3,7 @@ project (linux-minimal-wamr)
 
 get_filename_component(RUNTIMES_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set (COMMON_DIR ${RUNTIMES_DIR}/common)
-set (WAMR_ROOT_DIR ${COMMON_DIR}/wasm-micro-runtime-sl)
+set (WAMR_ROOT_DIR ${COMMON_DIR}/wasm-micro-runtime)
 
 # --------------------------------------------------------------------------- #
 #                              WAMR Configuration                             #
@@ -50,6 +50,7 @@ set (WAMR_BUILD_LIB_PTHREAD 0)
 set (WAMR_BUILD_MINI_LOADER 0)
 set (WAMR_BUILD_SIMD 1)
 set (WAMR_BUILD_REF_TYPES 0)
+add_definitions (-DWASM_ENABLE_OPCODE_COUNTER=1)
 
 # linker flags
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -pie -fPIE")

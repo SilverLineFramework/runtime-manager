@@ -40,21 +40,6 @@ class BenchmarkingInterference(Benchmarking):
 
 
 @beartype
-class BenchmarkingDataDependent(Benchmarking):
-    """Execution time for data-dependent benchmarks."""
-
-    TYPE = "benchmarking/datadependent"
-    APIS = ["wasm", "wasi", "profile:datadependent"]
-    MAX_NMODULES = 1
-    DEFAULT_NAME = "benchmarking-datadependent"
-    DEFAULT_SHORTNAME = "dd"
-    DEFAULT_COMMAND = (
-        "PYTHONPATH=. ./env/bin/python "
-        "runtimes/linux_benchmarking_dd.py")
-    PROFILE_TOPIC = "profile/benchmarking"
-
-
-@beartype
 class OpcodeCount(Benchmarking):
     """Opcode counting runtime."""
 

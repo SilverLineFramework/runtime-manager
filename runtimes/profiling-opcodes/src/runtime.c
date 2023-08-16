@@ -40,12 +40,15 @@ bool run_module(module_t *mod) {
         wamr_inst_module(&mod->wamr, NULL) &&
         wamr_run_module(&mod->wamr, &mod->args));
 
-    uint64_t *table = ((WASMModuleInstance *) mod->wamr.inst)->opcode_table;
-    slsocket_rwrite(
-        runtime.socket, H_CONTROL | 0x00, H_PROFILE,
-        (char *) table, 256 * sizeof(uint64_t));
+    if(res) {
+        uint64_t *table = (
+            (WASMModuleInstance *) mod->wamr.inst)->e->opcode_table;
+        slsocket_rwrite(
+            runtime.socket, H_CONTROL | 0x00, H_PROFILE,
+            (char *) table, 256 * sizeof(uint64_t));
 
-    wamr_destroy_module(&mod->wamr);
+        wamr_destroy_module(&mod->wamr);
+    }
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(

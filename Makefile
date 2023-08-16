@@ -44,11 +44,6 @@ stop:
 reset:
 	make -C services/orchestrator reset
 
-
-WAMRC_PATH=runtimes/common/wasm-micro-runtime/wamr-compiler
-wamrc: 
-	ln -s $(WAMRC_PATH)/build/wamrc .
-
 typecheck:
 	python -m mypy start.py
 	python -m mypy manage.py

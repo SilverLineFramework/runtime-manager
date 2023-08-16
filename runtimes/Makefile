@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-all: bin bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm
+all: bin bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3 bin/iwasm-wali
 
 
 bin:
@@ -21,6 +21,15 @@ profiling-opcodes/build/runtime:
 	make -C profiling-opcodes
 
 
+bin/wasm3: common/wasm3/build/wasm3
+	ln -s ../common/wasm3/build/wasm3 bin/wasm3
+
+common/wasm3/build/wasm3:
+	mkdir -p common/wasm3/build
+	cd common/wasm3/build; cmake ..
+	make -C common/wasm3/build
+
+
 WAMR_IWASM=common/wasm-micro-runtime/product-mini/platforms/linux
 bin/iwasm: $(WAMR_IWASM)/build/iwasm
 	ln -s ../$(WAMR_IWASM)/build/iwasm bin/iwasm
@@ -38,10 +47,9 @@ bin/iwasm-wali: $(WAMR_WALI)/build/iwasm
 $(WAMR_WALI)/build/iwasm:
 	mkdir -p $(WAMR_WALI)/build
 	cd $(WAMR_WALI)/build; cmake .. -DWAMR_BUILD_PLATFORM=linux \
-		-DWAMR_BUILD_CUSTOM_NAME_SECTION=1 -DWAMR_BUILD_MULTI_MODULE=1 \
-		-DWAMR_BUILD_FAST_INTERP=1 -DWAMR_BUILD_LIB_PTHREAD=1 \
+		-DWAMR_BUILD_CUSTOM_NAME_SECTION=1 \
 		-DWAMR_BUILD_DUMP_CALL_STACK=1 -DWAMR_BUILD_LIB_WASI_THREADS=1 \
-		-DWAMR_BUILD_MEMORY_PROFILING=1
+		-DWAMR_BUILD_MEMORY_PROFILING=1 -DWAMR_BUILD_LIBC_WALI=1
 	make -C $(WAMR_WALI)/build
 
 
