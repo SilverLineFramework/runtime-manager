@@ -2,9 +2,7 @@
 
 from manager import RuntimeManager
 
-from .benchmarking import (
-    Benchmarking, BenchmarkingInterference, BenchmarkingDataDependent,
-    OpcodeCount)
+from .benchmarking import Benchmarking, BenchmarkingInterference, OpcodeCount
 from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
@@ -26,8 +24,6 @@ __benchmarking = {
     "_": Benchmarking,
     "if": BenchmarkingInterference,
     "interference": BenchmarkingInterference,
-    "dd": BenchmarkingDataDependent,
-    "datadependent": BenchmarkingDataDependent,
     "op": OpcodeCount,
     "opcodes": OpcodeCount
 }

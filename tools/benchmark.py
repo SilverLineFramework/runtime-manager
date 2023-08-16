@@ -21,8 +21,8 @@ _desc = "Run (runtimes x files x engines) benchmarking."
 
 ENGINES = {
     "native": "native",
-    "iwasm": "./runtimes/bin/iwasm --",
-    "iwasm-aot": "./runtimes/bin/iwasm --",
+    "iwasm": "./runtimes/bin/iwasm -v=0 --",
+    "iwasm-aot": "./runtimes/bin/iwasm -v=0 --",
     "wasmer-cranelift": "./runtimes/bin/wasmer run --cranelift --",
     "wasmer-llvm": "./runtimes/bin/wasmer run --llvm --",
     "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass --",
