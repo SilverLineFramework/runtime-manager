@@ -71,12 +71,12 @@ class LinuxBenchmarkingRuntime:
         watchdog.cancel()
         return b''.join(stats)
 
-    def _make_cmd(self, file, args):
+    def _make_cmd(self, file, args, argv):
         """Assemble shell command."""
         engine = args.get("engine", "wasmer run --singlepass --")
 
         if engine == "native":
-            cmd = [file] + args.get("argv", [])
+            cmd = [file] + argv
         else:
             cmd = engine.split(" ")
             # Ends in '--': runtime, module args separated by '--'
@@ -86,7 +86,7 @@ class LinuxBenchmarkingRuntime:
             cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
             cmd += [file]
             cmd += ["--"] if sep else []
-            cmd += args.get("argv", [])
+            cmd += argv
         return cmd
 
     def run(self, msg):
@@ -98,10 +98,10 @@ class LinuxBenchmarkingRuntime:
         argv = args.get("argv", [])
         file = data.get("file")
         if len(argv) > 0 and isinstance(argv[0], str):
-            cmd = self._make_cmd(file, argv)
+            cmd = self._make_cmd(file, args, argv)
             cmds = [cmd] * args.get("repeat", 1)
         else:
-            cmds = [self._make_cmd(file, a) for a in argv]
+            cmds = [self._make_cmd(file, args, a) for a in argv]
 
         stats = self._run_loop(cmds, args.get("limit", 60.0))
 

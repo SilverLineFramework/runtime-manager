@@ -66,9 +66,8 @@ def _parse(p):
         "--argfile", default=None, help="Json file containing list of "
         "arguments (list of list) to pass to each module.")
     p.add_argument(
-        "--argrepeat", default=True,
-        help="Run each argv set as its own benchmark, instead of different "
-        "entries in the same benchmark.")
+        "--norepeat", default=False, action='store_true',
+        help="Run each argv as different entries in the same benchmark.")
     return p
 
 
