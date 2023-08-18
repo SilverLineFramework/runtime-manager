@@ -10,6 +10,27 @@ import signal
 from libsilverline import Message, SLSocket, Header
 
 
+# Supported engine commands
+ENGINES = {
+    "native": "native",
+    "iwasm": "./runtimes/bin/iwasm -v=0",
+    "iwasm-aot": "./runtimes/bin/iwasm -v=0",
+    "wasmer-cranelift": "./runtimes/bin/wasmer run --cranelift --enable-all --",
+    "wasmer-llvm": "./runtimes/bin/wasmer run --llvm --enable-all --",
+    "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass --enable-all --",
+    "wasmedge": "./runtimes/bin/wasmedge",
+    "wasmedge-aot": "./runtimes/bin/wasmedge",
+    "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all --",
+    "wasm3": "./runtimes/bin/wasm3",
+}
+
+# File formats other than normal wasm files in wasm/*.wasm
+CUSTOM_FORMATS = {
+    "iwasm-aot": "aot-iwasm/",
+    "wasmedge-aot": "aot-wasmedge/",
+    "native": "native/"
+}
+
 class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 
@@ -22,6 +43,9 @@ class LinuxBenchmarkingRuntime:
         self.process = os.fork()
         if self.process == 0:
             try:
+                devnull = os.open("/dev/null", os.O_WRONLY)
+                os.dup2(devnull, 1)
+                os.dup2(devnull, 2)
                 os.execvp(cmd[0], cmd)
             except Exception as e:
                 os._exit(1)
@@ -46,21 +70,31 @@ class LinuxBenchmarkingRuntime:
                     int(rusage.ru_stime * 10**6),
                     rusage.ru_maxrss)
 
-    def _run_loop(self, cmds, limit):
+    def _run_loop(self, file, args, repeat, repeat_mode):
         """Run benchmarking loop."""
 
         def kill():
             os.kill(self.process, signal.SIGKILL)
 
-        watchdog = threading.Timer(limit, kill)
+        watchdog = threading.Timer(args.get("limit", 60.0), kill)
         watchdog.start()
 
         stats = []
-        for cmd in cmds:
+        for i in range(repeat):
+            if args.get("ilimit"):
+                watchdog2 = threading.Timer(args.get("ilimit"), kill)
+                watchdog2.start()
+
+            cmd = self._make_cmd(file, args, i, repeat_mode)
             res = self._run(cmd)
+
+            if args.get("ilimit"):
+                watchdog2.cancel()                
+
             if res is None:
                 stats.append(struct.pack("III", 0, 0, 0))
-                break
+                if repeat_mode:
+                    break
             else:
                 stats.append(res)
 
@@ -71,14 +105,23 @@ class LinuxBenchmarkingRuntime:
         watchdog.cancel()
         return b''.join(stats)
 
-    def _make_cmd(self, file, args, argv):
+    def _make_cmd(self, file, args, idx, repeat_mode):
         """Assemble shell command."""
-        engine = args.get("engine", "wasmer run --singlepass --")
+        engine = args.get("engine", "wasmer-singlepass")
+        if isinstance(engine, list):
+            engine = engine[idx]
+        argv = args.get("argv", [])
+        if not repeat_mode:
+            argv = argv[idx]
+
+        if engine in CUSTOM_FORMATS:
+            file = file.replace("wasm/", CUSTOM_FORMATS[engine])
+        engine_cmd = ENGINES.get(engine, engine)
 
         if engine == "native":
             cmd = [file] + argv
         else:
-            cmd = engine.split(" ")
+            cmd = engine_cmd.split(" ")
             # Ends in '--': runtime, module args separated by '--'
             cmd, sep = (cmd[:-1], True) if cmd[-1] == "--" else (cmd, False)
 
@@ -95,15 +138,18 @@ class LinuxBenchmarkingRuntime:
         data = json.loads(msg.payload)
 
         args = data.get("args", {})
-        argv = args.get("argv", [])
-        file = data.get("file")
-        if len(argv) > 0 and isinstance(argv[0], str):
-            cmd = self._make_cmd(file, args, argv)
-            cmds = [cmd] * args.get("repeat", 1)
-        else:
-            cmds = [self._make_cmd(file, args, a) for a in argv]
 
-        stats = self._run_loop(cmds, args.get("limit", 60.0))
+        # repeat_mode: one set of argv that we repeat
+        argv = args.get("argv", [])
+        repeat_mode = len(argv) == 0 or not isinstance(argv[0], list)
+
+        repeat = args.get("repeat", 1)
+        if isinstance(args.get("engine"), list):
+            repeat = len(args.get("engine"))
+        if repeat_mode:
+            repeat = min(repeat, len(argv))
+
+        stats = self._run_loop(data.get("file"), args, repeat, repeat_mode)
 
         self.socket.write(Message(
             Header.control | 0x00, Header.profile, stats))

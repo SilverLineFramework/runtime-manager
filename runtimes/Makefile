@@ -2,25 +2,39 @@
 
 all: bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3
 
-
 bin:
 	mkdir -p bin
 
+# Aliases for installed runtimes
+alias: bin/wasmtime bin/wasmer bin/wasmedge bin/wasmedgec
 
+bin/wasmtime: bin ~/.wasmtime/bin/wasmtime
+	cd bin; ln -s ~/.wasmtime/bin/wasmtime wasmtime
+
+bin/wasmedge: bin ~/.wasmedge/bin/wasmedge
+	cd bin; ln -s ~/.wasmedge/bin/wasmedge wasmedge
+
+bin/wasmedgec: bin ~/.wasmedge/bin/wasmedgec
+	cd bin; ln -s ~/.wasmedge/bin/wasmedgec wasmedgec
+
+bin/wasmer: bin ~/.wasmer/bin/wasmer
+	cd bin; ln -s ~/.wasmer/bin/wasmer wasmer
+
+# Minimal WAMR-based runtime
 bin/linux-minimal-wamr: bin linux-minimal-wamr/build/runtime
 	ln -s ../linux-minimal-wamr/build/runtime bin/linux-minimal-wamr
 
 linux-minimal-wamr/build/runtime:
 	make -C linux-minimal-wamr
 
-
+# Opcode profiling runtime
 bin/profiling-opcodes: bin profiling-opcodes/build/runtime
 	ln -s ../profiling-opcodes/build/runtime bin/profiling-opcodes
 
 profiling-opcodes/build/runtime:
 	make -C profiling-opcodes
 
-
+# Wasm3
 bin/wasm3: bin wasm3/build/wasm3
 	ln -s ../wasm3/build/wasm3 bin/wasm3
 
@@ -29,7 +43,7 @@ wasm3/build/wasm3:
 	cd wasm3/build; cmake ..
 	make -C wasm3/build
 
-
+# WAMR (WALI edition)
 WAMR=wasm-micro-runtime/product-mini/platforms/linux
 bin/iwasm: bin $(WAMR)/build/iwasm
 	ln -s ../$(WAMR)/build/iwasm bin/iwasm

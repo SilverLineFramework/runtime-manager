@@ -19,25 +19,10 @@ from libsilverline import SilverlineClient, SilverlineCluster, configure_log
 _desc = "Run (runtimes x files x engines) benchmarking."
 
 
-ENGINES = {
-    "native": "native",
-    "iwasm": "./runtimes/bin/iwasm -v=0 --",
-    "iwasm-aot": "./runtimes/bin/iwasm -v=0 --",
-    "wasmer-cranelift": "./runtimes/bin/wasmer run --cranelift --",
-    "wasmer-llvm": "./runtimes/bin/wasmer run --llvm --",
-    "wasmer-singlepass": "./runtimes/bin/wasmer run --singlepass --",
-    "wasmedge": "./runtimes/bin/wasmedge",
-    "wasmedge-aot": "./runtimes/bin/wasmedge",
-    "wasmtime": "./runtimes/bin/wasmtime run --wasm-features all --",
-    "wasm3": "./runtimes/bin/wasm3",
-}
-
-# Defaults can all operate on normal wasm files without AOT preprocessing.
 DEFAULT_ENGINES = [
     "wasmer-llvm", "wasmer-cranelift", "wasmer-singlepass", "iwasm",
-    "wasmedge", "wasmtime"
+    "iwasm-aot", "wasmedge", "wasmedge-aot", "wasmtime", "wasm3"
 ]
-
 
 
 def _parse(p):
@@ -57,6 +42,9 @@ def _parse(p):
     p.add_argument(
         "--limit", type=float, default=60.0, help="Benchmarking time limit.")
     p.add_argument(
+        "--ilimit", type=float, default=None,
+        help="Time limit for each run (even when repeated).")
+    p.add_argument(
         "--engine", nargs="+", default=DEFAULT_ENGINES,
         help="WASM engine to use for benchmarking.")
     p.add_argument(
@@ -68,17 +56,26 @@ def _parse(p):
     p.add_argument(
         "--norepeat", default=False, action='store_true',
         help="Run each argv as different entries in the same benchmark.")
+    p.add_argument(
+        "--eshuffle", default=False, action='store_true',
+        help="Assign random engine to each benchmark, similar to norepeat.")
     return p
 
 
-def cross(func, *args, **kwargs):
+def cross(func, **kwargs):
     """Create cross product list by applying func to iterable args/kwargs."""
-    out = [((), {})]
-    for it in args:
-        out = [((*a, item), k) for a, k in out for item in it]
+    out = [{}]
     for key, it in kwargs.items():
-        out = [(a, {key: item, **k}) for a, k in out for item in it]
-    return [func(*a, **k) for a, k in out]
+        out = [{key: item, **k} for k in out for item in it]
+    return [func(**k) for k in out]
+
+
+def supported_runtimes(args, manifest, device):
+    """Get list of supported (wasm) runtimes on this device."""
+    row = manifest.get(device)
+    if row is None:
+        return args.engine
+    return [k for k in args.engine if row.get(k) == 'x']
 
 
 def _main(args):
@@ -86,27 +83,34 @@ def _main(args):
     log = logging.getLogger("cli")
     client = SilverlineClient.from_config(args.cfg, name="cli").start()
 
+    _manifest = pd.read_csv(
+        SilverlineCluster.from_config(args.cfg).manifest, sep='\t')
+    manifest = {row["Device"]: row for _, row in _manifest.iterrows()}
+
     if args.runtime is None:
-        args.runtime = list(pd.read_csv(
-            SilverlineCluster.from_config(args.cfg).manifest, sep='\t'
-        )["Device"])
+        args.runtime = list(_manifest["Device"])
     if args.argfile:
         with open(args.argfile) as f:
             argv = json.load(f)
     else:
         argv = [[]]
 
-    # Argument constructors
-    def _file(file=None, **_):
+    def _file(file=None, engine=None, **_):
         return file
 
     def _modulename(file=None, engine=None, **_):
-        return file.split("/")[-1].split('.')[0] + "." + engine
+        splits = [file.split("/")[-1].split('.')[0]]
+        if args.argfile:
+            splits.append(args.argfile.split("/")[-1].split(".")[0])
+        if isinstance(engine, list):
+            return ".".join(splits)
+        else:
+            return ".".join(splits + [engine])
 
     def _moduleargs(engine=None, arg=None, **_):
         return {
-            "engine": ENGINES[engine], "argv": arg,
-            "repeat": args.repeat, "limit": args.limit, "dirs": ["."]}
+            "engine": engine, "argv": arg, "repeat": args.repeat,
+            "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."]}
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
@@ -114,14 +118,22 @@ def _main(args):
             log.error("Could not find runtime: {}".format(rt))
         else:
             if args.norepeat:
+                random.shuffle(argv)
                 iters = {"file": args.file, "engine": args.engine}
-                module_args = cross(partial(_moduleargs, arg=argv), iters)
+                partials = {"arg": argv}
+            elif args.eshuffle:
+                random.shuffle(argv)
+                supported = supported_runtimes(args, manifest, rt)
+                randengine = [random.choice(supported) for _ in argv]
+                iters = {"file": args.file}
+                partials = {"arg": argv, "engine": randengine}
             else:
                 iters = {"file": args.file, "engine": args.engine, "arg": argv}
-                module_args = cross(_moduleargs, **iters)
+                partials = {}
 
-            files = cross(_file, **iters)
-            names = cross(_modulename, **iters)
+            files = cross(partial(_file, **partials), **iters)
+            names = cross(partial(_modulename, **partials), **iters)
+            module_args = cross(partial(_moduleargs, **partials), **iters)
 
             if args.shuffle:
                 tmp = list(zip(files, names, module_args))
