@@ -97,12 +97,10 @@ def execute(args, jobs):
         def compile(job):
             dst, cmd = job
             if os.path.exists(dst):
-                pass
-                # log_cmpl.info("Already exists: {}. Skipping.".format(dst))
+                log_cmpl.info("Already exists: {}. Skipping.".format(dst))
             else:
-                print(cmd)
-                # os.makedirs(os.path.dirname(dst), exist_ok=True)
-                # subprocess.run(cmd.split(" "), stdout=subprocess.DEVNULL)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                subprocess.run(cmd.split(" "), stdout=subprocess.DEVNULL)
                 progress.update(task, advance=1)
 
         with ThreadPool(processes=args.threads) as p:
