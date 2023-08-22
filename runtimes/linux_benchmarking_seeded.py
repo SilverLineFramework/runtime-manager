@@ -47,10 +47,9 @@ class LinuxBenchmarkingRuntime:
         self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
 
-    def _run(self, cmd):
+    def _run(self, cmd, max_seed):
         """Run single benchmark iteration."""
-        seed = random.randint(0, 10)
-        print(cmd)
+        seed = random.randint(0, max_seed)
         self.process = os.fork()
         if self.process == 0:
             try:
@@ -94,7 +93,7 @@ class LinuxBenchmarkingRuntime:
                 watchdog2.start()
 
             cmd = self._make_cmd(file, args, i)
-            res = self._run(cmd)
+            res = self._run(cmd, args.get("max_seed", 9999))
 
             if args.get("ilimit"):
                 watchdog2.cancel()
