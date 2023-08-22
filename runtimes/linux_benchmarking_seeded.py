@@ -46,6 +46,7 @@ class LinuxBenchmarkingRuntime:
     def __init__(self, index: int) -> None:
         self.socket = SLSocket(index, server=False, timeout=5.)
         self.process = None
+        self.done = False
 
     def _run(self, cmd, max_seed):
         """Run single benchmark iteration."""
@@ -82,7 +83,9 @@ class LinuxBenchmarkingRuntime:
         """Run benchmarking loop."""
         def kill():
             os.kill(self.process, signal.SIGKILL)
+            self.done = True
 
+        self.done = False
         watchdog = threading.Timer(args.get("limit", 60.0), kill)
         watchdog.start()
 
@@ -102,6 +105,8 @@ class LinuxBenchmarkingRuntime:
                 stats.append(struct.pack("IIII", 0, 0, 0, 0))
             else:
                 stats.append(res)
+            if self.done:
+                break
 
         self.socket.write(Message.from_str(
             Header.control | 0x00, Header.log_module,

@@ -24,3 +24,5 @@ Note:
 
 Data dependent:
 
+
+hc benchmark -f wasm/python.wasm --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a --limit 300 --repeat 10000 --argv data/python/parametric/b_array.py
