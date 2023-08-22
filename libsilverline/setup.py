@@ -8,7 +8,7 @@ with open('requirements.txt') as f:
 
 setup(
     name="libsilverline",
-    version="2.0.1",
+    version="2.0.2",
     packages=["libsilverline"],
     license="BSD 3-Clause License",
     install_requires=requirements,

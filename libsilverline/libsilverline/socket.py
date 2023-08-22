@@ -16,7 +16,7 @@ class SLSocket:
 
     Sockets use the following protocol::
 
-        [ -- len:2 -- ][h1:1][h2:1][ ------ payload:len ------ ]
+        [ -- len:4 -- ][h1:1][h2:1][ ------ payload:len ------ ]
 
     See the documentation of `manager.types.Message` for header values.
     Empty payloads are also supported.
@@ -32,8 +32,8 @@ class SLSocket:
     retries: maximum number of times to try sending data if send fails.
     """
 
-    HEADER_FMT = "HBB"
-    HEADER_SIZE = 4
+    HEADER_FMT = "IBB"
+    HEADER_SIZE = 6
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,
