@@ -8,8 +8,11 @@
 	path = tests
 	url = git@github.com:SilverLineFramework/tests.git
 [submodule "wasm-micro-runtime-wali"]
-	path = runtimes/wasm-micro-runtime
+	path = runtimes/wasm-micro-runtime-wali
 	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git
 [submodule "runtimes/common/wasm3"]
 	path = runtimes/wasm3
 	url = git@github.com:wasm3/wasm3.git
+[submodule "runtimes/wasm-micro-runtime"]
+	path = runtimes/wasm-micro-runtime
+	url = git@github.com:bytecodealliance/wasm-micro-runtime.git
