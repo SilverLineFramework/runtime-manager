@@ -37,6 +37,7 @@ class Device:
             "model": row.get("Model", "-"),
             "cpu": row.get("CPU", "-"),
             "target": row.get("Target", "-"),
+            "triple": row.get("Triple", "-"),
             "arch": row.get("Arch", "-"),
             "smt": row.get("SMT", "0"),
             "cgroup": row.get("Cgroup", "0,1"),
