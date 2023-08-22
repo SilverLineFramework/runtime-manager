@@ -2,7 +2,8 @@
 
 from manager import RuntimeManager
 
-from .benchmarking import Benchmarking, BenchmarkingInterference, OpcodeCount
+from .benchmarking import (
+    Benchmarking, BenchmarkingSeeded, BenchmarkingInterference, OpcodeCount)
 from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
@@ -12,7 +13,8 @@ from beartype.typing import cast
 
 __all__ = [
     "Benchmarking",
-    "BenchmarkingInterference"
+    "BenchmarkingSeeded",
+    "BenchmarkingInterference",
     "OpcodeCount",
     "LinuxMinimal",
     "LinuxMinimalWAMR",
@@ -22,6 +24,7 @@ __all__ = [
 
 __benchmarking = {
     "_": Benchmarking,
+    "seeded": BenchmarkingSeeded,
     "if": BenchmarkingInterference,
     "interference": BenchmarkingInterference,
     "op": OpcodeCount,

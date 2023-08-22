@@ -6,6 +6,7 @@ import json
 import threading
 import struct
 import signal
+import random
 
 from libsilverline import Message, SLSocket, Header
 
@@ -48,13 +49,15 @@ class LinuxBenchmarkingRuntime:
 
     def _run(self, cmd):
         """Run single benchmark iteration."""
+        seed = random.randint(0, 10)
+        print(cmd)
         self.process = os.fork()
         if self.process == 0:
             try:
                 devnull = os.open("/dev/null", os.O_WRONLY)
                 os.dup2(devnull, 1)
                 os.dup2(devnull, 2)
-                os.execvp(cmd[0], cmd)
+                os.execvp(cmd[0], cmd + [str(seed)])
             except Exception as e:
                 os._exit(1)
         else:
@@ -68,17 +71,15 @@ class LinuxBenchmarkingRuntime:
             if os.waitstatus_to_exitcode(status) != 0:
                 self.socket.write(Message.from_str(
                     Header.control | 0x00, Header.log_module,
-                    "Nonzero exit code: {}".format(status)
-                ))
+                    "Nonzero exit code: {}".format(status)))
                 return None
             else:
                 return struct.pack(
-                    "III",
-                    int(rusage.ru_utime * 10**6),
-                    int(rusage.ru_stime * 10**6),
-                    rusage.ru_maxrss)
+                    "IIII",
+                    int(rusage.ru_utime * 10**6), int(rusage.ru_stime * 10**6),
+                    rusage.ru_maxrss, seed)
 
-    def _run_loop(self, file, args, repeat, repeat_mode):
+    def _run_loop(self, file, args, repeat):
         """Run benchmarking loop."""
         def kill():
             os.kill(self.process, signal.SIGKILL)
@@ -92,16 +93,14 @@ class LinuxBenchmarkingRuntime:
                 watchdog2 = threading.Timer(args.get("ilimit"), kill)
                 watchdog2.start()
 
-            cmd = self._make_cmd(file, args, i, repeat_mode)
+            cmd = self._make_cmd(file, args, i)
             res = self._run(cmd)
 
             if args.get("ilimit"):
                 watchdog2.cancel()
 
             if res is None:
-                stats.append(struct.pack("III", 0, 0, 0))
-                if repeat_mode:
-                    break
+                stats.append(struct.pack("IIII", 0, 0, 0, 0))
             else:
                 stats.append(res)
 
@@ -112,14 +111,12 @@ class LinuxBenchmarkingRuntime:
         watchdog.cancel()
         return b''.join(stats)
 
-    def _make_cmd(self, file, args, idx, repeat_mode):
+    def _make_cmd(self, file, args, idx):
         """Assemble shell command."""
         engine = args.get("engine", "wasmer-singlepass")
         if isinstance(engine, list):
             engine = engine[idx]
         argv = args.get("argv", [])
-        if not repeat_mode:
-            argv = argv[idx]
 
         if engine in CUSTOM_FORMATS:
             file = file.replace("wasm/", CUSTOM_FORMATS[engine])
@@ -145,18 +142,10 @@ class LinuxBenchmarkingRuntime:
         data = json.loads(msg.payload)
 
         args = data.get("args", {})
-
-        # repeat_mode: one set of argv that we repeat
         argv = args.get("argv", [])
-        repeat_mode = len(argv) == 0 or not isinstance(argv[0], list)
-
         repeat = args.get("repeat", 1)
-        if isinstance(args.get("engine"), list):
-            repeat = len(args.get("engine"))
-        if not repeat_mode:
-            repeat = min(repeat, len(argv))
 
-        stats = self._run_loop(data.get("file"), args, repeat, repeat_mode)
+        stats = self._run_loop(data.get("file"), args, repeat)
 
         self.socket.write(Message(
             Header.control | 0x00, Header.profile, stats))

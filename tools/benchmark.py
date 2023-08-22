@@ -20,8 +20,8 @@ _desc = "Run (runtimes x files x engines) benchmarking."
 
 
 DEFAULT_ENGINES = [
-    "wasmer-llvm", "wasmer-cranelift", "wasmer-singlepass", "iwasm",
-    "iwasm-aot", "wasmedge", "wasmedge-aot", "wasmtime", "wasm3"
+    "wasmer-j-ll", "wasmer-j-cl", "wasmer-j-singlepass", "iwasm-i",
+    "wasmedge-i", "wasmtime-j", "wasm3-i"
 ]
 
 
@@ -46,13 +46,15 @@ def _parse(p):
         help="Time limit for each run (even when repeated).")
     p.add_argument(
         "--engine", nargs="+", default=DEFAULT_ENGINES,
-        help="WASM engine to use for benchmarking.")
+        help="WASM engine(s) to use for benchmarking.")
     p.add_argument(
         "--shuffle", default=False, action='store_true',
         help="Shuffle modules on each runtime before running.")
     p.add_argument(
+        "--argv", default=[], nargs='+', help="Argv to pass to the module.")
+    p.add_argument(
         "--argfile", default=None, help="Json file containing list of "
-        "arguments (list of list) to pass to each module.")
+        "arguments (list of list) to pass to each module (overrides --argv).")
     p.add_argument(
         "--norepeat", default=False, action='store_true',
         help="Run each argv as different entries in the same benchmark.")
@@ -93,7 +95,7 @@ def _main(args):
         with open(args.argfile) as f:
             argv = json.load(f)
     else:
-        argv = [[]]
+        argv = [args.argv]
 
     def _file(file=None, engine=None, **_):
         return file

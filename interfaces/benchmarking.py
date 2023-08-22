@@ -25,6 +25,20 @@ class Benchmarking(LinuxMinimal):
 
 
 @beartype
+class BenchmarkingSeeded(Benchmarking):
+    """Benchmarking runtime with a random seed provided to each benchmark."""
+
+    TYPE = "benchmarking/seeded"
+    APIS = ["wasm", "wasi", "profile:benchmarking-seeded"]
+    MAX_NMODULES = 1
+    DEFAULT_NAME = "benchmarking-seeded"
+    DEFAULT_SHORTNAME = "seed"
+    DEFAULT_COMMAND = (
+        "PYTHONPATH=. ./env/bin/python runtimes/linux_benchmarking_seeded.py")
+    PROFILE_TOPIC = "profile/seeded"
+
+
+@beartype
 class BenchmarkingInterference(Benchmarking):
     """Execution time for 2-way interference."""
 

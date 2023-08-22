@@ -33,6 +33,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_PATH = os.environ.get('SL_CONFIG', 'config.json')
 _config = _load(CONFIG_PATH)
 
+# Don't show HTTP request spam
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "loggers": {"django": {"level": "ERROR"}}
+}
+
 # LOG_DIR = os.path.join(_config.get("log_dir", "log"), "orchestrator/")
 LOG_DIR = None
 if os.environ.get('RUN_MAIN', None) == 'true':

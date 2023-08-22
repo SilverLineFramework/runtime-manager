@@ -15,6 +15,7 @@ from beartype.typing import Optional, Union
 
 from libsilverline import (
     SilverlineClient, MQTTServer, configure_log, dict_or_load)
+import parsers
 
 
 class ProfilerException(Exception):
@@ -94,45 +95,15 @@ class Profiler(SilverlineClient):
                 json.dump(self._runtimes, f, indent=4)
 
     def decode(self, payload: bytes, mtype: str):
-        """Decode message."""
-        match mtype:
-            case "benchmarking":
-                data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 3)
-                return {
-                    "utime": data[:, 0],
-                    "stime": data[:, 1],
-                    "maxrss": data[:, 2]
-                }
-            case "opcodes":
-                data = np.frombuffer(payload, dtype=np.uint64)
-                return {"opcodes": data}
-            case "instrumented":
-                data = np.frombuffer(payload, dtype=np.uint32)
-                return {"counts": data}
-            case "deployed":
-                data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 8)
-                start = (
-                    data[:, 0].astype(np.uint64)
-                    | (data[:, 1].astype(np.uint64) << np.uint64(32)))
-                return {
-                    "start": start,
-                    "wall": data[:, 2],
-                    "cpu_time": data[:, 3],
-                    "memory": data[:, 4],
-                    "ch_mqtt": data[:, 5],
-                    "ch_local": data[:, 6],
-                    "ch_out": data[:, 7]
-                }
-            case "interference":
-                return json.loads(payload)
-            case "raw32":
-                data = np.frombuffer(payload, dtype=np.uint32)
-                return {"data": data}
-            case "raw64":
-                data = np.frombuffer(payload, dtype=np.uint64)
-                return {"data": data}
-            case _:
-                raise ProfilerException("Invalid type: {}".format(mtype))
+        """Decode message.
+
+        Decoders are stored in `parsers.py`, and dispatched by name.
+        """
+        try:
+            decode_func = getattr(parsers, mtype)
+            return decode_func(payload)
+        except AttributeError:
+            raise ProfilerException("Invalid type: {}".format(mtype))
 
     def __on_message(self, msg) -> None:
         try:

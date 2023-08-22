@@ -11,6 +11,8 @@ devices.tsv
 /wamrc
 /services/profile/data
 *.code-workspace
+wasm/
+aot/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
