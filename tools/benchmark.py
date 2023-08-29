@@ -61,6 +61,12 @@ def _parse(p):
     p.add_argument(
         "--eshuffle", default=False, action='store_true',
         help="Assign random engine to each benchmark, similar to norepeat.")
+    p.add_argument(
+        "--max_seed", default=9999, type=int,
+        help="Maximum seed for seeded benchmarking.")
+    p.add_argument(
+        "--dirmode", default=False, action='store_true',
+        help="Use directory mode for seeded benchmarking.")
     return p
 
 
@@ -112,7 +118,8 @@ def _main(args):
     def _moduleargs(engine=None, arg=None, **_):
         return {
             "engine": engine, "argv": arg, "repeat": args.repeat,
-            "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."]}
+            "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."],
+            "dirmode": args.dirmode, "max_seed": args.max_seed}
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)

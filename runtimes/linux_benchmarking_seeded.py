@@ -48,16 +48,16 @@ class LinuxBenchmarkingRuntime:
         self.process = None
         self.done = False
 
-    def _run(self, cmd, max_seed):
+    def _run(self, cmd, seed):
         """Run single benchmark iteration."""
-        seed = random.randint(0, max_seed)
+        print(" ".join(cmd))
         self.process = os.fork()
         if self.process == 0:
             try:
                 devnull = os.open("/dev/null", os.O_WRONLY)
                 os.dup2(devnull, 1)
                 os.dup2(devnull, 2)
-                os.execvp(cmd[0], cmd + [str(seed)])
+                os.execvp(cmd[0], cmd)
             except Exception as e:
                 os._exit(1)
         else:
@@ -96,7 +96,14 @@ class LinuxBenchmarkingRuntime:
                 watchdog2.start()
 
             cmd = self._make_cmd(file, args, i)
-            res = self._run(cmd, args.get("max_seed", 9999))
+            seed = random.randint(0, args.get("max_seed", 9999))
+            if args.get("dirmode", False):
+                path = args.get("argv", [])[-1]
+                ls = os.listdir(path)
+                cmd[-1] = os.path.join(path, ls[seed % len(ls)])
+            else:
+                cmd.append(str(seed))
+            res = self._run(cmd, seed)
 
             if args.get("ilimit"):
                 watchdog2.cancel()
@@ -146,7 +153,6 @@ class LinuxBenchmarkingRuntime:
         data = json.loads(msg.payload)
 
         args = data.get("args", {})
-        argv = args.get("argv", [])
         repeat = args.get("repeat", 1)
 
         stats = self._run_loop(data.get("file"), args, repeat)

@@ -24,5 +24,10 @@ Note:
 
 Data dependent:
 
-
-hc benchmark -f wasm/python.wasm --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a --limit 300 --repeat 10000 --argv data/python/parametric/b_array.py
+```sh
+hc benchmark -f wasm/python.wasm --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a --limit 300 --repeat 200 --argfile parametric.json
+# interpreters get double time to reduce dataset imbalance.
+hc benchmark -f wasm/python.wasm --engine iwasm-i wasm3-i wasmedge-i --limit 600 --repeat 200 --argfile parametric.json
+# wasmtime-j can cause system/runtime crashes due to large JIT compilation memory usage. Make sure it's last in case it gets the entire runtime killed!
+hc benchmark -f wasm/python.wasm --engine wasmtime-j --limit 300 --repeat 200 --argfile parametric.json
+```

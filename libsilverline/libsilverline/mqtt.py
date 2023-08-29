@@ -55,7 +55,7 @@ class MQTTServer(NamedTuple):
         g = p.add_argument_group(title="MQTT")
         g.add_argument(
             "--mqtt", default="localhost",
-            help="MQTT server address and port.")
+            help="MQTT server address. Use `ssl:address` if using MQTTS.")
         g.add_argument(
             "--mqtt_pwd", default="../mqtt_pwd.txt",
             help="Path to MQTT password file.")
