@@ -99,7 +99,7 @@ class LinuxBenchmarkingRuntime:
             seed = random.randint(0, args.get("max_seed", 9999))
             if args.get("dirmode", False):
                 path = args.get("argv", [])[-1]
-                ls = os.listdir(path)
+                ls = sorted(os.listdir(path))
                 cmd[-1] = os.path.join(path, ls[seed % len(ls)])
             else:
                 cmd.append(str(seed))

@@ -59,7 +59,7 @@ def _parse(p):
         "--norepeat", default=False, action='store_true',
         help="Run each argv as different entries in the same benchmark.")
     p.add_argument(
-        "--eshuffle", default=False, action='store_true',
+        "--eshuffle", default=False, action='store_true',   
         help="Assign random engine to each benchmark, similar to norepeat.")
     p.add_argument(
         "--max_seed", default=9999, type=int,
