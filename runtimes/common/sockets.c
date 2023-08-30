@@ -43,7 +43,7 @@ int slsocket_open(int runtime, int module) {
  */
 message_t *slsocket_read(int fd) {
     message_t *msg = malloc(sizeof(message_t));
-    if(recv(fd, (char *) msg, 4, MSG_WAITALL) < 4) {
+    if(recv(fd, (char *) msg, HEADER_SIZE, MSG_WAITALL) < HEADER_SIZE) {
         free(msg);
         return NULL;
     };
@@ -66,7 +66,7 @@ message_t *slsocket_read(int fd) {
  * @param msg Message to write. Has header values already set.
  */
 void slsocket_write(int fd, message_t *msg) {
-    send(fd, (char *) msg, 4, 0);
+    send(fd, (char *) msg, HEADER_SIZE, 0);
     send(fd, msg->payload, msg->payloadlen, 0);
 }
 

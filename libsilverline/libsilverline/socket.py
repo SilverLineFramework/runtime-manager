@@ -10,6 +10,9 @@ from beartype import beartype
 from .types import Message
 
 
+_HEADER_FMT = "IBB"
+
+
 @beartype
 class SLSocket:
     """Silverline local socket.
@@ -32,8 +35,8 @@ class SLSocket:
     retries: maximum number of times to try sending data if send fails.
     """
 
-    HEADER_FMT = "IBB"
-    HEADER_SIZE = 6
+    HEADER_FMT = _HEADER_FMT
+    HEADER_SIZE = struct.calcsize(HEADER_FMT)
 
     def __init__(
         self, runtime: int, module: int = -1, server: bool = True,

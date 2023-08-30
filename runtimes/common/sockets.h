@@ -10,6 +10,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifndef COMMON_SOCKETS_H
 #define COMMON_SOCKETS_H
@@ -40,15 +41,17 @@
 /**
  * @brief Silverline manager message; see runtime-manager for documentation.
  * 
- * Payloadlen, h1, and h2 are packed contiguously so that the first four bytes
+ * Payloadlen, h1, and h2 are packed contiguously so that the first bytes
  * of `(char *) message_t` correspond to the packet header.
  */
-typedef struct {
-    uint16_t payloadlen;
+typedef struct __attribute__((__packed__)) {
+    uint32_t payloadlen;
     uint8_t h1;
     uint8_t h2;
     char *payload;
 } message_t;
+
+#define HEADER_SIZE (offsetof(message_t, payload))
 
 #if !defined(DOXYGEN_SHOULD_SKIP_THIS)
 int slsocket_open(int runtime, int module);

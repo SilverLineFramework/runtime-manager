@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
 #include "cJSON/cJSON.h"
 #include "logging.h"
 #include "sockets.h"
