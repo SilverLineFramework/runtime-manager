@@ -12,7 +12,7 @@
 #include "sockets.h"
 
 /** Global socket (to avoid having to pass `socket` as context everywhere) */
-int _socket;
+static int _socket;
 
 /**
  * @brief Initialize logging.

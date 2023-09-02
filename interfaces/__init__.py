@@ -4,6 +4,8 @@ from manager import RuntimeManager
 
 from .benchmarking import (
     Benchmarking, BenchmarkingSeeded, BenchmarkingInterference, OpcodeCount)
+from .data_race import (
+    DataRaceAccessSingle, DataRaceAccessBatch, DataRaceTSVSingle, DataRaceTSVBatch)
 from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
@@ -31,6 +33,18 @@ __benchmarking = {
     "opcodes": OpcodeCount
 }
 
+__data_race = {
+    "_": None,
+    "access": {
+        "single": DataRaceAccessSingle,
+        "batch": DataRaceAccessBatch
+    },
+    "tsv": {
+        "single": DataRaceTSVSingle,
+        "batch": DataRaceTSVBatch
+    }
+}
+
 tree: dict = {
     "_": None,
     "bench": __benchmarking,
@@ -47,7 +61,8 @@ tree: dict = {
     "test": {
         "_": None,
         "reg": RegistrationOnly
-    }
+    },
+    "data-race": __data_race
 }
 
 
@@ -64,6 +79,6 @@ def get_runtime(name: str) -> RuntimeManager:
         rt_class = rt_class["_"]
 
     if rt_class is None:
-        raise NotImplemented("Runtime {} is not yet implemented.".format(name))
+        raise NotImplementedError("Runtime {} is not yet implemented.".format(name))
     else:
         return cast(RuntimeManager, rt_class)

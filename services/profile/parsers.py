@@ -69,3 +69,12 @@ def raw64(payload):
     """Save raw 64-bit integers."""
     data = np.frombuffer(payload, dtype=np.uint64)
     return {"data": data}
+
+def dr_access(payload):
+    """Data Race Access (Stage 1)."""
+    data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 3)
+    return {
+        "utime": data[:, 0],
+        "stime": data[:, 1],
+        "maxrss": data[:, 2]
+    }

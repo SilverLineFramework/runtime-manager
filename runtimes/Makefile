@@ -1,4 +1,5 @@
 .PHONY: all clean
+.PHONY: bin/linux-datarace-wali
 
 all: bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3
 
@@ -21,18 +22,19 @@ bin/wasmer: bin ~/.wasmer/bin/wasmer
 	cd bin; ln -s ~/.wasmer/bin/wasmer wasmer
 
 # Minimal WAMR-based runtime
-bin/linux-minimal-wamr: bin linux-minimal-wamr/build/runtime
+bin/linux-minimal-wamr: bin
+	make -C linux-minimal-wamr
 	ln -s ../linux-minimal-wamr/build/runtime bin/linux-minimal-wamr
 
-linux-minimal-wamr/build/runtime:
-	make -C linux-minimal-wamr
+# Data-race WAMR-WALI runtime
+bin/linux-datarace-wali: bin
+	make -C linux-datarace-wali
+	ln -sf ../linux-datarace-wali/build/runtime $@
 
 # Opcode profiling runtime
-bin/profiling-opcodes: bin profiling-opcodes/build/runtime
-	ln -s ../profiling-opcodes/build/runtime bin/profiling-opcodes
-
-profiling-opcodes/build/runtime:
+bin/profiling-opcodes: bin 
 	make -C profiling-opcodes
+	ln -s ../profiling-opcodes/build/runtime bin/profiling-opcodes
 
 # Wasm3
 bin/wasm3: bin wasm3/build/wasm3
@@ -44,7 +46,7 @@ wasm3/build/wasm3:
 	make -C wasm3/build
 
 # WAMR (WALI edition)
-WAMR=wasm-micro-runtime/product-mini/platforms/linux
+WAMR=wasm-micro-runtime-wali/product-mini/platforms/linux
 bin/iwasm: bin $(WAMR)/build/iwasm
 	ln -s ../$(WAMR)/build/iwasm bin/iwasm
 

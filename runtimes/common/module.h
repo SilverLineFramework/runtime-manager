@@ -27,7 +27,7 @@ typedef struct {
 } module_wamr_t;
 
 /**
- * @brief Module arguments passed to WASI.
+ * @brief Module arguments passed to WASI
  * @note Strings are presumed to be owned by module_args_t, and are freed on
  * cleanup.
  */
@@ -41,6 +41,22 @@ typedef struct {
     /** Arguments */
     array_string_t argv;
 } module_args_t;
+
+/**
+ * @brief Module additional settings
+*/
+typedef struct {
+    /** Stack Size */
+    uint32_t stack_size;
+    /** Heap Size */
+    uint32_t heap_size;
+    /** Log verbosity */
+    int log_verbose_level;
+    /** Max Threads */
+    uint32_t max_threads;
+    /** Native Libraries */
+    char *native_libs[8];
+} module_settings_t;
 
 /**
  * @brief Module metadata.
