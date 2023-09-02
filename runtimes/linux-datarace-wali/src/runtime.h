@@ -1,7 +1,8 @@
 /**
- * @defgroup linux-minimal-wamr
+ * @defgroup linux-datarace-wali
  * 
- * Minimal WAMR-based linux C runtime implementation.
+ * Minimal WAMR-based linux C runtime 
+ * for single module data-race checking.
  * 
  * @{
  * @file runtime.h

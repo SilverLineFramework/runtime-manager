@@ -3,7 +3,7 @@ project (linux-datarace-wali)
 
 get_filename_component(RUNTIMES_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set (COMMON_DIR ${RUNTIMES_DIR}/common)
-set (WAMR_ROOT_DIR ../wasm-micro-runtime)
+set (WAMR_ROOT_DIR ../wasm-micro-runtime-sl)
 
 # --------------------------------------------------------------------------- #
 #                              WAMR Configuration                             #
@@ -67,7 +67,13 @@ include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
-# build out opcode
+# build out instrumentation hook as library
+add_library(access
+    lib/access.cpp
+    lib/optable.c
+    )
+target_compile_options(access PRIVATE -std=c++2a -O3)
+    
 
 # --------------------------------------------------------------------------- #
 #                            Runtime Configuration                            #
@@ -79,7 +85,9 @@ message(STATUS "${WAMR_ROOT_DIR}")
 message(STATUS "${CMAKE_CURRENT_LIST_DIR}")
 
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
 include_directories(${RUNTIMES_DIR}/common)
+
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
 add_definitions(-DBH_VPRINTF=socket_vprintf)
@@ -96,9 +104,8 @@ add_executable(
     ${COMMON_DIR}/logging.c
     # Runtime files
     src/runtime.c
-    # Native library
     ${UNCOMMON_SHARED_SOURCE}
 )
 
 target_link_libraries (
-    runtime vmlib -lm -ldl -lpthread -lrt -larchive)
+    runtime vmlib access -lm -ldl -lpthread -lrt -larchive)

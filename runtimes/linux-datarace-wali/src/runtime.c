@@ -1,5 +1,5 @@
 /**
- * @addtogroup linux-minimal-wamr
+ * @addtogroup linux-datarace-wali
  * @{
  * @file runtime.c
  * @brief Main runtime.
@@ -18,6 +18,7 @@
 
 #include "module.h"
 #include "runtime.h"
+#include "access_export.h"
 
 #define STD_MAX_LEN 4096
 
@@ -72,7 +73,14 @@ int main(int argc, char **argv) {
     if (runtime.socket < 0) { exit(-1); }
     log_init(runtime.socket);
 
-    bool res = wamr_init(&glob_settings, NULL, NULL);
+    NativeSymbolPackage ns_package[] = {
+      {
+        .exports = native_access_symbols,
+        .num_exports = num_native_access_symbols,
+        .module_name = "instrument"
+      }
+    };
+    bool res = wamr_init(&glob_settings, ns_package);
     if (!res) { exit(-1); }
 
     log_msg(L_INF, "Runtime launched and connected to socket.");

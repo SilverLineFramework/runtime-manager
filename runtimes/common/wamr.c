@@ -17,6 +17,7 @@
 #include "aot_runtime.h"
 
 #include "module.h"
+#include "wamr.h"
 #include "logging.h"
 
 #define ERROR_SIZE 256
@@ -33,7 +34,7 @@ static void wamr_init_settings(module_settings_t *settings) {
 /**
  * @brief Initialize WAMR.
  */
-bool wamr_init(module_settings_t *settings, NativeSymbol *exports, const char* native_name) {
+bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages) {
 
     wamr_init_settings(settings);
 
@@ -48,14 +49,16 @@ bool wamr_init(module_settings_t *settings, NativeSymbol *exports, const char* n
     init_args.mem_alloc_option.allocator.free_func = free;
 
     // Register native API
-    if (exports != NULL) {
-        init_args.native_symbols = exports;
-        init_args.n_native_symbols = sizeof(exports) / sizeof(NativeSymbol *);
+    if (ns_packages != NULL) {
+        init_args.native_symbols = ns_packages->exports;
+        init_args.n_native_symbols = ns_packages->num_exports;
     } else {
         init_args.native_symbols = NULL;
         init_args.n_native_symbols = 0;
     }
-    init_args.native_module_name = native_name ? native_name : "env";
+
+    bool name_provided = ns_packages->module_name[0];
+    init_args.native_module_name = name_provided ? ns_packages->module_name : "env";
 
     // Initialize runtime
     return wasm_runtime_full_init(&init_args);
