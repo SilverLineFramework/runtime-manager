@@ -22,6 +22,12 @@
 
 #define ERROR_SIZE 256
 
+static module_settings_t default_settings = {
+  .stack_size = 1024 * 1024,
+  .heap_size = 1024 * 1024,
+  .log_verbose_level = 2,
+  .max_threads = 1
+};
 
 /**
  * @brief Setup default WAMR settings
@@ -36,6 +42,7 @@ static void wamr_init_settings(module_settings_t *settings) {
  */
 bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages) {
 
+    settings = settings ? settings : &default_settings;
     wamr_init_settings(settings);
 
     // Initialize WAMR init arguments
@@ -52,13 +59,13 @@ bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages) {
     if (ns_packages != NULL) {
         init_args.native_symbols = ns_packages->exports;
         init_args.n_native_symbols = ns_packages->num_exports;
+        bool name_provided = ns_packages->module_name[0];
+        init_args.native_module_name = name_provided ? ns_packages->module_name : "env";
     } else {
         init_args.native_symbols = NULL;
         init_args.n_native_symbols = 0;
+        init_args.native_module_name = NULL;
     }
-
-    bool name_provided = ns_packages->module_name[0];
-    init_args.native_module_name = name_provided ? ns_packages->module_name : "env";
 
     // Initialize runtime
     return wasm_runtime_full_init(&init_args);
@@ -103,6 +110,8 @@ static bool wamr_set_wasi_args(module_wamr_t *mod, module_args_t *args) {
  * @brief Instantiate (or reinstantiate) WASM module.
  */
 bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *context) {
+    settings = settings ? settings : &default_settings;
+
     if (mod->inst != NULL) {
         log_msg(L_DBG, "Reinstantiating module...");
         wasm_runtime_deinstantiate(mod->inst);

@@ -25,7 +25,7 @@
 runtime_t runtime;
 
 module_settings_t glob_settings = {
-    .stack_size = 524288,
+    .stack_size = 1024 * 1024,
     .heap_size = 0,
     .log_verbose_level = 2,
     .max_threads = 20

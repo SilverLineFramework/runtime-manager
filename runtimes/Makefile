@@ -24,7 +24,7 @@ bin/wasmer: bin ~/.wasmer/bin/wasmer
 # Minimal WAMR-based runtime
 bin/linux-minimal-wamr: bin
 	make -C linux-minimal-wamr
-	ln -s ../linux-minimal-wamr/build/runtime bin/linux-minimal-wamr
+	ln -sf ../linux-minimal-wamr/build/runtime bin/linux-minimal-wamr
 
 # Data-race WAMR-WALI runtime
 bin/linux-datarace-wali: bin
@@ -34,7 +34,7 @@ bin/linux-datarace-wali: bin
 # Opcode profiling runtime
 bin/profiling-opcodes: bin 
 	make -C profiling-opcodes
-	ln -s ../profiling-opcodes/build/runtime bin/profiling-opcodes
+	ln -sf ../profiling-opcodes/build/runtime bin/profiling-opcodes
 
 # Wasm3
 bin/wasm3: bin wasm3/build/wasm3

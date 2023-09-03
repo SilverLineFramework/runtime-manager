@@ -38,7 +38,7 @@ bool run_module(module_t *mod) {
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, sizeof(openmsg));
 
-    bool res = wamr_run_once(&mod->args, NULL);
+    bool res = wamr_run_once(&mod->args, NULL, NULL);
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
     if (runtime.socket < 0) { exit(-1); }
     log_init(runtime.socket);
 
-    bool res = wamr_init(NULL);
+    bool res = wamr_init(NULL, NULL);
     if (!res) { exit(-1); }
 
     log_msg(L_INF, "Runtime launched and connected to socket.");
