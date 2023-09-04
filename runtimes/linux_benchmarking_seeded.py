@@ -7,6 +7,7 @@ import threading
 import struct
 import signal
 import random
+import subprocess
 
 from libsilverline import Message, SLSocket, Header
 
@@ -40,6 +41,22 @@ CUSTOM_FORMATS = {
 }
 
 
+def _handle_seed(args, cmd):
+    """Apply seed arguments to command."""
+    seed = random.randint(0, args.get("max_seed", 9999))
+    if args.get("dirmode", False):
+        path = args.get("argv")[-1]
+        ls = sorted(os.listdir(path))
+        cmd[-1] = os.path.join(path, ls[seed % len(ls)])
+    elif args.get("scriptmode", False):
+        _cmd = ["python3", args.get("argv")[-1], str(seed)]
+        cmd[-1] = subprocess.run(
+            _cmd, capture_output=True).stdout.decode('utf-8')
+    else:
+        cmd.append(str(seed))
+    return cmd, seed
+
+
 class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 
@@ -50,7 +67,8 @@ class LinuxBenchmarkingRuntime:
 
     def _run(self, cmd, seed):
         """Run single benchmark iteration."""
-        print(" ".join(cmd))
+        self.socket.write(Message.from_str(
+            Header.control | 0x00, Header.log_module, " ".join(cmd)))
         self.process = os.fork()
         if self.process == 0:
             try:
@@ -72,7 +90,7 @@ class LinuxBenchmarkingRuntime:
                 self.socket.write(Message.from_str(
                     Header.control | 0x00, Header.log_module,
                     "Nonzero exit code: {}".format(status)))
-                return None
+                return struct.pack("IIII", 0, 0, 0, 0)
             else:
                 return struct.pack(
                     "IIII",
@@ -95,23 +113,16 @@ class LinuxBenchmarkingRuntime:
                 watchdog2 = threading.Timer(args.get("ilimit"), kill)
                 watchdog2.start()
 
-            cmd = self._make_cmd(file, args, i)
-            seed = random.randint(0, args.get("max_seed", 9999))
-            if args.get("dirmode", False):
-                path = args.get("argv", [])[-1]
-                ls = sorted(os.listdir(path))
-                cmd[-1] = os.path.join(path, ls[seed % len(ls)])
-            else:
-                cmd.append(str(seed))
-            res = self._run(cmd, seed)
+            try:
+                cmd = self._make_cmd(file, args, i)
+                stats.append(self._run(*_handle_seed(args, cmd)))
+            except Exception as e:
+                done = True
+                self.socket.write(Message.from_str(
+                    Header.control, Header.log_runtime, str(e)))
 
             if args.get("ilimit"):
                 watchdog2.cancel()
-
-            if res is None:
-                stats.append(struct.pack("IIII", 0, 0, 0, 0))
-            else:
-                stats.append(res)
             if self.done:
                 break
 

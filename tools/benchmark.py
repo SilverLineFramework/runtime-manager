@@ -66,7 +66,12 @@ def _parse(p):
         help="Maximum seed for seeded benchmarking.")
     p.add_argument(
         "--dirmode", default=False, action='store_true',
-        help="Use directory mode for seeded benchmarking.")
+        help="Generate arguments by indexing into directory (last arg)"
+        "for seeded benchmarking instead of passing directly.")
+    p.add_argument(
+        "--scriptmode", default=False, action='store_true',
+        help="Generate arguments using python script (last arg) that takes a "
+        "seed for seeded benchmarking instead of passing directly.")
     return p
 
 
@@ -119,7 +124,9 @@ def _main(args):
         return {
             "engine": engine, "argv": arg, "repeat": args.repeat,
             "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."],
-            "dirmode": args.dirmode, "max_seed": args.max_seed}
+            "dirmode": args.dirmode, "scriptmode": args.scriptmode,
+            "max_seed": args.max_seed
+        }
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
