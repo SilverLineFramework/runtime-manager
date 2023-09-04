@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "cJSON/cJSON.h"
 #include "logging.h"
 #include "sockets.h"
@@ -47,7 +48,31 @@ bool run_module(module_t *mod) {
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, sizeof(openmsg));
 
-    bool res = wamr_run_once(&mod->args, &glob_settings, NULL);
+    /** Run instrumented code **/
+    module_rusage_t rusage = {0};
+    if (!init_instrumentation_state()) {
+      log_msg(L_ERR, "Failed to initialize instrumentation state");
+      goto fail;
+    }
+
+    bool res = wamr_run_once(&mod->args, &glob_settings, NULL, &rusage);
+    
+    char* buf;
+    int64_t buflen = get_instrumentation_profile(&buf, (char*)&rusage, sizeof(rusage));
+    if (buflen == -1) {
+      log_msg(L_ERR, "Instrumentation profile error");
+      goto fail;
+    }
+
+    slsocket_rwrite(
+        runtime.socket, H_CONTROL | 0x00, H_PROFILE, buf, buflen);
+
+    free(buf);
+    if (!destroy_instrumentation_state()) {
+      log_msg(L_ERR, "Instrumentation destroy error");
+      goto fail;
+    }
+    /** **/
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(
@@ -56,6 +81,8 @@ bool run_module(module_t *mod) {
     destroy_module_args(&mod->args);
     destroy_metadata_args(&mod->meta);
     return res;
+fail:
+    return false;
 }
 
 bool create_module(module_t *mod, message_t *msg) {

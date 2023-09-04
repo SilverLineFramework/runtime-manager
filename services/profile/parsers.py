@@ -2,6 +2,8 @@
 
 import numpy as np
 import json
+import struct
+from collections import namedtuple, OrderedDict
 
 
 def benchmarking(payload):
@@ -70,11 +72,37 @@ def raw64(payload):
     data = np.frombuffer(payload, dtype=np.uint64)
     return {"data": data}
 
+
 def dr_access(payload):
     """Data Race Access (Stage 1)."""
-    data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 3)
-    return {
-        "utime": data[:, 0],
-        "stime": data[:, 1],
-        "maxrss": data[:, 2]
-    }
+    parsed = {}
+    def parse_pl(fmt, payload, offset):
+        res = struct.unpack_from(fmt, payload, offset)
+        offset += struct.calcsize(fmt)
+        return res, offset 
+
+    def parse_defset(payload, offset):
+        (ct,), offset = parse_pl('<I', payload, offset)
+        shared_v, offset = parse_pl(f"<{ct}I", payload, offset)
+        return list(set(shared_v)), offset
+
+    offset = 0
+    (parsed['cpu_time'],), offset = parse_pl('<Q', payload, offset)
+    # Read shared instructions
+    parsed['shared_insts'], offset = parse_defset(payload, offset)
+    # Read shared addrs
+    parsed['shared_addrs'], offset = parse_defset(payload, offset)
+
+    AccessRecord = namedtuple('AccessRecord', ['tid', 'has_write', 'inst_idxs'])
+    parsed['partials'] = {}
+    while offset != len(payload):
+        # Read partials
+        fields, offset = parse_pl('<IQ?I', payload, offset)
+        addr, acc_tup = fields[0], fields[1:]
+        acc = AccessRecord._make(acc_tup)
+        entry_list, offset = parse_pl(f"<{acc.inst_idxs}I", payload, offset)
+        acc = acc._replace(inst_idxs=entry_list)
+        parsed['partials'][addr] = acc
+
+    return parsed
+

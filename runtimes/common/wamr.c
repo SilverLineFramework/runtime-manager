@@ -29,6 +29,19 @@ static module_settings_t default_settings = {
   .max_threads = 1
 };
 
+static inline uint64_t ts2us(struct timespec ts) {
+  return ((uint64_t)ts.tv_sec * 1000000) + ((uint64_t)ts.tv_nsec / 1000);
+}
+
+/**
+ * @brief Get raw CPU time, not subject to NTP or process suspend
+ */
+static inline uint64_t get_cpu_time() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+  return ts2us(ts);
+}
+
 /**
  * @brief Setup default WAMR settings
  */
@@ -131,18 +144,22 @@ bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *con
 
 /**
  * @brief Run module.
+ * @return cpu_time Active execution time for running module
  */
-bool wamr_run_module(module_wamr_t *mod, module_args_t *args) {
+bool wamr_run_module(module_wamr_t *mod, module_args_t *args, uint64_t *cpu_time) {
     const char* exception;
     int argc = args->argv.len;
     char **argv = args->argv.data;
     log_msg(L_INF, "Running main: %s | argc: %d", args->path, argc);
+    uint64_t start_time = get_cpu_time();
     bool res = wasm_application_execute_main(mod->inst, argc, argv);
+    uint64_t end_time = get_cpu_time();
     if ((exception = wasm_runtime_get_exception(mod->inst))) {
         log_msg(L_ERR, exception);
     } else {
         log_msg(L_INF, "Successfully executed main.");
     }
+    *cpu_time = end_time - start_time;
     return res;
 }
 
@@ -168,9 +185,6 @@ bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
  * allow/recommend destroying `NULL` objects.
  */
 void wamr_destroy_module(module_wamr_t *mod) {
-#if WAMR_DISABLE_HW_BOUND_CHECK == 0
-    // aot_signal_destroy();
-#endif
     if (mod != NULL) {
         if (mod->inst != NULL) { wasm_runtime_deinstantiate(mod->inst); }
         if (mod->module != NULL) { wasm_runtime_unload(mod->module); }
@@ -183,16 +197,19 @@ void wamr_destroy_module(module_wamr_t *mod) {
  * @brief Create and run a WAMR WebAssembly module once.
  *
  * @param args Module arguments.
+ * @param settings Instantiate and runtime module settings.
  * @param context Optional context to add to module in WAMR.
  * @return success indicator.
+ * @return rusage module resource usage stats
  */
-bool wamr_run_once(module_args_t *args, module_settings_t *settings, void *context) {
+bool wamr_run_once(module_args_t *args, module_settings_t *settings, 
+      void *context, module_rusage_t *rusage) {
     module_wamr_t mod;
     memset(&mod, 0, sizeof(mod));
     bool res = (
         wamr_create_module(&mod, args) &&
         wamr_inst_module(&mod, settings, context) &&
-        wamr_run_module(&mod, args));
+        wamr_run_module(&mod, args, &rusage->cpu_time));
     wamr_destroy_module(&mod);
     return res;
 }
