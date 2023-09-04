@@ -65,6 +65,17 @@ tree: dict = {
     "data-race": __data_race
 }
 
+def nested_dict_str(dictionary, parent_key=""):
+    cur_level_keys = []
+    for key, value in dictionary.items():
+        new_key = f"{parent_key}/{key}" if parent_key else key
+
+        if isinstance(value, dict):
+            cur_level_keys.append(nested_dict_str(value, new_key))
+        elif value:
+            cur_level_keys.append("  " + new_key)
+
+    return '\n'.join(cur_level_keys)
 
 def get_runtime(name: str) -> RuntimeManager:
     """Get runtime by name."""

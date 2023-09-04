@@ -3,7 +3,7 @@
 import uuid
 import json
 import platform
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawTextHelpFormatter
 
 from libsilverline import configure_log, MQTTServer
 
@@ -12,7 +12,6 @@ import interfaces
 
 
 _desc = "Start Silverline runtime manager and runtime(s)."
-
 
 def _parse(p):
     p.add_argument("-n", "--name", help="Node name.", default="node")
@@ -26,7 +25,8 @@ def _parse(p):
         "-l", "--log", default=None,
         help="Log directory; if not passed, logs are not saved.")
     p.add_argument(
-        "-r", "--runtimes", nargs='+', help="Runtimes to start.",
+        "-r", "--runtimes", nargs='+', 
+        help="Runtimes to start. Supported options: \n" + interfaces.nested_dict_str(interfaces.tree),
         default=["linux/min/wasmer"])
 
     return p
@@ -62,4 +62,4 @@ def _main(args):
 
 
 if __name__ == '__main__':
-    _main(_parse(ArgumentParser(description=_desc)).parse_args())
+    _main(_parse(ArgumentParser(description=_desc, formatter_class=RawTextHelpFormatter)).parse_args())
