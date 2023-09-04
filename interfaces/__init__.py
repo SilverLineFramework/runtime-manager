@@ -73,7 +73,7 @@ def nested_dict_str(dictionary, parent_key=""):
         if isinstance(value, dict):
             cur_level_keys.append(nested_dict_str(value, new_key))
         elif value:
-            cur_level_keys.append("  " + new_key)
+            cur_level_keys.append("  \u2022 " + new_key)
 
     return '\n'.join(cur_level_keys)
 
