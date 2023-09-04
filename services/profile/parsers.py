@@ -88,13 +88,15 @@ def dr_access(payload):
 
     offset = 0
     (parsed['cpu_time'],), offset = parse_pl('<Q', payload, offset)
+    parsed['profile'] = {}
+    parsed_profile = parsed['profile']
     # Read shared instructions
-    parsed['shared_insts'], offset = parse_defset(payload, offset)
+    parsed_profile['shared_insts'], offset = parse_defset(payload, offset)
     # Read shared addrs
-    parsed['shared_addrs'], offset = parse_defset(payload, offset)
+    parsed_profile['shared_addrs'], offset = parse_defset(payload, offset)
 
     AccessRecord = namedtuple('AccessRecord', ['tid', 'has_write', 'inst_idxs'])
-    parsed['partials'] = {}
+    parsed_profile['partials'] = {}
     while offset != len(payload):
         # Read partials
         fields, offset = parse_pl('<IQ?I', payload, offset)
@@ -102,7 +104,27 @@ def dr_access(payload):
         acc = AccessRecord._make(acc_tup)
         entry_list, offset = parse_pl(f"<{acc.inst_idxs}I", payload, offset)
         acc = acc._replace(inst_idxs=entry_list)
-        parsed['partials'][addr] = acc
+        parsed_profile['partials'][addr] = acc
 
     return parsed
 
+
+def dr_tsvd(payload):
+    """Data Race TSVD (Stage 2)."""
+    parsed = {}
+    def parse_pl(fmt, payload, offset):
+        res = struct.unpack_from(fmt, payload, offset)
+        offset += struct.calcsize(fmt)
+        return res, offset 
+
+    offset = 0
+    (parsed['cpu_time'],), offset = parse_pl('<Q', payload, offset)
+    # Read profile_elements
+    (ct,), offset = parse_pl('<I', payload, offset)
+    violation_arr = list(struct.iter_unpack("<5I", payload[offset:]))
+
+    ViolationRecord = namedtuple('ViolationRecord', ['addr', 'i1', 'op1', 'i2', 'op2'])
+    parsed['violations'] = [ViolationRecord._make(x)._asdict()
+                             for x in violation_arr]
+
+    return parsed

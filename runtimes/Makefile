@@ -29,7 +29,8 @@ bin/linux-minimal-wamr: bin
 # Data-race WAMR-WALI runtime
 bin/linux-datarace-wali: bin
 	make -C linux-datarace-wali
-	ln -sf ../linux-datarace-wali/build/runtime $@
+	ln -sf ../linux-datarace-wali/build/runtime-access $@-access
+	ln -sf ../linux-datarace-wali/build/runtime-tsvd $@-tsvd
 
 # Opcode profiling runtime
 bin/profiling-opcodes: bin 

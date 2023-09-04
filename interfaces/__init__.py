@@ -5,7 +5,7 @@ from manager import RuntimeManager
 from .benchmarking import (
     Benchmarking, BenchmarkingSeeded, BenchmarkingInterference, OpcodeCount)
 from .data_race import (
-    DataRaceAccessSingle, DataRaceAccessBatch, DataRaceTSVSingle, DataRaceTSVBatch)
+    DataRaceAccessSingle, DataRaceAccessBatch, DataRaceTSVDSingle, DataRaceTSVDBatch)
 from .linux_minimal import LinuxMinimal, LinuxMinimalWAMR
 from .linux import LinuxRuntime
 from .test import RegistrationOnly
@@ -39,9 +39,9 @@ __data_race = {
         "single": DataRaceAccessSingle,
         "batch": DataRaceAccessBatch
     },
-    "tsv": {
-        "single": DataRaceTSVSingle,
-        "batch": DataRaceTSVBatch
+    "tsvd": {
+        "single": DataRaceTSVDSingle,
+        "batch": DataRaceTSVDBatch
     }
 }
 

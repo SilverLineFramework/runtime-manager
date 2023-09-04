@@ -34,6 +34,8 @@ class DataRaceAccessSingle(DataRace):
     APIS = ["wasm", "wasi", "profile:data-race-access-single"]
     DEFAULT_NAME = "data-race-access-single"
     DEFAULT_SHORTNAME = "dr-acc"
+    DEFAULT_COMMAND = (
+        "./runtimes/bin/linux-datarace-wali-access")
     PROFILE_TOPIC = "profile/dr_access"
 
 
@@ -49,11 +51,20 @@ class DataRaceAccessBatch(DataRace):
 
 
 @beartype
-class DataRaceTSVSingle(DataRace):
+class DataRaceTSVDSingle(DataRace):
     """Data Race TSV Detector (Stage 2) runtime in single mode."""
+
+    TYPE = "data-race-tsvd-single"
+    APIS = ["wasm", "wasi", "profile:data-race-tsvd-single"]
+    DEFAULT_NAME = "data-race-tsvd-single"
+    DEFAULT_SHORTNAME = "dr-tsvd"
+    DEFAULT_COMMAND = (
+        "./runtimes/bin/linux-datarace-wali-tsvd")
+    PROFILE_TOPIC = "profile/dr_tsvd"
+
 
 
 @beartype
-class DataRaceTSVBatch(DataRace):
+class DataRaceTSVDBatch(DataRace):
     """Data Race TSV Detector (Stage 2) runtime in batch mode."""
 

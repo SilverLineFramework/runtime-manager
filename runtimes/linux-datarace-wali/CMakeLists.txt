@@ -67,12 +67,18 @@ include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
-# build out instrumentation hook as library
+# build out instrumentation hooks as library
 add_library(access
-    lib/access.cpp
-    lib/optable.c
+    inst_lib/access.cpp
+    inst_lib/optable.c
     )
 target_compile_options(access PRIVATE -std=c++2a -O3)
+
+add_library(tsvd
+    inst_lib/tsvd.cpp
+    inst_lib/optable.c
+    )
+target_compile_options(tsvd PRIVATE -std=c++2a -O3)
     
 
 # --------------------------------------------------------------------------- #
@@ -92,20 +98,32 @@ include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
 add_definitions(-DBH_VPRINTF=socket_vprintf)
 
-add_executable(
-    runtime
+set (RUNTIME_SRC_FILES
     # cJSON
-    ${COMMON_DIR}/cJSON/cJSON.c
+    "${COMMON_DIR}/cJSON/cJSON.c"
     # Common files
-    ${COMMON_DIR}/json_parse.c
-    ${COMMON_DIR}/json_utils.c
-    ${COMMON_DIR}/sockets.c
-    ${COMMON_DIR}/wamr.c
-    ${COMMON_DIR}/logging.c
+    "${COMMON_DIR}/json_parse.c"
+    "${COMMON_DIR}/json_utils.c"
+    "${COMMON_DIR}/sockets.c"
+    "${COMMON_DIR}/wamr.c"
+    "${COMMON_DIR}/logging.c"
     # Runtime files
-    src/runtime.c
-    ${UNCOMMON_SHARED_SOURCE}
+    "src/runtime.c"
+    "${UNCOMMON_SHARED_SOURCE}"
+    )
+
+add_executable(
+    runtime-access
+    ${RUNTIME_SRC_FILES}
+)
+
+add_executable(
+    runtime-tsvd
+    ${RUNTIME_SRC_FILES}
 )
 
 target_link_libraries (
-    runtime vmlib access -lm -ldl -lpthread -lrt -larchive)
+    runtime-access vmlib access -lm -ldl -lpthread -lrt -larchive)
+
+target_link_libraries (
+    runtime-tsvd vmlib tsvd -lm -ldl -lpthread -lrt -larchive)
