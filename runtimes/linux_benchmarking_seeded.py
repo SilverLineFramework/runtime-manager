@@ -49,7 +49,7 @@ def _handle_seed(args, cmd):
         ls = sorted(os.listdir(path))
         cmd[-1] = os.path.join(path, ls[seed % len(ls)])
     elif args.get("scriptmode", False):
-        _cmd = ["python3", args.get("argv")[-1], str(seed)]
+        _cmd = ["./env/bin/python", args.get("argv")[-1], str(seed)]
         cmd[-1] = subprocess.run(
             _cmd, capture_output=True).stdout.decode('utf-8')
     else:
