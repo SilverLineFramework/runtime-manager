@@ -10,16 +10,16 @@ bin:
 alias: bin/wasmtime bin/wasmer bin/wasmedge bin/wasmedgec
 
 bin/wasmtime: bin ~/.wasmtime/bin/wasmtime
-	cd bin; ln -s ~/.wasmtime/bin/wasmtime wasmtime
+	cd bin; ln -sf ~/.wasmtime/bin/wasmtime wasmtime
 
 bin/wasmedge: bin ~/.wasmedge/bin/wasmedge
-	cd bin; ln -s ~/.wasmedge/bin/wasmedge wasmedge
+	cd bin; ln -sf ~/.wasmedge/bin/wasmedge wasmedge
 
 bin/wasmedgec: bin ~/.wasmedge/bin/wasmedgec
-	cd bin; ln -s ~/.wasmedge/bin/wasmedgec wasmedgec
+	cd bin; ln -sf ~/.wasmedge/bin/wasmedgec wasmedgec
 
 bin/wasmer: bin ~/.wasmer/bin/wasmer
-	cd bin; ln -s ~/.wasmer/bin/wasmer wasmer
+	cd bin; ln -sf ~/.wasmer/bin/wasmer wasmer
 
 # Minimal WAMR-based runtime
 bin/linux-minimal-wamr: bin
@@ -39,7 +39,7 @@ bin/profiling-opcodes: bin
 
 # Wasm3
 bin/wasm3: bin wasm3/build/wasm3
-	ln -s ../wasm3/build/wasm3 bin/wasm3
+	ln -sf ../wasm3/build/wasm3 bin/wasm3
 
 wasm3/build/wasm3:
 	mkdir -p wasm3/build
@@ -49,7 +49,7 @@ wasm3/build/wasm3:
 # WAMR (WALI edition)
 WAMR=wasm-micro-runtime-wali/product-mini/platforms/linux
 bin/iwasm: bin $(WAMR)/build/iwasm
-	ln -s ../$(WAMR)/build/iwasm bin/iwasm
+	ln -sf ../$(WAMR)/build/iwasm bin/iwasm
 
 $(WAMR)/build/iwasm:
 	mkdir -p $(WAMR)/build
@@ -61,7 +61,7 @@ $(WAMR)/build/iwasm:
 
 WAMRC=wasm-micro-runtime/wamr-compiler
 bin/wamrc: bin $(WAMRC)
-	ln -s ../$(WAMRC)/build/wamrc bin/wamrc
+	ln -sf ../$(WAMRC)/build/wamrc bin/wamrc
 
 # This step is super not automated. You might have to manually delete the
 # build files and retry if it fails the first time. It also may be necessary
@@ -76,6 +76,7 @@ $(WAMRC)/build/wamrc:
 clean:
 	make -C linux-minimal-wamr clean
 	make -C profiling-opcodes clean
+	make -C linux-datarace-wali clean
 	rm -rf $(WAMR)/build
 	rm -rf wasm3/build
 	rm -rf bin
