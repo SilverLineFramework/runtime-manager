@@ -27,7 +27,7 @@ runtime_t runtime;
 
 module_settings_t glob_settings = {
     .stack_size = 1024 * 1024,
-    .heap_size = 0,
+    .heap_size = 1024 * 1024,
     .log_verbose_level = 2,
     .max_threads = 20
 };
@@ -50,18 +50,26 @@ bool run_module(module_t *mod) {
 
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
+    bool instrument_success = false;
+    
+    bool res = false;
     if (!init_instrumentation_state()) {
       log_msg(L_ERR, "Failed to initialize instrumentation state");
-      goto fail;
+      goto cleanup;
     }
 
-    bool res = wamr_run_once(&mod->args, &glob_settings, NULL, &rusage);
-    
+    res = wamr_run_once(&mod->args, &glob_settings, NULL, &rusage);
+    if (!res) {
+      log_msg(L_ERR, "WAMR run failed!");
+      goto cleanup;
+    }
+
+    /** Gather profile **/
     char* buf;
     int64_t buflen = get_instrumentation_profile(&buf, (char*)&rusage, sizeof(rusage));
     if (buflen == -1) {
       log_msg(L_ERR, "Instrumentation profile error");
-      goto fail;
+      goto cleanup;
     }
 
     slsocket_rwrite(
@@ -70,19 +78,19 @@ bool run_module(module_t *mod) {
     free(buf);
     if (!destroy_instrumentation_state()) {
       log_msg(L_ERR, "Instrumentation destroy error");
-      goto fail;
+      goto cleanup;
     }
+    instrument_success = true;
     /** **/
 
+cleanup:
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
 
     destroy_module_args(&mod->args);
     destroy_metadata_args(&mod->meta);
-    return res;
-fail:
-    return false;
+    return res && instrument_success;
 }
 
 bool create_module(module_t *mod, message_t *msg) {

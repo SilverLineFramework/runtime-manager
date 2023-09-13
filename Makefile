@@ -1,3 +1,5 @@
+.PHONY: instrument
+
 DIR=$(shell pwd)
 SYS_PYTHON=python3
 
@@ -50,3 +52,7 @@ typecheck:
 	python -m mypy services/profile/profile.py
 	cd services/orchestrator; python -m mypy .
 	make -C runtimes typecheck
+
+instrument:
+	make -C runtimes/common/wasm-instrument
+	ln -sf runtimes/common/wasm-instrument/instrument instrument

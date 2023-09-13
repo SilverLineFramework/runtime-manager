@@ -3,7 +3,7 @@ project (linux-datarace-wali)
 
 get_filename_component(RUNTIMES_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 set (COMMON_DIR ${RUNTIMES_DIR}/common)
-set (WAMR_ROOT_DIR ../wasm-micro-runtime-sl)
+set (WAMR_ROOT_DIR ../wasm-micro-runtime-wali)
 
 # --------------------------------------------------------------------------- #
 #                              WAMR Configuration                             #
@@ -42,15 +42,18 @@ set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_AOT 1)
 set (WAMR_BUILD_JIT 0)
 set (WAMR_BUILD_FAST_JIT 0)
-set (WAMR_BUILD_LIBC_BUILTIN 1)
+set (WAMR_BUILD_CUSTOM_NAME_SECTION 1)
+set (WAMR_BUILD_DUMP_CALL_STACK 1)
+#set (WAMR_BUILD_LIBC_BUILTIN 1)
 set (WAMR_BUILD_LIBC_WASI 1)
 set (WAMR_BUILD_FAST_INTERP 1)
-set (WAMR_BUILD_MULTI_MODULE 1)
-set (WAMR_BUILD_LIB_PTHREAD 0)
+#set (WAMR_BUILD_MULTI_MODULE 1)
+#set (WAMR_BUILD_LIB_PTHREAD 0)
 set (WAMR_BUILD_LIB_WASI_THREADS 1)
-set (WAMR_BUILD_MINI_LOADER 0)
-set (WAMR_BUILD_SIMD 1)
-set (WAMR_BUILD_REF_TYPES 0)
+#set (WAMR_BUILD_MINI_LOADER 0)
+#set (WAMR_BUILD_SIMD 1)
+#set (WAMR_BUILD_REF_TYPES 0)
+set (WAMR_BUILD_LIBC_WALI 1) 
 
 # linker flags
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -pie -fPIE")

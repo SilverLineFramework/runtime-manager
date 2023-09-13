@@ -10,6 +10,7 @@
 [submodule "wasm-micro-runtime-wali"]
 	path = runtimes/wasm-micro-runtime-wali
 	url = git@github.com:SilverLineFramework/wasm-micro-runtime.git
+	branch = wali
 [submodule "runtimes/common/wasm3"]
 	path = runtimes/wasm3
 	url = git@github.com:wasm3/wasm3.git
