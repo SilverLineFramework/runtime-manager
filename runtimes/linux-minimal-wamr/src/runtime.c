@@ -38,7 +38,7 @@ bool run_module(module_t *mod) {
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, sizeof(openmsg));
 
-    bool res = wamr_run_once(&mod->args, NULL, NULL);
+    bool res = wamr_run_once(&mod->args, NULL, NULL, NULL);
 
     char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(

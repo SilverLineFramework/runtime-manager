@@ -37,8 +37,8 @@ bool run_module(module_t *mod) {
 
     bool res = (
         wamr_create_module(&mod->wamr, &mod->args) &&
-        wamr_inst_module(&mod->wamr, NULL) &&
-        wamr_run_module(&mod->wamr, &mod->args));
+        wamr_inst_module(&mod->wamr, NULL, NULL) &&
+        wamr_run_module(&mod->wamr, &mod->args, NULL));
 
     if(res) {
         uint64_t *table = (
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     if (runtime.socket < 0) { exit(-1); }
     log_init(runtime.socket);
 
-    bool res = wamr_init(NULL);
+    bool res = wamr_init(NULL, NULL);
     if (!res) { exit(-1); }
 
     log_msg(L_INF, "Runtime launched and connected to socket.");
