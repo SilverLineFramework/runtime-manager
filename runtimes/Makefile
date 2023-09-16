@@ -1,7 +1,6 @@
 .PHONY: all clean
-.PHONY: bin/linux-datarace-wali
 
-all: bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3
+all: bin/linux-minimal-wamr bin/profiling-opcodes bin/iwasm bin/wasm3 bin/linux-datarace-wali
 
 bin:
 	mkdir -p bin
