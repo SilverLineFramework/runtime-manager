@@ -99,7 +99,7 @@ include_directories(${RUNTIMES_DIR}/common)
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
-add_definitions(-DBH_VPRINTF=socket_vprintf)
+#add_definitions(-DBH_VPRINTF=socket_vprintf)
 
 set (RUNTIME_SRC_FILES
     # cJSON

@@ -28,26 +28,11 @@ runtime_t runtime;
 module_settings_t glob_settings = {
     .stack_size = 1024 * 1024,
     .heap_size = 1024 * 1024,
-    .log_verbose_level = 2,
+    .log_verbose_level = 0,
     .max_threads = 20
 };
 
-
-int socket_vprintf(const char *format, va_list ap) {
-    char buf[STD_MAX_LEN];
-    int len = vsnprintf(buf, STD_MAX_LEN, format, ap);
-    if (len > STD_MAX_LEN) { len = STD_MAX_LEN; }
-    slsocket_rwrite(runtime.socket, 0x00, 0x00, buf, len);
-    return len;
-}
-
 bool run_module(module_t *mod) {
-    char openmsg[] = "__$SL/proc/stdio";
-    openmsg[0] = 0x00;
-    openmsg[1] = CH_WRONLY;
-    slsocket_rwrite(
-        runtime.socket, H_CONTROL | 0x00, H_CH_OPEN, openmsg, sizeof(openmsg));
-
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
     bool instrument_success = false;
