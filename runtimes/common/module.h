@@ -40,6 +40,8 @@ typedef struct {
     array_string_t env;
     /** Arguments */
     array_string_t argv;
+    /** Repeat exection */
+    uint32_t repeat;
 } module_args_t;
 
 /**
@@ -71,5 +73,20 @@ typedef struct {
     /** Runtime UUID. */
     char *parent;
 } module_metadata_t;
+
+/** 
+ * @brief Module usage characteristics
+ */
+typedef struct {
+  /** CPU time to run module (excludes create/load)  */ 
+  uint64_t cpu_time;
+} module_rusage_t;
+
+/**
+ * @brief Module run parameters
+ */
+typedef struct {
+  uint32_t repeat;
+} module_runparams_t;
 
 #endif

@@ -78,7 +78,7 @@ cleanup:
     return res && instrument_success;
 }
 
-bool create_module(module_t *mod, message_t *msg) {
+bool parse_module_create(module_t *mod, message_t *msg) {
     cJSON *json = cJSON_ParseWithLength(msg->payload, msg->payloadlen);
     bool res = (
         parse_module_args(json, &mod->args)
@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
                 log_msg(
                     L_DBG, "Runtime received message: %.*s",
                     msg->payloadlen, msg->payload);
-                if (create_module(&runtime.mod, msg)) {
+                if (parse_module_create(&runtime.mod, msg)) {
                     run_module(&runtime.mod);
                 }
             }

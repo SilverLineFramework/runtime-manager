@@ -33,10 +33,6 @@ typedef struct {
   char module_name[100];
 } NativeSymbolPackage;
 
-typedef struct {
-  uint64_t cpu_time;
-} module_rusage_t;
-
 bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages);
 bool wamr_create_module(module_wamr_t *mod, module_args_t *args);
 bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *context);

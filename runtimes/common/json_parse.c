@@ -34,7 +34,8 @@ bool parse_module_args(cJSON *data, module_args_t *dst) {
         (args != NULL) &&
         get_string_value(data, "file", &dst->path) &&
         get_string_array(args, "dirs", &dst->dirs) &&
-        get_string_array(args, "env", &dst->env) &&
+        get_string_array(args, "env", &dst->env) && 
+        get_integer_value(args, "repeat", &dst->repeat) &&
         parse_argv(args, dst));
 }
 
