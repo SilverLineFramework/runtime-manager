@@ -16,6 +16,8 @@ set (CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 set (CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 set (CMAKE_C_STANDARD 99)
+set (CMAKE_CXX_STANDARD 20)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set WAMR_BUILD_TARGET, currently values supported:
 # "X86_64", "AMD_64", "X86_32", "AARCH64[sub]", "ARM[sub]", "THUMB[sub]",
@@ -57,7 +59,7 @@ set (WAMR_BUILD_LIBC_WALI 1)
 
 # linker flags
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections -pie -fPIE")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra -Wformat -Wformat-security")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra -Wformat -Wno-missing-field-initializers -Wformat-security")
 
 if (WAMR_BUILD_TARGET MATCHES "X86_.*" OR WAMR_BUILD_TARGET STREQUAL "AMD_64")
   if (NOT (CMAKE_C_COMPILER MATCHES ".*clang.*" OR CMAKE_C_COMPILER_ID MATCHES ".*Clang"))
@@ -70,18 +72,21 @@ include (${WAMR_ROOT_DIR}/build-scripts/runtime_lib.cmake)
 
 add_library(vmlib ${WAMR_RUNTIME_LIB_SOURCE})
 
-# build out instrumentation hooks as library
+# build out instrumentation library
+include (${COMMON_DIR}/wasm-instrument/instrument_lib.cmake)
+
+# build out WAMR native function hooks as library
 add_library(access
     inst_lib/access.cpp
     inst_lib/optable.c
     )
-target_compile_options(access PRIVATE -std=c++2a -O3)
+#target_compile_options(access PRIVATE)
 
 add_library(tsvd
     inst_lib/tsvd.cpp
     inst_lib/optable.c
     )
-target_compile_options(tsvd PRIVATE -std=c++2a -O3)
+#target_compile_options(tsvd PRIVATE -std=c++2a)
     
 
 # --------------------------------------------------------------------------- #
@@ -126,7 +131,7 @@ add_executable(
 )
 
 target_link_libraries (
-    runtime-access vmlib access -lm -ldl -lpthread -lrt -larchive)
+    runtime-access vmlib instrumentlib access -lm -ldl -lpthread -lrt -larchive)
 
 target_link_libraries (
-    runtime-tsvd vmlib tsvd -lm -ldl -lpthread -lrt -larchive)
+    runtime-tsvd vmlib instrumentlib tsvd -lm -ldl -lpthread -lrt -larchive)

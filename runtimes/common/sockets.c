@@ -43,7 +43,10 @@ int slsocket_open(int runtime, int module) {
  */
 message_t *slsocket_read(int fd) {
     message_t *msg = malloc(sizeof(message_t));
-    if(recv(fd, (char *) msg, HEADER_SIZE, MSG_WAITALL) < HEADER_SIZE) {
+    int recv_status = recv(fd, (char *) msg, HEADER_SIZE, MSG_WAITALL);
+    if (recv_status == -1) {
+        return NULL;
+    } else if (recv_status < (int)HEADER_SIZE) {
         free(msg);
         return NULL;
     };

@@ -33,6 +33,8 @@ module_settings_t glob_settings = {
 };
 
 bool run_module(module_t *mod) {
+    char exitmsg[] = "{\"status\": \"exited\"}";
+
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
     bool instrument_success = false;
@@ -69,7 +71,6 @@ bool run_module(module_t *mod) {
     /** **/
 
 cleanup:
-    char exitmsg[] = "{\"status\": \"exited\"}";
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
 

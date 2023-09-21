@@ -189,7 +189,7 @@ int64_t get_instrumentation_profile(char **buf_ptr, char *pre_buf, int pre_len) 
   if (*buf_ptr == NULL) { goto fail; }
   std::copy(outbuf.begin(), outbuf.end(), *buf_ptr);
 
-  printf("Generated outbuf -- Size: %d\n", buf_size);
+  printf("Generated outbuf -- Size: %ld\n", buf_size);
 
   return buf_size;
 
