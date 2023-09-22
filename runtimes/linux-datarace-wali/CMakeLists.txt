@@ -106,6 +106,7 @@ include_directories(${INSTRUMENT_EXPORT_DIR})
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 
 #add_definitions(-DBH_VPRINTF=socket_vprintf)
+add_definitions(-DENABLE_INSTRUMENTATION=1)
 
 set (RUNTIME_SRC_FILES
     # cJSON

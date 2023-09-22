@@ -10,7 +10,10 @@
 
 #include "wasm_export.h"
 #include "json_utils.h"
+
+#if ENABLE_INSTRUMENTATION
 #include "instrument_c_api.h"
+#endif
 
 /**
  * @brief Module state used by WAMR.
@@ -45,6 +48,7 @@ typedef struct {
     uint32_t repeat;
 } module_args_t;
 
+#if ENABLE_INSTRUMENTATION
 typedef struct {
     /** On-fly instrumentation scheme */
     const char *scheme;
@@ -53,6 +57,7 @@ typedef struct {
     /** Number of arguments */
     uint32_t num_args;
 } module_instrumentation_t;
+#endif
 
 /**
  * @brief Module additional settings
@@ -68,8 +73,10 @@ typedef struct {
     uint32_t max_threads;
     /** Native Libraries */
     char *native_libs[8];
+#if ENABLE_INSTRUMENTATION
     /** Optional pre-execution instrumentation */
     module_instrumentation_t instrumentation;
+#endif
 } module_settings_t;
 
 /**
