@@ -53,7 +53,7 @@ typedef struct {
     /** On-fly instrumentation scheme */
     const char *scheme;
     /** Arguments for specific scheme*/
-    const instrument_arg_t args[5];
+    instrument_arg_t args[5];
     /** Number of arguments */
     uint32_t num_args;
 } module_instrumentation_t;

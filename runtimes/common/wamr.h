@@ -34,7 +34,7 @@ typedef struct {
 } NativeSymbolPackage;
 
 bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages);
-bool wamr_create_module(module_wamr_t *mod, module_args_t *args);
+bool wamr_create_module(module_wamr_t *mod, module_args_t *args, module_settings_t *settings);
 bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *context);
 bool wamr_run_module(module_wamr_t *mod, module_args_t *args, uint64_t *cpu_time);
 void wamr_destroy_module(module_wamr_t *mod);

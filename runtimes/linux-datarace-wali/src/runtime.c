@@ -33,7 +33,7 @@ module_settings_t glob_settings = {
     .instrumentation = {
         .scheme = "memaccess-stochastic",
         .args = {
-            { .type = ARG_INT, .v.i32 = 40 },
+            { .type = ARG_INT, .v.i32 = 100 },
             { .type = ARG_INT, .v.i32 = 1 }
         }
     }
