@@ -20,6 +20,7 @@
 [submodule "runtimes/common/wasm-instrument"]
 	path = runtimes/common/wasm-instrument
 	url = https://github.com/arjunr2/wasm-instrument.git
+	branch = main
 [submodule "runtimes/wasm-micro-runtime-sl"]
 	path = runtimes/wasm-micro-runtime-sl
 	url = https://github.com/SilverLineFramework/wasm-micro-runtime.git
