@@ -35,7 +35,8 @@ module_settings_t glob_settings = {
         .args = {
             { .type = ARG_INT, .v.i32 = 100 },
             { .type = ARG_INT, .v.i32 = 1 }
-        }
+        },
+        .num_args = 2
     }
 };
 
