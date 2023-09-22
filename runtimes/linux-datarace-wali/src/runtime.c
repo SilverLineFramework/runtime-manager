@@ -29,7 +29,14 @@ module_settings_t glob_settings = {
     .stack_size = 1024 * 1024,
     .heap_size = 1024 * 1024,
     .log_verbose_level = 0,
-    .max_threads = 20
+    .max_threads = 20,
+    .instrumentation = {
+        .scheme = "memaccess-stochastic",
+        .args = {
+            { .type = ARG_INT, .v.i32 = 40 },
+            { .type = ARG_INT, .v.i32 = 1 }
+        }
+    }
 };
 
 bool run_module(module_t *mod) {

@@ -101,6 +101,7 @@ message(STATUS "${CMAKE_CURRENT_LIST_DIR}")
 include_directories(${CMAKE_CURRENT_LIST_DIR}/src)
 include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
 include_directories(${RUNTIMES_DIR}/common)
+include_directories(${INSTRUMENT_EXPORT_DIR})
 
 include (${SHARED_DIR}/utils/uncommon/shared_uncommon.cmake)
 

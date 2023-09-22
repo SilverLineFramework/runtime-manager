@@ -53,6 +53,8 @@ typecheck:
 	cd services/orchestrator; python -m mypy .
 	make -C runtimes typecheck
 
+INSTRUMENT_DIR=runtimes/common/wasm-instrument
 instrument:
-	make -C runtimes/common/wasm-instrument
-	ln -sf runtimes/common/wasm-instrument/instrument instrument
+	cmake -S $(INSTRUMENT_DIR) -B $(INSTRUMENT_DIR)/build
+	make -C $(INSTRUMENT_DIR)/build
+	ln -sf $(INSTRUMENT_DIR)/instrument instrument
