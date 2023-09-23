@@ -17,6 +17,7 @@
 [submodule "runtimes/wasm-micro-runtime"]
 	path = runtimes/wasm-micro-runtime
 	url = git@github.com:bytecodealliance/wasm-micro-runtime.git
+	branch = main
 [submodule "runtimes/common/wasm-instrument"]
 	path = runtimes/common/wasm-instrument
 	url = https://github.com/arjunr2/wasm-instrument.git
