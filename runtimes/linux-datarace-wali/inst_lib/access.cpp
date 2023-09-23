@@ -99,8 +99,8 @@ void logend_wrapper(wasm_exec_env_t exec_env) {}
 bool init_instrumentation_state() {
   access_table = (acc_entry*) mmap(NULL, table_size, PROT_READ|PROT_WRITE, 
                     MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
-  if (access_table == NULL) {
-    perror("malloc error");
+  if (access_table == MAP_FAILED) {
+    perror("access table mmap error");
     return false;
   }
 

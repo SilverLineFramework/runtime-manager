@@ -84,17 +84,21 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 
 static bool run_modules(module_t *mod) {
     char exitmsg[] = "{\"status\": \"exited\"}";
+    bool ret = true;
     uint32_t repeat = mod->args.repeat;
     for (uint32_t i = 1; i <= repeat; i++) {
         if (!run_module_once(mod)) {
             log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
-            return false;
+            ret = false;
+            break;
         }
+    }
+    if (ret) {
+      log_msg(L_INF, "\'%s\' succesfully executed %d times!", mod->args.path, repeat);
     }
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
-    log_msg(L_INF, "\'%s\' succesfully executed %d times!", mod->args.path, repeat);
-    return true;
+    return ret;
 }
 
 static void destroy_args(module_t *mod) {
