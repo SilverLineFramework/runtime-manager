@@ -135,7 +135,7 @@ void logend_wrapper(wasm_exec_env_t exec_env) {}
 bool init_instrumentation_state() {
   tsv_table = (tsv_entry*) mmap(NULL, table_size, PROT_READ|PROT_WRITE, 
                     MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
-  if (tsv_table == NULL) {
+  if (tsv_table == MAP_FAILED) {
     perror("tsv table mmap error");
     return false;
   }
