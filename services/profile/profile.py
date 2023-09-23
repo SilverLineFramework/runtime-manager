@@ -7,6 +7,7 @@ import json
 import traceback
 import time
 import threading
+import uuid
 
 import numpy as np
 
@@ -123,7 +124,8 @@ class Profiler(SilverlineClient):
         module = self.get_module(mid)
         path = os.path.join(
             self.base_path, self._runtimes[rtid].get("name", "unknown"),
-            "{}.{}.{}.json".format(module.get("name", "unknown"), mid, mtype))
+            "{}.{}.{}.{}.json".format(
+                module.get("name", "unknown"), mid, uuid.uuid4(),  mtype))
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
         out = {k: _tolist(v) for k, v in decoded.items()}
