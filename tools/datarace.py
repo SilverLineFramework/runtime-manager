@@ -16,7 +16,7 @@ import random
 from libsilverline import SilverlineClient, SilverlineCluster, configure_log
 
 
-_desc = "Run data-race benchmarking."
+_desc = "Run data-race benchmarking (runtimes x files x instrumentation-density) ."
 
 
 
@@ -24,13 +24,16 @@ def _parse(p):
     p.add_argument(
         "-c", "--cfg", help="Config file.",
         default=os.environ.get('SL_CONFIG', 'config.json'))
-    p.add_argument("-v", "--verbose", default=20, help="Logging level.")
+    p.add_argument("-v", "--verbose", default=20, type=int, help="Logging level.")
     p.add_argument(
         "-r", "--runtime", nargs='+', default=None,
         help="Target runtime names, uuids, or last characters of uuid.")
     p.add_argument(
         "-f", "--file", nargs="+", default=["wasm/apps/helloworld.wasm"],
         help="Target file paths, relative to WASM/WASI base directory.")
+    p.add_argument(
+        "-i", "--instdensity", default=["0"], nargs='+',
+        help="Instrumentation density to apply.")
     p.add_argument(
         "--repeat", type=int, default=100,
         help="Number of times to run module if benchmarking.")
@@ -58,13 +61,6 @@ def cross(func, **kwargs):
     return [func(**k) for k in out]
 
 
-def supported_runtimes(args, manifest, device):
-    """Get list of supported (wasm) runtimes on this device."""
-    row = manifest.get(device)
-    if row is None:
-        return args.engine
-    return [k for k in args.engine if row.get(k) == 'x']
-
 
 def _main(args):
     configure_log(log=None, level=args.verbose)
@@ -83,22 +79,27 @@ def _main(args):
     else:
         argv = [args.argv]
 
-    def _file(file=None, engine=None, **_):
+    def _file(file=None, instdensity=None, **_):
         return file
 
-    def _modulename(file=None, engine=None, **_):
+    def _modulename(file=None, instdensity=None, **_):
         splits = [file.split("/")[-1].split('.')[0]]
         if args.argfile:
             splits.append(args.argfile.split("/")[-1].split(".")[0])
-        if isinstance(engine, list):
+        if isinstance(instdensity, list):
             return ".".join(splits)
         else:
-            return ".".join(splits + [engine])
+            return ".".join(splits + [instdensity])
 
-    def _moduleargs(engine=None, arg=None, **_):
+    def _moduleargs(instdensity=None, arg=None, **_):
         return {
             "argv": arg, "repeat": args.repeat,
-            "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."] }
+            "limit": args.limit, "ilimit": args.ilimit, "dirs": ["."],
+            "instrument": {
+                "scheme": "memaccess-stochastic",
+                "instargs": [instdensity, "1"],
+            }
+        }
 
     for rt in args.runtime:
         rtid = client.infer_runtime(rt)
@@ -107,20 +108,15 @@ def _main(args):
         else:
             if args.norepeat:
                 random.shuffle(argv)
-                iters = {"file": args.file, "engine": args.engine}
+                iters = {"file": args.file, "instdensity": args.instdensity}
                 partials = {"arg": argv}
             else:
-                iters = {"file": args.file, "engine": args.engine, "arg": argv}
+                iters = {"file": args.file, "instdensity": args.instdensity, "arg": argv}
                 partials = {}
 
             files = cross(partial(_file, **partials), **iters)
             names = cross(partial(_modulename, **partials), **iters)
             module_args = cross(partial(_moduleargs, **partials), **iters)
-
-            if args.shuffle:
-                tmp = list(zip(files, names, module_args))
-                random.shuffle(tmp)
-                files, names, module_args = zip(*tmp)
 
             client.create_module_batch(rtid, files, names, module_args)
 
