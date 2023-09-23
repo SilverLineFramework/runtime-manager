@@ -32,7 +32,7 @@ module_settings_t glob_settings = {
     .max_threads = 20,
 };
 
-bool run_module(module_t *mod) {
+static bool run_module_once(module_t *mod) {
     char exitmsg[] = "{\"status\": \"exited\"}";
 
     /** Run instrumented code **/
@@ -74,8 +74,6 @@ cleanup:
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
 
-    destroy_module_args(&mod->args);
-    destroy_metadata_args(&mod->meta);
     return res && instrument_success;
 }
 
@@ -86,6 +84,22 @@ bool parse_module_create(module_t *mod, message_t *msg) {
         && parse_metadata_args(json, &mod->meta));
     cJSON_Delete(json);
     return res;
+}
+
+static bool run_modules(module_t *mod) {
+    for (uint32_t i = 1; i <= mod->args.repeat; i++) {
+        if (!run_module_once(mod)) {
+            log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
+            return false;
+        }
+        log_msg(L_DBG, "\'%s\' | Iteration %u completed!", mod->args.path, i);
+    }
+    return true;
+}
+
+static void destroy_args(module_t *mod) {
+    destroy_module_args(&mod->args);
+    destroy_metadata_args(&mod->meta);
 }
 
 int main(int argc, char **argv) {
@@ -113,7 +127,8 @@ int main(int argc, char **argv) {
                     L_DBG, "Runtime received message: %.*s",
                     msg->payloadlen, msg->payload);
                 if (parse_module_create(&runtime.mod, msg)) {
-                    run_module(&runtime.mod);
+                    run_modules(&runtime.mod);
+                    destroy_args(&runtime.mod);
                 }
             }
             slsocket_free(msg);
