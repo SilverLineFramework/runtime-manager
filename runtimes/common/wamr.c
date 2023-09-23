@@ -95,12 +95,8 @@ static bool wamr_read_module(module_wamr_t *mod, module_args_t *args) {
     if ((mod->file != NULL) && (inst_params->scheme != NULL)) {
         uint32_t encode_size = 0;
         /* Decode, instrument, re-encode */
-        wasm_instrument_mod_t ins_mod = decode_instrument_module(mod->file, mod->size);
-        instrument_module (ins_mod, inst_params->scheme, inst_params->args.data, 
-            inst_params->args.len);
-        byte *filebuf = encode_file_buf_from_module(ins_mod, &encode_size);
-        /* */
-        destroy_instrument_module(ins_mod);
+        byte *filebuf = instrument_module_buffer (mod->file, mod->size, &encode_size,
+            inst_params->scheme, inst_params->args.data, inst_params->args.len);
         wasm_runtime_free(mod->file);
         mod->file = filebuf;
         mod->size = encode_size;

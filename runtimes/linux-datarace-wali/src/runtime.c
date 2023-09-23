@@ -33,8 +33,6 @@ module_settings_t glob_settings = {
 };
 
 static bool run_module_once(module_t *mod) {
-    char exitmsg[] = "{\"status\": \"exited\"}";
-
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
     bool instrument_success = false;
@@ -58,6 +56,7 @@ static bool run_module_once(module_t *mod) {
       log_msg(L_ERR, "Instrumentation profile error");
       goto cleanup;
     }
+    log_msg(L_DBG, "Generated profile data of size %ld\n", buflen);
 
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_PROFILE, buf, buflen);
@@ -71,9 +70,6 @@ static bool run_module_once(module_t *mod) {
     /** **/
 
 cleanup:
-    slsocket_rwrite(
-        runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
-
     return res && instrument_success;
 }
 
@@ -87,13 +83,17 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 }
 
 static bool run_modules(module_t *mod) {
-    for (uint32_t i = 1; i <= mod->args.repeat; i++) {
+    char exitmsg[] = "{\"status\": \"exited\"}";
+    uint32_t repeat = mod->args.repeat;
+    for (uint32_t i = 1; i <= repeat; i++) {
         if (!run_module_once(mod)) {
             log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
             return false;
         }
-        log_msg(L_DBG, "\'%s\' | Iteration %u completed!", mod->args.path, i);
     }
+    slsocket_rwrite(
+        runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
+    log_msg(L_INF, "\'%s\' succesfully executed %d times!", mod->args.path, repeat);
     return true;
 }
 

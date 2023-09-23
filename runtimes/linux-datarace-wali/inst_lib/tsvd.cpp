@@ -10,6 +10,7 @@
 #include "lib_export.h"
 #include "opaccess.h"
 #include "access_export.h"
+#include "logging.h"
 
 #include <unordered_set>
 #include <mutex>
@@ -201,8 +202,6 @@ int64_t get_instrumentation_profile(char **buf_ptr, char *pre_buf, int pre_len) 
   }
 
   #endif
-
-  printf("Generated outbuf -- Size: %ld\n", buf_size);
 
   return buf_size;
 
