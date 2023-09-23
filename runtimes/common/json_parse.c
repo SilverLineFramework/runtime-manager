@@ -24,6 +24,18 @@ static bool parse_argv(cJSON *args, module_args_t *dst) {
     return true;
 }
 
+static bool parse_instrumentation(cJSON *args, module_args_t *dst) {
+#if ENABLE_INSTRUMENTATION
+    cJSON *inst = cJSON_GetObjectItem(args, "instrument");
+    module_instrumentation_t *dstinst = &dst->instrumentation;
+    return (
+      (inst != NULL) &&
+      get_string_value(inst, "scheme", &dstinst->scheme) &&
+      get_string_array(inst, "instargs", &dstinst->args));
+#else
+    return true;
+#endif
+}
 
 /**
  * @brief Parse module arguments (path, env, argv, dirs, etc).
@@ -36,7 +48,8 @@ bool parse_module_args(cJSON *data, module_args_t *dst) {
         get_string_array(args, "dirs", &dst->dirs) &&
         get_string_array(args, "env", &dst->env) && 
         get_integer_value(args, "repeat", &dst->repeat) &&
-        parse_argv(args, dst));
+        parse_argv(args, dst) &&
+        parse_instrumentation(args, dst));
 }
 
 /**
@@ -59,6 +72,10 @@ void destroy_module_args(module_args_t *dst) {
         string_array_destroy(&dst->env);
         string_array_destroy(&dst->argv);
         free(dst->path);
+#if ENABLE_INSTRUMENTATION
+        free(dst->instrumentation.scheme);
+        string_array_destroy(&dst->instrumentation.args);
+#endif
     }
 }
 

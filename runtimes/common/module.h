@@ -30,6 +30,18 @@ typedef struct {
     wasm_module_inst_t inst;
 } module_wamr_t;
 
+#if ENABLE_INSTRUMENTATION
+/**
+ * @brief On-fly instrumentation parameters 
+ */
+typedef struct {
+    /** Instrumentation scheme to execute */
+    char *scheme;
+    /** Arguments for specific scheme */
+    array_string_t args;
+} module_instrumentation_t;
+#endif
+
 /**
  * @brief Module arguments passed to WASI
  * @note Strings are presumed to be owned by module_args_t, and are freed on
@@ -46,18 +58,11 @@ typedef struct {
     array_string_t argv;
     /** Repeat exection */
     uint32_t repeat;
-} module_args_t;
-
 #if ENABLE_INSTRUMENTATION
-typedef struct {
-    /** On-fly instrumentation scheme */
-    const char *scheme;
-    /** Arguments for specific scheme*/
-    instrument_arg_t args[5];
-    /** Number of arguments */
-    uint32_t num_args;
-} module_instrumentation_t;
+    /** Optional pre-execution instrumentation */
+    module_instrumentation_t instrumentation;
 #endif
+} module_args_t;
 
 /**
  * @brief Module additional settings
@@ -73,10 +78,6 @@ typedef struct {
     uint32_t max_threads;
     /** Native Libraries */
     char *native_libs[8];
-#if ENABLE_INSTRUMENTATION
-    /** Optional pre-execution instrumentation */
-    module_instrumentation_t instrumentation;
-#endif
 } module_settings_t;
 
 /**

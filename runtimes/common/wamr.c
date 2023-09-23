@@ -87,16 +87,17 @@ bool wamr_init(module_settings_t *settings, NativeSymbolPackage *ns_packages) {
 /**
  * @brief Read from file.
  */
-static bool wamr_read_module(module_wamr_t *mod, module_args_t *args, module_settings_t *settings) {
+static bool wamr_read_module(module_wamr_t *mod, module_args_t *args) {
     log_msg(L_DBG, "Reading module...");
     mod->file = (char *) bh_read_file_to_buffer(args->path, &mod->size);
 #if ENABLE_INSTRUMENTATION
-    module_instrumentation_t *inst_params = &settings->instrumentation;
+    module_instrumentation_t *inst_params = &args->instrumentation;
     if ((mod->file != NULL) && (inst_params->scheme != NULL)) {
         uint32_t encode_size = 0;
         /* Decode, instrument, re-encode */
         wasm_instrument_mod_t ins_mod = decode_instrument_module(mod->file, mod->size);
-        instrument_module (ins_mod, inst_params->scheme, inst_params->args, inst_params->num_args);
+        instrument_module (ins_mod, inst_params->scheme, inst_params->args.data, 
+            inst_params->args.len);
         byte *filebuf = encode_file_buf_from_module(ins_mod, &encode_size);
         /* */
         destroy_instrument_module(ins_mod);
@@ -181,13 +182,13 @@ bool wamr_run_module(module_wamr_t *mod, module_args_t *args, uint64_t *cpu_time
 /**
  * @brief Load WAMR WebAssembly module.
  */
-bool wamr_create_module(module_wamr_t *mod, module_args_t *args, module_settings_t *settings) {
+bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
     // `&&` chaining should short-circuit and skip steps once any of these
     // functions return false.
     log_msg(L_INF, "Creating WAMR module...");
     bool result = (
         wasm_runtime_init_thread_env() &&
-        wamr_read_module(mod, args, settings) &&
+        wamr_read_module(mod, args) &&
         wamr_load_module(mod) &&
         wamr_set_wasi_args(mod, args));
     log_msg(L_INF, "Done creating WAMR module.");
@@ -222,7 +223,7 @@ bool wamr_run_once(module_args_t *args, module_settings_t *settings,
     module_wamr_t mod;
     memset(&mod, 0, sizeof(mod));
     bool res = (
-        wamr_create_module(&mod, args, settings) &&
+        wamr_create_module(&mod, args) &&
         wamr_inst_module(&mod, settings, context) &&
         wamr_run_module(&mod, args, &rusage->cpu_time));
     wamr_destroy_module(&mod);
