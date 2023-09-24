@@ -151,6 +151,7 @@ bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *con
 
     if (mod->inst == NULL) { log_msg(L_ERR, "%s", err); }
     else { wasm_runtime_set_custom_data(mod->inst, context); }
+    printf("max memory: %d\n", wasm_runtime_get_max_memory_size(mod->inst));
     return (mod->inst != NULL);
 }
 

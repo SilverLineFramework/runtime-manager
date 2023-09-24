@@ -27,7 +27,7 @@ void logaccess_wrapper(wasm_exec_env_t exec_env, uint32_t addr,
     uint32_t opcode, uint32_t inst_idx);
 
 /* Relevant methods */
-bool init_instrumentation_state();
+bool init_instrumentation_state(uint32_t max_mem);
 bool destroy_instrumentation_state();
 
 /**

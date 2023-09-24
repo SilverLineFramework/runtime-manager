@@ -96,7 +96,8 @@ void logstart_wrapper(wasm_exec_env_t exec_env, uint32_t max_instructions) {}
 void logend_wrapper(wasm_exec_env_t exec_env) {}
 
 /* Initialization routine */
-bool init_instrumentation_state() {
+bool init_instrumentation_state(uint32_t max_mem) {
+  table_size = (size_t)max_mem * sizeof(acc_entry);
   access_table = (acc_entry*) mmap(NULL, table_size, PROT_READ|PROT_WRITE, 
                     MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0);
   if (access_table == MAP_FAILED) {
