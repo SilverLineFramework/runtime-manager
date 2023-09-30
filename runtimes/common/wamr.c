@@ -91,15 +91,17 @@ static bool wamr_read_module(module_wamr_t *mod, module_args_t *args) {
     log_msg(L_DBG, "Reading module...");
     mod->file = (char *) bh_read_file_to_buffer(args->path, &mod->size);
 #if ENABLE_INSTRUMENTATION
-    module_instrumentation_t *inst_params = &args->instrumentation;
-    if ((mod->file != NULL) && (inst_params->scheme != NULL)) {
-        uint32_t encode_size = 0;
-        /* Decode, instrument, re-encode */
-        byte *filebuf = instrument_module_buffer (mod->file, mod->size, &encode_size,
-            inst_params->scheme, inst_params->args.data, inst_params->args.len);
-        wasm_runtime_free(mod->file);
-        mod->file = filebuf;
-        mod->size = encode_size;
+    if (get_package_type(mod->file, mod->size) == Wasm_Module_Bytecode) {
+      module_instrumentation_t *inst_params = &args->instrumentation;
+      if ((mod->file != NULL) && (inst_params->scheme != NULL)) {
+          uint32_t encode_size = 0;
+          /* Decode, instrument, re-encode */
+          byte *filebuf = instrument_module_buffer (mod->file, mod->size, &encode_size,
+              inst_params->scheme, inst_params->args.data, inst_params->args.len);
+          wasm_runtime_free(mod->file);
+          mod->file = filebuf;
+          mod->size = encode_size;
+      }
     }
 #endif
     return (mod->file != NULL);
@@ -151,7 +153,6 @@ bool wamr_inst_module(module_wamr_t *mod, module_settings_t *settings, void *con
 
     if (mod->inst == NULL) { log_msg(L_ERR, "%s", err); }
     else { wasm_runtime_set_custom_data(mod->inst, context); }
-    printf("max memory: %d\n", wasm_runtime_get_max_memory_size(mod->inst));
     return (mod->inst != NULL);
 }
 

@@ -39,7 +39,7 @@ if (NOT DEFINED WAMR_BUILD_TARGET)
 endif ()
 
 add_compile_definitions(_GNU_SOURCE)
-set (CMAKE_BUILD_TYPE Debug)
+set (CMAKE_BUILD_TYPE Release)
 set (WAMR_BUILD_INTERP 1)
 set (WAMR_BUILD_AOT 1)
 set (WAMR_BUILD_JIT 0)
