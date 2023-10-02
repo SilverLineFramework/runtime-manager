@@ -12,6 +12,7 @@ from multiprocessing.pool import ThreadPool
 from libsilverline import Message, SLSocket, Header
 from common import make_command, run_and_wait
 
+
 class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
 

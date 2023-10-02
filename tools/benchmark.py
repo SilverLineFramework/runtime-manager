@@ -59,7 +59,7 @@ def _parse(p):
         "--norepeat", default=False, action='store_true',
         help="Run each argv as different entries in the same benchmark.")
     p.add_argument(
-        "--eshuffle", default=False, action='store_true',   
+        "--eshuffle", default=False, action='store_true',
         help="Assign random engine to each benchmark, similar to norepeat.")
     p.add_argument(
         "--max_seed", default=9999, type=int,
@@ -72,6 +72,9 @@ def _parse(p):
         "--scriptmode", default=False, action='store_true',
         help="Generate arguments using python script (last arg) that takes a "
         "seed for seeded benchmarking instead of passing directly.")
+    p.add_argument(
+        "--interference", default=0, type=int,
+        help="Enable interference mode for this many ways.")
     return p
 
 
@@ -143,6 +146,12 @@ def _main(args):
                 randengine = [random.choice(supported) for _ in argv]
                 iters = {"file": args.file}
                 partials = {"arg": argv, "engine": randengine}
+            elif args.interference > 0:
+                ifset = [args.file.copy() for _ in range(args.interference)]
+                for x in ifset:
+                    random.shuffle(x)
+                files = [":".join(x) for x in list(zip(*ifset))]
+                iters = {"file": files, "engine": args.engine, "arg": argv}
             else:
                 iters = {"file": args.file, "engine": args.engine, "arg": argv}
                 partials = {}
