@@ -26,13 +26,12 @@ class LinuxBenchmarkingRuntime:
         stats = []
         while not self.done:
             self.process[i] = os.fork()
-            err, rusage = run_and_wait(self.process[i], cmd)
-            if err != 0:
-                break
-            else:
-                stats.append(
-                    int(rusage.ru_utime * 10**6)
-                    + int(rusage.ru_stime * 10**6))
+            # NOTE: don't break on error, since we need the interference to
+            # keep going!
+            _, rusage = run_and_wait(self.process[i], cmd)
+            stats.append(
+                int(rusage.ru_utime * 10**6)
+                + int(rusage.ru_stime * 10**6))
         if len(stats) > 1:
             return sum(stats[1:]) / (len(stats) - 1)
         else:
