@@ -43,7 +43,10 @@ class LinuxBenchmarkingRuntime:
         def kill():
             self.done = True
             for p in self.process:
-                os.kill(p, signal.SIGKILL)
+                try:
+                    os.kill(p, signal.SIGKILL)
+                except:
+                    pass
 
         self.done = False
         watchdog = threading.Timer(limit, kill)
