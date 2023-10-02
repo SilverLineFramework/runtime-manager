@@ -32,6 +32,9 @@ def _parse(p):
     p.add_argument(
         "-t", "--set", default=None, type=int,
         help="Generate sets of t items, separated by `:`.")
+    p.add_argument(
+        "-n", "--limit", default=None, type=int,
+        help="Only list first n matches.")
     return p
 
 
@@ -54,5 +57,8 @@ def _main(args):
     else:
         if args.shuffle:
             random.shuffle(out)
+
+    if isinstance(args.limit, int):
+        out = out[:args.limit]
 
     print(" ".join(out))

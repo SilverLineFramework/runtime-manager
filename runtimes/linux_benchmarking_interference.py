@@ -10,7 +10,7 @@ from functools import partial
 from multiprocessing.pool import ThreadPool
 
 from libsilverline import Message, SLSocket, Header
-
+from common import make_command, run_and_wait
 
 class LinuxBenchmarkingRuntime:
     """Mimimal linux benchmarking runtime."""
@@ -26,22 +26,15 @@ class LinuxBenchmarkingRuntime:
         stats = []
         while not self.done:
             self.process[i] = os.fork()
-            if self.process[i] == 0:
-                try:
-                    os.execvp(cmd[0], cmd)
-                except Exception as e:
-                    os._exit(1)
+            err, rusage = run_and_wait(self.process[i], cmd)
+            if err != 0:
+                break
             else:
-                _, status, rusage = os.wait4(self.process[i], 0)
-                if os.waitstatus_to_exitcode(status) != 0:
-                    stats.append(0)
-                    break
-                else:
-                    stats.append(
-                        int(rusage.ru_utime * 10**6)
-                        + int(rusage.ru_stime * 10**6))
-        if len(stats) > 2:
-            return sum(stats[1:-1]) / (len(stats) - 2)
+                stats.append(
+                    int(rusage.ru_utime * 10**6)
+                    + int(rusage.ru_stime * 10**6))
+        if len(stats) > 1:
+            return sum(stats[1:]) / (len(stats) - 1)
         else:
             return 0
 
@@ -65,13 +58,10 @@ class LinuxBenchmarkingRuntime:
             for i, (f, v) in enumerate(zip(files, results))
         }
 
-    def __make_cmd(self, file, args):
-        engine = args.get("engine", "wasmer run --singlepass")
-        if engine == "native":
-            cmd = [file]
-        else:
-            cmd = engine.split(" ") + ["--dir=.", file]
-        return cmd
+    def _make_cmd(self, file, argv, args):
+        """Assemble shell command."""
+        engine = args.get("engine", "iwasm-i")
+        return make_command(engine, file, argv)
 
     def run(self, msg):
         """Run program."""
@@ -81,8 +71,9 @@ class LinuxBenchmarkingRuntime:
         args = data.get("args", {})
 
         files = data.get("file").split(":")
-        cmds = [self.__make_cmd(f, args) for f in files]
-        self.process = [None for _ in files]
+        argv = args.get("argv", [])
+        cmds = [self._make_cmd(f, argv, args) for f in files]
+        self.process = [-1 for _ in files]
 
         stats = self.__run(files, cmds, args.get("limit", 60.0))
 

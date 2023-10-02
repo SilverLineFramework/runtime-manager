@@ -1,33 +1,31 @@
-## Pitot
-
-Matrix:
-```sh
-hc benchmark -f `hc index -d wasm -p benchmarks` --engine iwasm wasmedge wasmtime wasmer-cranelift wasmer-singlepass wasmer-llvm
-hc benchmark -f `hc index -d wasm -p benchmarks -r wasm=aot` --engine iwasm-aot
-hc benchmark -f `hc index -d wasm -p benchmarks -r wasm/=native/` --engine native
-hc benchmark -f `hc index -d wasm -p benchmarks -r wasm/=aot-wasmedge/` --engine wasmedge-aot
-```
-
-Interference:
-```sh
-hc benchmark -f `hc index -d wasm -p benchmarks -s -t 2` --limit 30 --engine iwasm wasmedge wasmtime wasmer-cranelift wasmer-singlepass wasmer-llvm
-```
-
-Note:
-- Change:
-    - iwasm -> iwasm-i; iwasm-aot -> iwasm-a;
-    - wasmtime -> wasmtime-j
-    - wasmer-cranelift -> wasmer-j-cl; wasmer-llvm -> wasmer-j-ll; wasmer-singlepass -> wasmer-j-sp;
-    - wasmedge -> wasmedge-i; wasmedge-aot -> wasmedge-a
-
-## Anemos
-
-Data dependent:
+## Pitot v2
 
 ```sh
-hc benchmark -f wasm/python.wasm --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a --limit 300 --repeat 200 --argfile parametric.json
-# interpreters get double time to reduce dataset imbalance.
-hc benchmark -f wasm/python.wasm --engine iwasm-i wasm3-i wasmedge-i --limit 600 --repeat 200 --argfile parametric.json
-# wasmtime-j can cause system/runtime crashes due to large JIT compilation memory usage. Make sure it's last in case it gets the entire runtime killed!
-hc benchmark -f wasm/python.wasm --engine wasmtime-j --limit 300 --repeat 200 --argfile parametric.json
+# matrix/polybench
+hc benchmark -f `hc index -d wasm/polybench` --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a iwasm-i wasm3-i wasmedge-i wasmtime-j wasmer-j-sp wasmer-j-cl --repeat 50 --limit 30
+
+# matrix/mi-cx-vn
+hc benchmark -f `hc index -d wasm/mibench` `hc index -d wasm/cortex` `hc index -d wasm/vision` --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a iwasm-i wasm3-i wasmedge-i wasmtime-j wasmer-j-sp wasmer-j-cl --repeat 50 --limit 30
+
+# matrix/libsodium
+hc benchmark -f `hc index -d wasm/libsodium` --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a iwasm-i wasm3-i wasmedge-i wasmtime-j wasmer-j-sp wasmer-j-cl --repeat 50 --limit 30
+
+# matrix/python
+hc benchmark -f wasm/apps/python.wasm --engine iwasm-a wasmer-a-ll wasmer-a-cl wasmtime-a iwasm-i wasm3-i wasmedge-i wasmtime-j wasmer-j-sp wasmer-j-cl --repeat 50 --limit 30 --argfile benchmarks/apps/python.json
+
+# if/aot
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine iwasm-a --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmer-a-ll --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmer-a-cl --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmtime-a --limit 30
+
+# if/interp
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine iwasm-i --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 251` --engine wasm3-i --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmedge-i --limit 30
+
+# if/jit
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmtime-j --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmer-j-sp --limit 30
+hc benchmark -f `hc index -d wasm -t 2 -n 250` --engine wasmer-j-cl --limit 30
 ```

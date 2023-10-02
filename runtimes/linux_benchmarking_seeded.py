@@ -10,35 +10,7 @@ import random
 import subprocess
 
 from libsilverline import Message, SLSocket, Header
-
-
-# Supported engine commands
-ENGINES = {
-    "native": "native",
-    "iwasm-i": "./runtimes/bin/iwasm -v=0",
-    "iwasm-a": "./runtimes/bin/iwasm -v=0",
-    "wasmer-j-cl": "./runtimes/bin/wasmer run --cranelift --enable-all --",
-    "wasmer-a-cl": "./runtimes/bin/wasmer run --enable-all --",
-    "wasmer-j-ll": "./runtimes/bin/wasmer run --llvm --enable-all --",
-    "wasmer-a-ll": "./runtimes/bin/wasmer run --enable-all --",
-    "wasmer-j-sp": "./runtimes/bin/wasmer run --singlepass --enable-all --",
-    "wasmedge-i": "./runtimes/bin/wasmedge",
-    "wasmedge-j": "./runtimes/bin/wasmedge",
-    "wasmedge-a": "./runtimes/bin/wasmedge",
-    "wasmtime-j": "./runtimes/bin/wasmtime run --wasm-features all --",
-    "wasmtime-a": "./runtimes/bin/wasmtime run --wasm-features all --allow-precompiled --",
-    "wasm3-i": "./runtimes/bin/wasm3",
-}
-
-# File formats other than normal wasm files in wasm/*.wasm
-CUSTOM_FORMATS = {
-    "iwasm-a": "aot/iwasm/",
-    "wasmer-a-cl": "aot/wasmer-cranelift/",
-    "wasmer-a-ll": "aot/wasmer-llvm/",
-    "wasmtime-a": "aot/wasmtime/",
-    "wasmedge-a": "aot/wasmedge/",
-    "native": "native/"
-}
+from common import make_command, run_and_wait
 
 
 def _handle_seed(args, cmd):
@@ -62,7 +34,7 @@ class LinuxBenchmarkingRuntime:
 
     def __init__(self, index: int) -> None:
         self.socket = SLSocket(index, server=False, timeout=5.)
-        self.process = None
+        self.process = -1
         self.done = False
 
     def _run(self, cmd, seed):
@@ -70,32 +42,17 @@ class LinuxBenchmarkingRuntime:
         self.socket.write(Message.from_str(
             Header.control | 0x00, Header.log_module, " ".join(cmd)))
         self.process = os.fork()
-        if self.process == 0:
-            try:
-                devnull = os.open("/dev/null", os.O_WRONLY)
-                os.dup2(devnull, 1)
-                os.dup2(devnull, 2)
-                os.execvp(cmd[0], cmd)
-            except Exception as e:
-                os._exit(1)
+        err, rusage = run_and_wait(self.process, cmd)
+        if err != 0:
+            self.socket.write(Message.from_str(
+                Header.control | 0x00, Header.log_module,
+                "Nonzero exit code: {}".format(err)))
+            return struct.pack("IIII", 0, 0, 0, 0)
         else:
-            try:
-                with open("/sys/fs/cgroup/cpuset/bench/tasks") as f:
-                    f.write(str(self.process))
-            except FileNotFoundError:
-                pass
-
-            _, status, rusage = os.wait4(self.process, 0)
-            if os.waitstatus_to_exitcode(status) != 0:
-                self.socket.write(Message.from_str(
-                    Header.control | 0x00, Header.log_module,
-                    "Nonzero exit code: {}".format(status)))
-                return struct.pack("IIII", 0, 0, 0, 0)
-            else:
-                return struct.pack(
-                    "IIII",
-                    int(rusage.ru_utime * 10**6), int(rusage.ru_stime * 10**6),
-                    rusage.ru_maxrss, seed)
+            return struct.pack(
+                "IIII",
+                int(rusage.ru_utime * 10**6), int(rusage.ru_stime * 10**6),
+                rusage.ru_maxrss, seed)
 
     def _run_loop(self, file, args, repeat):
         """Run benchmarking loop."""
@@ -109,20 +66,14 @@ class LinuxBenchmarkingRuntime:
 
         stats = []
         for i in range(repeat):
-            if args.get("ilimit"):
-                watchdog2 = threading.Timer(args.get("ilimit"), kill)
-                watchdog2.start()
-
             try:
                 cmd = self._make_cmd(file, args, i)
                 stats.append(self._run(*_handle_seed(args, cmd)))
             except Exception as e:
-                done = True
+                self.done = True
                 self.socket.write(Message.from_str(
                     Header.control, Header.log_runtime, str(e)))
 
-            if args.get("ilimit"):
-                watchdog2.cancel()
             if self.done:
                 break
 
@@ -135,28 +86,12 @@ class LinuxBenchmarkingRuntime:
 
     def _make_cmd(self, file, args, idx):
         """Assemble shell command."""
-        engine = args.get("engine", "wasmer-singlepass")
+        engine = args.get("engine", "iwasm-i")
         if isinstance(engine, list):
             engine = engine[idx]
         argv = args.get("argv", [])
 
-        if engine in CUSTOM_FORMATS:
-            file = file.replace("wasm/", CUSTOM_FORMATS[engine])
-        engine_cmd = ENGINES.get(engine, engine)
-
-        if engine == "native":
-            cmd = [file] + argv
-        else:
-            cmd = engine_cmd.split(" ")
-            # Ends in '--': runtime, module args separated by '--'
-            cmd, sep = (cmd[:-1], True) if cmd[-1] == "--" else (cmd, False)
-
-            cmd += ["--dir=."]
-            cmd += ["--env=\"{}\"".format(var) for var in args.get("env", [])]
-            cmd += [file]
-            cmd += ["--"] if sep else []
-            cmd += argv
-        return cmd
+        return make_command(engine, file, argv)
 
     def run(self, msg):
         """Run program."""
