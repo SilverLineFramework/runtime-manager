@@ -29,7 +29,7 @@ class LinuxBenchmarkingRuntime:
             self.process[i] = os.fork()
             err, rusage = run_and_wait(self.process[i], cmd)
             if err != 0:
-                return 0
+                pass
             else:
                 stats.append(
                     int(rusage.ru_utime * 10**6)
