@@ -8,9 +8,9 @@ def benchmarking(payload):
     """Basic benchmarking."""
     data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 3)
     return {
-        "utime": data[:, 0],
-        "stime": data[:, 1],
-        "maxrss": data[:, 2]
+        "wall": data[:, 0],
+        "utime": data[:, 1],
+        "stime": data[:, 2]
     }
 
 
@@ -18,9 +18,9 @@ def seeded(payload):
     """Benchmarking with a random seed."""
     data = np.frombuffer(payload, dtype=np.uint32).reshape(-1, 4)
     return {
-        "utime": data[:, 0],
-        "stime": data[:, 1],
-        "maxrss": data[:, 2],
+        "wall": data[:, 0],
+        "utime": data[:, 1],
+        "stime": data[:, 2],
         "seed": data[:, 3]
     }
 
