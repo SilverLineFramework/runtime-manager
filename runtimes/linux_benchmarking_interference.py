@@ -29,15 +29,12 @@ class LinuxBenchmarkingRuntime:
             self.process[i] = os.fork()
             err, rusage = run_and_wait(self.process[i], cmd)
             if err != 0:
-                pass
+                stats.append(0)
             else:
                 stats.append(
                     int(rusage.ru_utime * 10**6)
                     + int(rusage.ru_stime * 10**6))
-        if len(stats) > 0:
-            return sum(stats) / len(stats)
-        else:
-            return 0
+        return stats
 
     def __run(self, files, cmds, limit):
 
