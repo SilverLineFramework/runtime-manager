@@ -42,7 +42,7 @@ class LinuxBenchmarkingRuntime:
         self.socket.write(Message.from_str(
             Header.control | 0x00, Header.log_module, " ".join(cmd)))
         self.process = os.fork()
-        err, rusage = run_and_wait(self.process, cmd)
+        err, real_time, rusage = run_and_wait(self.process, cmd)
         if err != 0:
             self.socket.write(Message.from_str(
                 Header.control | 0x00, Header.log_module,
@@ -50,9 +50,8 @@ class LinuxBenchmarkingRuntime:
             return struct.pack("IIII", 0, 0, 0, 0)
         else:
             return struct.pack(
-                "IIII",
-                int(rusage.ru_utime * 10**6), int(rusage.ru_stime * 10**6),
-                rusage.ru_maxrss, seed)
+                "IIII", real_time, int(rusage.ru_utime * 10**6),
+                int(rusage.ru_stime * 10**6), seed)
 
     def _run_loop(self, file, args, repeat):
         """Run benchmarking loop."""

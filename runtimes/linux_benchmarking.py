@@ -21,7 +21,7 @@ class LinuxBenchmarkingRuntime:
     def _run(self, cmd):
         """Run single benchmark iteration."""
         self.process = os.fork()
-        err, rusage = run_and_wait(self.process, cmd)
+        err, real_time, rusage = run_and_wait(self.process, cmd)
 
         if err != 0:
             self.socket.write(Message.from_str(
@@ -31,10 +31,8 @@ class LinuxBenchmarkingRuntime:
             return None
         else:
             return struct.pack(
-                "III",
-                int(rusage.ru_utime * 10**6),
-                int(rusage.ru_stime * 10**6),
-                rusage.ru_maxrss)
+                "III", real_time,
+                int(rusage.ru_utime * 10**6), int(rusage.ru_stime * 10**6))
 
     def _run_loop(self, file, args, repeat, repeat_mode):
         """Run benchmarking loop."""

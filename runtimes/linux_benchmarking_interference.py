@@ -4,9 +4,7 @@ import os
 import sys
 import json
 import threading
-import struct
 import signal
-from functools import partial
 from multiprocessing.pool import ThreadPool
 
 from libsilverline import Message, SLSocket, Header
@@ -27,13 +25,11 @@ class LinuxBenchmarkingRuntime:
         stats = []
         while not self.done:
             self.process[i] = os.fork()
-            err, rusage = run_and_wait(self.process[i], cmd)
+            err, real_time, rusage = run_and_wait(self.process[i], cmd)
             if err != 0:
                 stats.append(0)
             else:
-                stats.append(
-                    int(rusage.ru_utime * 10**6)
-                    + int(rusage.ru_stime * 10**6))
+                stats.append(real_time)
         return stats
 
     def __run(self, files, cmds, limit):

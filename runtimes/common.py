@@ -1,6 +1,7 @@
 """Common python-based runtime utilities."""
 
 import os
+import time
 from beartype.typing import Any
 
 
@@ -56,8 +57,9 @@ def make_command(
     return cmd
 
 
-def run_and_wait(pid: int, cmd: list[str]) -> tuple[int, Any]:
+def run_and_wait(pid: int, cmd: list[str]) -> tuple[int, int, Any]:
     """Run command (after forking) and return rusage."""
+    start = time.perf_counter_ns()
     if pid == 0:
         try:
             devnull = os.open("/dev/null", os.O_WRONLY)
@@ -68,4 +70,5 @@ def run_and_wait(pid: int, cmd: list[str]) -> tuple[int, Any]:
             os._exit(1)
     else:
         _, status, rusage = os.wait4(pid, 0)
-        return os.waitstatus_to_exitcode(status), rusage
+        real_time = (time.perf_counter_ns() - start) // 1000
+        return os.waitstatus_to_exitcode(status), real_time, rusage
