@@ -152,6 +152,7 @@ def _main(args):
                     random.shuffle(x)
                 files = [":".join(x) for x in list(zip(*ifset))]
                 iters = {"file": files, "engine": args.engine, "arg": argv}
+                partials = {}
             else:
                 iters = {"file": args.file, "engine": args.engine, "arg": argv}
                 partials = {}
