@@ -34,7 +34,7 @@ void log_msg(int level, const char *format, ...) {
     va_start(args, format);
 
     char buf[LOG_MAX_LEN];
-    int len = vsnprintf(&buf[1], LOG_MAX_LEN, format, args);
+    int len = vsnprintf(&buf[1], LOG_MAX_LEN - 1, format, args);
     if (len > LOG_MAX_LEN) { len = LOG_MAX_LEN; }
     buf[0] = H_CONTROL | (level < 256 ? level : 256);
 
