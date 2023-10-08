@@ -5,6 +5,8 @@
  * @brief Main runtime.
  */
 
+#include <sys/mman.h>
+#include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -98,15 +100,36 @@ bool parse_module_create(module_t *mod, message_t *msg) {
     return res;
 }
 
+
+__attribute__((noreturn)) static bool run_module_child(module_t *mod, int i) {
+  if (!run_module_once(mod)) {
+      log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
+      exit(1);
+  }
+  exit(0);
+}
+
 static bool run_modules(module_t *mod) {
     char exitmsg[] = "{\"status\": \"exited\"}";
     bool ret = true;
     uint32_t repeat = mod->args.repeat;
     for (uint32_t i = 1; i <= repeat; i++) {
-        if (!run_module_once(mod)) {
-            log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
+        /* Create child process to run module + send profile */
+        pid_t cpid = fork();
+        if (cpid == 0) {
+          run_module_child(mod, i);
+        } else {
+          int wstatus, exit_code;
+          wait4(cpid, &wstatus, 0, NULL);
+          if (!WIFEXITED(wstatus)) {
+            log_msg(L_ERR, "Child process terminated unusually\n");
             ret = false;
             break;
+          } else if (exit_code = WEXITSTATUS(wstatus)) {
+            log_msg(L_ERR, "Child process invalid exit code: %d\n", exit_code);
+            ret = false;
+            break;
+          }
         }
     }
     if (ret) {
