@@ -22,6 +22,8 @@
 #include "module.h"
 #include "runtime.h"
 #include "access_export.h"
+#include "../interpreter/wasm_runtime.h"
+#include "../aot/aot_runtime.h"
 
 #define STD_MAX_LEN 4096
 
@@ -34,33 +36,51 @@ module_settings_t glob_settings = {
     .max_threads = 20,
 };
 
+static uint32_t get_global_value(WASMModuleInstance *inst, const char* name) {
+  uint32_t gval;
+  if (inst->module_type == Wasm_Module_Bytecode) {
+    WASMGlobalInstance *glob = wasm_lookup_global(inst, name);
+    memcpy(&gval, inst->global_data + glob->data_offset, sizeof(uint32_t));
+  } else {
+    AOTGlobal *glob = aot_lookup_global(inst, name)->u.glob;
+    memcpy(&gval, inst->global_data + glob->data_offset, sizeof(uint32_t));
+  }
+  return gval;
+}
+
 static bool run_module_once(module_t *mod) {
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
     bool instrument_success = false;
     
-    //module_wamr_t modwamr;
-    //memset(&modwamr, 0, sizeof(modwamr));
-    //bool res = (
-    //    wamr_create_module(&modwamr, &mod->args) &&
-    //    wamr_inst_module(&modwamr, &glob_settings, NULL));
-    ///* Init instrumentation after instantiate to obtain viable address space */
-    //if (res) {
-    //    uint32_t max_mem = wasm_runtime_get_max_memory_size(modwamr.inst);
-    //    if (!(res = init_instrumentation_state(max_mem))) {
-    //        log_msg(L_ERR, "Failed to initialize instrumentation state");
-    //    }
-    //}
-    //res = (res && wamr_run_module(&modwamr, &mod->args, &rusage.cpu_time));
-    //wamr_destroy_module(&modwamr);
-
-    bool res = false;
-    if (!init_instrumentation_state(1 << 31)) {
-      log_msg(L_ERR, "Failed to initialize instrumentation state");
-      goto cleanup;
+    module_wamr_t modwamr;
+    memset(&modwamr, 0, sizeof(modwamr));
+    bool res = (
+        wamr_create_module(&modwamr, &mod->args) &&
+        wamr_inst_module(&modwamr, &glob_settings, NULL));
+    /* Init instrumentation after instantiate to obtain viable address space */
+    if (res) {
+        uint32_t max_mem = wasm_runtime_get_max_memory_size(modwamr.inst);
+        if (!(res = init_instrumentation_state(max_mem))) {
+            log_msg(L_ERR, "Failed to initialize instrumentation state");
+        }
+        else {
+            /* Setup and write mask */
+            module_instrumentation_t *inst_params = &mod->args.instrumentation;
+            if (!strcmp(inst_params->scheme, "memaccess-stochastic")) {
+                WASMModuleInstance *tmp_inst = (WASMModuleInstance*)modwamr.inst;
+                uint32_t density = atoi(inst_params->args.data[0]);
+                uint8_t *memstart = wasm_get_default_memory(tmp_inst)->memory_data;
+                uint32_t meminst_base = get_global_value(tmp_inst, "__inst_membase") * WASM_PAGE_SIZE;
+                uint32_t max_insts = get_global_value(tmp_inst, "__inst_max");
+                fill_rand_instmask(memstart + meminst_base + 1, density, max_insts);
+                log_msg(L_INF, "Stochastic mask with density %d written", density);
+            }
+        }
     }
-
-    res = wamr_run_once(&mod->args, &glob_settings, NULL, &rusage);
+    /* Run the module if prior successful steps */
+    res = (res && wamr_run_module(&modwamr, &mod->args, &rusage.cpu_time));
+    wamr_destroy_module(&modwamr);
 
     if (!res) {
       log_msg(L_ERR, "WAMR run failed!");
@@ -125,7 +145,7 @@ static bool run_modules(module_t *mod) {
             log_msg(L_ERR, "Child process terminated unusually\n");
             ret = false;
             break;
-          } else if (exit_code = WEXITSTATUS(wstatus)) {
+          } else if ((exit_code = WEXITSTATUS(wstatus))) {
             log_msg(L_ERR, "Child process invalid exit code: %d\n", exit_code);
             ret = false;
             break;

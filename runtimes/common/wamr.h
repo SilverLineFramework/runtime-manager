@@ -26,6 +26,8 @@
 #include "module.h"
 #include "lib_export.h"
 
+#define WASM_PAGE_SIZE 65536
+
 #if !defined(DOXYGEN_SHOULD_SKIP_THIS)
 typedef struct {
   NativeSymbol *exports;
