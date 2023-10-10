@@ -122,42 +122,63 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 
 
 __attribute__((noreturn)) static bool run_module_child(module_t *mod, int i) {
-  if (!run_module_once(mod)) {
-      log_msg(L_ERR, "\'%s\' | Iteration %u failed!", mod->args.path, i);
-      exit(1);
+  bool succ = freopen("/dev/null", "w", stdout) && freopen("/dev/null", "w", stderr);
+  if (!succ) {
+    log_msg(L_ERR, "Could not redirect to /dev/null: %s", strerror(errno));
+    goto fail;
   }
+  if (!run_module_once(mod)) { goto fail; }
   exit(0);
+fail:
+  exit(11);
 }
 
 static bool run_modules(module_t *mod) {
     char exitmsg[] = "{\"status\": \"exited\"}";
-    bool ret = true;
     uint32_t repeat = mod->args.repeat;
+    uint32_t success_exec = 0;
     for (uint32_t i = 1; i <= repeat; i++) {
         /* Create child process to run module + send profile */
         pid_t cpid = fork();
         if (cpid == 0) {
-          run_module_child(mod, i);
-        } else {
-          int wstatus, exit_code;
-          wait4(cpid, &wstatus, 0, NULL);
-          if (!WIFEXITED(wstatus)) {
-            log_msg(L_ERR, "Child process terminated unusually\n");
-            ret = false;
-            break;
-          } else if ((exit_code = WEXITSTATUS(wstatus))) {
-            log_msg(L_ERR, "Child process invalid exit code: %d\n", exit_code);
-            ret = false;
-            break;
-          }
+            run_module_child(mod, i);
+        } else if (cpid == -1) {
+            log_msg(L_ERR, "Fork failed | Error: %s", strerror(errno));
+        }
+        else {
+            int wstatus;
+            wait4(cpid, &wstatus, 0, NULL);
+            if (WIFEXITED(wstatus) && !WEXITSTATUS(wstatus)) {
+                success_exec++;
+            } 
+            else {
+                int exit_code;
+                log_msg(L_ERR, "\'%s\' | Iteration %u failed", mod->args.path, i);
+                if (WIFEXITED(wstatus) && (exit_code = WEXITSTATUS(wstatus)))
+                    log_msg(L_ERR, "Reason: Invalid exit code (%d)", exit_code);
+                else if (WIFSIGNALED(wstatus)) {
+                    int signo = WTERMSIG(wstatus);
+                    log_msg(L_ERR, "Reason: Terminated by signal \'%s\'(%d)", strsignal(signo), signo);
+#ifdef WCOREDUMP
+                    if (WCOREDUMP(wstatus)) {
+                      log_msg(L_ERR, "WCOREDUMP: Child faced a core dump!");
+                    }
+#else
+                    log_msg(L_ERR, "WCOREDUMP: Cannot trace child for core-dump");
+#endif
+                } 
+                else {
+                  log_msg(L_ERR, "Reason: Unknown termination method");
+                }
+            } 
         }
     }
-    if (ret) {
-      log_msg(L_INF, "\'%s\' succesfully executed %d times!", mod->args.path, repeat);
-    }
+
+    log_msg(L_WRN, "\'%s\' succesfully executed %d/%d times!", 
+        mod->args.path, success_exec, repeat);
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
-    return ret;
+    return true;
 }
 
 static void destroy_args(module_t *mod) {

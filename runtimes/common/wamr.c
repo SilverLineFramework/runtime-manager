@@ -169,13 +169,13 @@ bool wamr_run_module(module_wamr_t *mod, module_args_t *args, uint64_t *cpu_time
 bool wamr_create_module(module_wamr_t *mod, module_args_t *args) {
     // `&&` chaining should short-circuit and skip steps once any of these
     // functions return false.
-    log_msg(L_INF, "Creating WAMR module...");
+    log_msg(L_DBG, "Creating WAMR module...");
     bool result = (
         wasm_runtime_init_thread_env() &&
         wamr_read_module(mod, args) &&
         wamr_load_module(mod) &&
         wamr_set_wasi_args(mod, args));
-    log_msg(L_INF, "Done creating WAMR module.");
+    log_msg(L_DBG, "Done creating WAMR module.");
     return result;
 }
 
