@@ -174,7 +174,7 @@ static bool run_modules(module_t *mod) {
         }
     }
 
-    log_msg(L_WRN, "\'%s\' succesfully executed %d/%d times!", 
+    log_msg(L_INF, "\'%s\' succesfully executed %d/%d times!", 
         mod->args.path, success_exec, repeat);
     slsocket_rwrite(
         runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
