@@ -90,9 +90,9 @@ class MQTTClient(mqtt.Client):
 
     def __init__(
         self, client_id: str = "client", server: Optional[MQTTServer] = None,
-        bridge: bool = False
+        bridge: bool = False, clean_session: bool = True
     ) -> None:
-        super().__init__(client_id=client_id)
+        super().__init__(client_id=client_id, clean_session=clean_session)
         self.__log = logging.getLogger('mq')
         self.client_id = client_id
         self.server = MQTTServer.from_config({}) if server is None else server

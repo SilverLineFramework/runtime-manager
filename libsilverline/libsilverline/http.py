@@ -18,10 +18,10 @@ class SilverlineClient(MQTTClient):
 
     def __init__(
         self, name: str = "cli", api: str = "localhost:8000",
-        server: Optional[MQTTServer] = None
+        server: Optional[MQTTServer] = None, clean_session: bool = True
     ) -> None:
         super().__init__(
-            client_id="{}:{}".format(name, str(uuid.uuid4())), server=server)
+            client_id="{}:{}".format(name, str(uuid.uuid4())), server=server, clean_session=clean_session)
         self.api = api
         self.__log = logging.getLogger("cli")
 

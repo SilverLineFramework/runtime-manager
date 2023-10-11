@@ -49,7 +49,7 @@ class Profiler(SilverlineClient):
         self, name: str = "profiler", base_path: str = "data",
         api: str = "localhost:8000", server: Optional[MQTTServer] = None
     ) -> None:
-        super().__init__(name=name, api=api, server=server)
+        super().__init__(name=name, api=api, server=server, clean_session=False)
 
         self.log = logging.getLogger("profile")
         self.name = name
