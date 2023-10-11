@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <signal.h>
 #include "cJSON/cJSON.h"
 #include "logging.h"
 #include "sockets.h"
@@ -35,6 +36,10 @@ module_settings_t glob_settings = {
     .log_verbose_level = 0,
     .max_threads = 20,
 };
+
+pid_t child_pid = -1;
+uint32_t child_timeout = 60;
+struct rusage child_rusage = {0};
 
 static uint32_t get_global_value(WASMModuleInstance *inst, const char* name) {
   uint32_t gval;
@@ -121,6 +126,15 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 }
 
 
+
+void timeout_kill_child(int signo) {
+  if (!child_rusage.ru_maxrss) {
+    if (kill (child_pid, SIGKILL) == -1) {
+      log_msg(L_CRI, "Could not kill child process (%d): %s", child_pid, strerror(errno));
+    }
+  }
+}
+
 __attribute__((noreturn)) static bool run_module_child(module_t *mod, int i) {
   bool succ = freopen("/dev/null", "w", stdout) && freopen("/dev/null", "w", stderr);
   if (!succ) {
@@ -137,6 +151,16 @@ static bool run_modules(module_t *mod) {
     char exitmsg[] = "{\"status\": \"exited\"}";
     uint32_t repeat = mod->args.repeat;
     uint32_t success_exec = 0;
+
+    /* Setup timeout signal handler */
+    struct sigaction act = {0};
+    act.sa_handler = timeout_kill_child;
+    sigemptyset (&act.sa_mask);
+    act.sa_flags = SA_RESTART;
+    if (sigaction(SIGALRM, &act, NULL) == -1) {
+      log_msg(L_ERR, "Could not register timeout alarm callback: %s", strerror(errno));
+    }
+
     for (uint32_t i = 1; i <= repeat; i++) {
         /* Create child process to run module + send profile */
         pid_t cpid = fork();
@@ -147,7 +171,13 @@ static bool run_modules(module_t *mod) {
         }
         else {
             int wstatus;
-            wait4(cpid, &wstatus, 0, NULL);
+            child_pid = cpid;
+            /* Currently use rusage as a way to signal that wait4 actually ended
+             * This is needed to prevent a race condition with kill alarm */
+            memset (&child_rusage, 0, sizeof(child_rusage));
+            alarm(child_timeout);
+            wait4(cpid, &wstatus, 0, &child_rusage);
+            alarm(0);
             if (WIFEXITED(wstatus) && !WEXITSTATUS(wstatus)) {
                 success_exec++;
             } 
