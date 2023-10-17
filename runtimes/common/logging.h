@@ -17,7 +17,7 @@
 #define L_DBG 10
 #define L_ALL 0
 
-#define LOG_MAX_LEN 1024
+#define LOG_MSG_MAX_LEN 1023
 
 #if !defined(DOXYGEN_SHOULD_SKIP_THIS)
 void log_init(int fd);

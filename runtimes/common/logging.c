@@ -33,10 +33,10 @@ void log_msg(int level, const char *format, ...) {
     va_list args;
     va_start(args, format);
 
-    char buf[LOG_MAX_LEN];
-    int len = vsnprintf(&buf[1], LOG_MAX_LEN - 1, format, args);
-    if (len > LOG_MAX_LEN) { len = LOG_MAX_LEN; }
-    buf[0] = H_CONTROL | (level < 256 ? level : 256);
+    char buf[LOG_MSG_MAX_LEN+1];
+    int len = vsnprintf(&buf[1], LOG_MSG_MAX_LEN, format, args);
+    if (len > LOG_MSG_MAX_LEN) { len = LOG_MSG_MAX_LEN; }
+    buf[0] = H_CONTROL | (level < 128 ? level : 128);
 
     slsocket_rwrite(_socket, H_CONTROL | 0x00, H_LOG_RUNTIME, buf, len + 1);
 }
