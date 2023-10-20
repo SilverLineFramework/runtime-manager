@@ -11,6 +11,10 @@ def _parse(p):
     p.add_argument(
         "-t", "--runtimes", default="linux/min/wasmer",
         help="Runtime(s) to start on managers.")
+    p.add_argument(
+        "-a", "--rtargs", nargs='+',
+        help="List of arguments to pass to runtime",
+        default=[])
     return p
 
 
@@ -26,7 +30,7 @@ def _main(args):
         "screen -S runtime -dm bash -c "
         "\". /home/hc/.wasmedge/env; cd runtime-manager; "
         "./env/bin/python start.py --name {{name}} --cfg config.json "
-        "--runtimes {} --verbose {}\"".format(
-            args.runtimes, args.verbose))
+        "--runtimes {} --verbose {} --rtargs\"".format(
+            args.runtimes, args.verbose, args.rtargs))
     args.verbose = 21
     command._main(args)
