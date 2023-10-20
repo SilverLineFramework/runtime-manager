@@ -22,7 +22,8 @@
 #define TRACE_ACCESS 0
 #define TRACE_VIOLATION 0
 
-#define DELAY 500
+/* Delay window parameter: Global settable */
+uint32_t delay_param = 500;
 
 /* Code Access Record */
 struct access_record {
@@ -99,7 +100,7 @@ void logaccess_wrapper(wasm_exec_env_t exec_env, uint32_t addr, uint32_t opcode,
     /* Access record must be updated atomically */
     entry->access = cur_access;
     entry->access_mtx.unlock();
-    delay(DELAY);
+    delay(delay_param);
     entry->probe.store(false);
   }
   /* If probed, check if at least one write from different thread */

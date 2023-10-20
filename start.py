@@ -28,6 +28,10 @@ def _parse(p):
         "-r", "--runtimes", nargs='+', 
         help="Runtimes to start. Supported options: \n" + interfaces.nested_dict_str(interfaces.tree),
         default=["linux/min/wasmer"])
+    p.add_argument(
+        "-a", "--rtargs", nargs='+',
+        help="List of arguments to pass to runtime",
+        default=[])
 
     return p
 
@@ -50,7 +54,7 @@ def _main(args):
         else:
             name = "{}.{}".format(args.name, rt_class.DEFAULT_SHORTNAME)
         return rt_class(
-            name=name, rtid=str(uuid.uuid4()), cfg=runtime_cfg, cpus=cpu)
+            name=name, rtid=str(uuid.uuid4()), cfg=runtime_cfg, cpus=cpu, rtargs=args.rtargs)
 
     if args.cpus is None:
         args.cpus = [None] * len(args.runtimes)

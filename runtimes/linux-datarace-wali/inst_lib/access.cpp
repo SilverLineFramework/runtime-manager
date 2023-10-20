@@ -207,3 +207,6 @@ NativeSymbol native_access_symbols[] = {
 };
 
 uint32_t num_native_access_symbols = sizeof(native_access_symbols) / sizeof(NativeSymbol);
+
+/* Unused */
+uint32_t delay_param = 0;

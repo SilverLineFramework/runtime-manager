@@ -34,10 +34,12 @@ class LinuxMinimal(RuntimeManager):
     def __init__(
         self, rtid: Optional[str] = None, name: Optional[str] = None,
         command: Optional[str] = None, cfg: dict = {},
-        cpus: Optional[str] = None
+        cpus: Optional[str] = None,
+        rtargs: Optional[list[str]] = []
     ) -> None:
         self.cpus = cpus
         self.command = self.DEFAULT_COMMAND if command is None else command
+        self.rtargs = rtargs
         super().__init__(rtid, name, cfg=cfg)
 
     def start(self) -> dict:
@@ -47,7 +49,9 @@ class LinuxMinimal(RuntimeManager):
 
         self.socket = SLSocket(self.index, server=True, timeout=5.)
         self.process = subprocess.Popen(
-            "{} {}".format(self.command, self.index), shell=True,
+            "{} {} {}".format(self.command, self.index, 
+                " ".join(self.rtargs)), 
+            shell=True,
             preexec_fn=os.setsid)
         self.socket.accept()
         return self.config

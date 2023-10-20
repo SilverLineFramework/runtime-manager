@@ -45,6 +45,7 @@ int64_t get_instrumentation_profile(char **buf_ptr, char *pre_buf, int pre_len);
 /* Exported symbols */
 extern NativeSymbol native_access_symbols[];
 extern uint32_t num_native_access_symbols;
+extern uint32_t delay_param;
 
 #ifdef __cplusplus
 }

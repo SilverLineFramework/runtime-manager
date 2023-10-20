@@ -102,7 +102,7 @@ static bool run_module_once(module_t *mod) {
     log_msg(L_DBG, "Generated profile data of size %ld\n", buflen);
 
     /* Enforces profile message only every 100 ms to prevent profiler overload */
-    int64_t diff_time = 100*1000 - rusage.cpu_time;
+    int64_t diff_time = 50*1000 - rusage.cpu_time;
     if (diff_time > 0) {
       usleep(diff_time);
     }
@@ -226,6 +226,11 @@ int main(int argc, char **argv) {
     runtime.socket = slsocket_open(atoi(argv[1]), -1);
     if (runtime.socket < 0) { exit(-1); }
     log_init(runtime.socket);
+
+    if (argc > 2) {
+      delay_param = atoi(argv[2]);
+      log_msg(L_INF, "Delay parameter set to %d\n", delay_param);
+    }
 
     NativeSymbolPackage ns_package[] = {
       {
