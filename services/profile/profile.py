@@ -8,6 +8,7 @@ import traceback
 import time
 import threading
 import uuid
+import multiprocessing as mp
 
 import numpy as np
 
@@ -17,7 +18,6 @@ from beartype.typing import Optional, Union
 from libsilverline import (
     SilverlineClient, MQTTServer, configure_log, dict_or_load)
 import parsers
-
 
 class ProfilerException(Exception):
     """Base class for profiling-related exceptions."""
@@ -46,7 +46,8 @@ class Profiler(SilverlineClient):
     """
 
     def __init__(
-        self, name: str = "profiler", base_path: str = "data",
+        self, processes: int = 1, name: str = "profiler", 
+        base_path: str = "data",
         api: str = "localhost:8000", server: Optional[MQTTServer] = None
     ) -> None:
         super().__init__(name=name, api=api, server=server, clean_session=False)
@@ -56,6 +57,8 @@ class Profiler(SilverlineClient):
         self.base_path = base_path
         self.log.info("Saving to directory: {}".format(self.base_path))
         self._runtimes: dict = {}
+        self.pool = mp.Pool(processes=processes)
+
 
     @classmethod
     def from_config(
@@ -134,8 +137,7 @@ class Profiler(SilverlineClient):
             json.dump(out, f)
         self.log.info("Saved profiling data: {}".format(path))
 
-    def on_message(self, client, userdata, msg):
-        """Handle message."""
+    def __on_message_proc(self, msg) -> None:
         self.log.debug("Received message on topic: {}".format(msg.topic))
         try:
             self.__on_message(msg)
@@ -144,6 +146,11 @@ class Profiler(SilverlineClient):
         except Exception as e:
             self.log.critical("Uncaught exception: {}".format(e))
             self.log.critical("\n".join(traceback.format_exception(e)))
+        
+        
+    def on_message(self, client, userdata, msg):
+        """Handle message."""
+        self.pool.apply_async(self.__on_message_proc(msg))
 
 
 if __name__ == '__main__':
@@ -156,6 +163,9 @@ if __name__ == '__main__':
     p.add_argument(
         "-c", "--cfg", help="Config file.",
         default=os.environ.get('SL_CONFIG', 'config.json'))
+    p.add_argument(
+        "-n", "--nprocs", help="Number of worker profiling processes",
+        default=mp.cpu_count()-2 if mp.cpu_count() > 2 else 1)
     p.add_argument("-v", "--verbose", help="Logging level", default=20)
     args = p.parse_args()
 
@@ -165,5 +175,5 @@ if __name__ == '__main__':
 
     path = os.path.join(args.data, time.strftime("%Y-%m-%d.%H-%M-%S"))
     Profiler.from_config(
-        args.cfg, name="profiler", base_path=path
+        args.cfg, name="profiler", base_path=path, processes=args.nprocs
     ).start().run_until_stop()

@@ -38,6 +38,7 @@ module_settings_t glob_settings = {
 };
 
 pid_t child_pid = -1;
+/* Timeout for non-budget runs */
 uint32_t child_timeout = 60;
 struct rusage child_rusage = {0};
 
@@ -101,8 +102,8 @@ static bool run_module_once(module_t *mod) {
     }
     log_msg(L_DBG, "Generated profile data of size %ld\n", buflen);
 
-    /* Enforces profile message only every 100 ms to prevent profiler overload */
-    int64_t diff_time = 50*1000 - rusage.cpu_time;
+    /* Enforces profile message only every 50 ms to prevent profiler overload */
+    int64_t diff_time = 10*1000 - rusage.cpu_time;
     if (diff_time > 0) {
       usleep(diff_time);
     }
@@ -131,13 +132,16 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 }
 
 
+bool kill_flag = false;
 
 void timeout_kill_child(int signo) {
+  log_msg(L_WRN, "Timeout signal received");
   if (!child_rusage.ru_maxrss) {
     if (kill (child_pid, SIGKILL) == -1) {
       log_msg(L_CRI, "Could not kill child process (%d): %s", child_pid, strerror(errno));
     }
   }
+  kill_flag = true;
 }
 
 __attribute__((noreturn)) static bool run_module_child(module_t *mod, int i) {
@@ -216,6 +220,71 @@ static bool run_modules(module_t *mod) {
     return true;
 }
 
+static bool run_modules_budget(module_t *mod, uint32_t budget) {
+    char exitmsg[] = "{\"status\": \"exited\"}";
+    uint32_t success_exec = 0;
+
+    kill_flag = false;
+    /* Setup timeout signal handler */
+    struct sigaction act = {0};
+    act.sa_handler = timeout_kill_child;
+    sigemptyset (&act.sa_mask);
+    act.sa_flags = SA_RESTART;
+    if (sigaction(SIGALRM, &act, NULL) == -1) {
+      log_msg(L_ERR, "Could not register timeout alarm callback: %s", strerror(errno));
+    }
+
+    alarm(budget);
+    uint32_t i = 0;
+    while (!kill_flag) {
+        /* Create child process to run module + send profile */
+        pid_t cpid = fork();
+        if (cpid == 0) {
+            run_module_child(mod, i);
+        } else if (cpid == -1) {
+            log_msg(L_ERR, "Fork failed | Error: %s", strerror(errno));
+        }
+        else {
+            int wstatus;
+            child_pid = cpid;
+            /* Currently use rusage as a way to signal that wait4 actually ended
+             * This is needed to prevent a race condition with kill alarm */
+            memset (&child_rusage, 0, sizeof(child_rusage));
+            wait4(cpid, &wstatus, 0, &child_rusage);
+            if (WIFEXITED(wstatus) && !WEXITSTATUS(wstatus)) {
+                success_exec++;
+            } 
+            else {
+                int exit_code;
+                log_msg(L_ERR, "\'%s\' | Iteration %u failed", mod->args.path, i);
+                if (WIFEXITED(wstatus) && (exit_code = WEXITSTATUS(wstatus)))
+                    log_msg(L_ERR, "Reason: Invalid exit code (%d)", exit_code);
+                else if (WIFSIGNALED(wstatus)) {
+                    int signo = WTERMSIG(wstatus);
+                    log_msg(L_ERR, "Reason: Terminated by signal \'%s\'(%d)", strsignal(signo), signo);
+#ifdef WCOREDUMP
+                    if (WCOREDUMP(wstatus)) {
+                      log_msg(L_ERR, "WCOREDUMP: Child faced a core dump!");
+                    }
+#else
+                    log_msg(L_ERR, "WCOREDUMP: Cannot trace child for core-dump");
+#endif
+                } 
+                else {
+                  log_msg(L_ERR, "Reason: Unknown termination method");
+                }
+            } 
+        }
+        i++;
+    }
+
+    log_msg(L_INF, "\'%s\' succesfully executed %d/%d times!", 
+        mod->args.path, success_exec, i);
+    slsocket_rwrite(
+        runtime.socket, H_CONTROL | 0x00, H_EXITED, exitmsg, strlen(exitmsg));
+    return true;
+}
+
 static void destroy_args(module_t *mod) {
     destroy_module_args(&mod->args);
     destroy_metadata_args(&mod->meta);
@@ -227,9 +296,14 @@ int main(int argc, char **argv) {
     if (runtime.socket < 0) { exit(-1); }
     log_init(runtime.socket);
 
+    uint32_t budget = 0;
     if (argc > 2) {
       delay_param = atoi(argv[2]);
-      log_msg(L_INF, "Delay parameter set to %d\n", delay_param);
+      log_msg(L_INF, "Delay parameter set to %d", delay_param);
+    }
+    if (argc > 3) {
+      budget = atoi(argv[3]);
+      log_msg(L_INF, "Time Budget is %d", budget);
     }
 
     NativeSymbolPackage ns_package[] = {
@@ -251,7 +325,11 @@ int main(int argc, char **argv) {
                     L_DBG, "Runtime received message: %.*s",
                     msg->payloadlen, msg->payload);
                 if (parse_module_create(&runtime.mod, msg)) {
-                    run_modules(&runtime.mod);
+                    if (budget == 0) {
+                      run_modules(&runtime.mod);
+                    } else {
+                      run_modules_budget(&runtime.mod, budget);
+                    }
                     destroy_args(&runtime.mod);
                 }
             }
