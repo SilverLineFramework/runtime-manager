@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
+#include <stdatomic.h>
 #include "cJSON/cJSON.h"
 #include "logging.h"
 #include "sockets.h"
@@ -38,6 +39,8 @@ module_settings_t glob_settings = {
 };
 
 pid_t child_pid = -1;
+
+atomic_bool kill_flag = false;
 /* Timeout for non-budget runs */
 uint32_t child_timeout = 60;
 struct rusage child_rusage = {0};
@@ -58,6 +61,10 @@ static bool run_module_once(module_t *mod) {
     /** Run instrumented code **/
     module_rusage_t rusage = {0};
     bool instrument_success = false;
+
+    sigset_t block_quit;
+    sigemptyset (&block_quit);
+    sigaddset (&block_quit, SIGQUIT);
     
     module_wamr_t modwamr;
     memset(&modwamr, 0, sizeof(modwamr));
@@ -93,6 +100,9 @@ static bool run_module_once(module_t *mod) {
       goto cleanup;
     }
 
+    /* Don't quit while sending profile */
+    sigprocmask (SIG_BLOCK, &block_quit, NULL);
+
     /** Gather profile **/
     char* buf;
     int64_t buflen = get_instrumentation_profile(&buf, (char*)&rusage, sizeof(rusage));
@@ -119,6 +129,7 @@ static bool run_module_once(module_t *mod) {
     /** **/
 
 cleanup:
+    sigprocmask (SIG_UNBLOCK, &block_quit, NULL);
     return res && instrument_success;
 }
 
@@ -132,13 +143,12 @@ bool parse_module_create(module_t *mod, message_t *msg) {
 }
 
 
-bool kill_flag = false;
 
 void timeout_kill_child(int signo) {
   log_msg(L_WRN, "Timeout signal received");
   if (!child_rusage.ru_maxrss) {
-    if (kill (child_pid, SIGKILL) == -1) {
-      log_msg(L_CRI, "Could not kill child process (%d): %s", child_pid, strerror(errno));
+    if (kill (child_pid, SIGQUIT) == -1) {
+      log_msg(L_CRI, "Could not quit child process (%d): %s", child_pid, strerror(errno));
     }
   }
   kill_flag = true;
