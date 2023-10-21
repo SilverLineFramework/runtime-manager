@@ -113,7 +113,7 @@ static bool run_module_once(module_t *mod) {
     log_msg(L_DBG, "Generated profile data of size %ld\n", buflen);
 
     /* Enforces profile message only every 50 ms to prevent profiler overload */
-    int64_t diff_time = 10*1000 - rusage.cpu_time;
+    int64_t diff_time = 50*1000 - rusage.cpu_time;
     if (diff_time > 0) {
       usleep(diff_time);
     }
