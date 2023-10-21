@@ -30,7 +30,7 @@ def _main(args):
         "screen -S runtime -dm bash -c "
         "\". /home/hc/.wasmedge/env; cd runtime-manager; "
         "./env/bin/python start.py --name {{name}} --cfg config.json "
-        "--runtimes {} --verbose {} --rtargs\"".format(
-            args.runtimes, args.verbose, args.rtargs))
+        "--runtimes {} --verbose {} --rtargs {}\"".format(
+            args.runtimes, args.verbose, " ".join(args.rtargs)))
     args.verbose = 21
     command._main(args)
