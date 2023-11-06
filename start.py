@@ -29,7 +29,7 @@ def _parse(p):
         help="Runtimes to start. Supported options: \n" + interfaces.nested_dict_str(interfaces.tree),
         default=["linux/min/wasmer"])
     p.add_argument(
-        "-a", "--rtargs", nargs='+',
+        "-a", "--rtargs", nargs='*',
         help="List of arguments to pass to runtime",
         default=[])
 
